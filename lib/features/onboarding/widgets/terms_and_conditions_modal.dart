@@ -60,12 +60,12 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Terms and Conditions',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -84,7 +84,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
               child: Theme(
                 data: Theme.of(context).copyWith(
                   scrollbarTheme: ScrollbarThemeData(
-                    thumbColor: WidgetStateProperty.all( AppColors.primaryButton),
+                    thumbColor: WidgetStateProperty.all(Theme.of(context).colorScheme.primary),
                     thickness: WidgetStateProperty.all(6),
                     radius: const Radius.circular(8),
                   ),
@@ -95,7 +95,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: _buildTermsTextContent(),
+                    child: _buildTermsTextContent(context),
                   ),
                 ),
               ),
@@ -105,19 +105,19 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
             Container(
               padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 24.0),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
               ),
               child: Column(
                 children: [
                   RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
                       style: TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         height: 1.5,
                       ),
-                      children: [
+                      children: const [
                           TextSpan(text: 'By continuing, you confirm that you\'ve read and understood these '),
                           TextSpan(text: 'Terms and Conditions', style: TextStyle(fontWeight: FontWeight.bold)),
                           TextSpan(text: ', and that you understand '),
@@ -135,10 +135,6 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                           }
                         : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryButton,
-                      disabledBackgroundColor: AppColors.disabledButton,
-                      disabledForegroundColor: AppColors.disabledText,
-                      foregroundColor: Colors.white,
                       elevation: _hasScrolledToBottom ? 4 : 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -159,42 +155,42 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
     );
   }
 
-  Widget _buildTermsTextContent() {
-    const bodyStyle = TextStyle(
+  Widget _buildTermsTextContent(BuildContext context) {
+    final bodyStyle = TextStyle(
       fontSize: 15,
-      color: AppColors.textPrimary,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
     
-    const headingStyle = TextStyle(
+    final headingStyle = TextStyle(
       fontSize: 18,
       fontWeight: FontWeight.bold,
-      color: AppColors.textPrimary,
+      color: Theme.of(context).colorScheme.onSurface,
       height: 1.5,
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Please read these Terms and Conditions carefully before using GabEye. By tapping "I Accept" or by using the app, you agree to these terms. If you don\'t agree, please don\'t continue using GabEye.',
           style: bodyStyle,
         ),
         const SizedBox(height: 24),
 
-        const Text('1. What is GabEye', style: headingStyle),
+        Text('1. What is GabEye', style: headingStyle),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'GabEye is a mobile app that helps people with color vision deficiency (CVD) navigate color-dependent tasks. It does this through a built-in color assessment, real-time and static color remapping, color identification, object recognition, and audio feedback.',
           style: bodyStyle,
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'GabEye is a personalization and assistive tool. It is built to adapt to how you see color and make everyday tasks easier — not to diagnose, treat, or replace professional eye care.',
           style: bodyStyle,
         ),
         const SizedBox(height: 24),
 
-        const Text('2. About the Color Assessment', style: headingStyle),
+        Text('2. About the Color Assessment', style: headingStyle),
         const SizedBox(height: 8),
         _buildBulletPoint('GabEye includes a digital version of the Farnsworth D-15 color arrangement test.', bodyStyle),
         _buildBulletPoint('This assessment is for app personalization only. It helps GabEye identify a likely color vision pattern (Protan, Deutan, or Tritan) so it can apply the right visual filters and settings for you.', bodyStyle),
@@ -203,9 +199,9 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         _buildBulletPoint('If your results suggest a color vision difference, or if you have any concerns about your vision, we encourage you to consult an eye specialist for a full assessment.', bodyStyle),
         const SizedBox(height: 24),
 
-        const Text('3. Using the Camera and Real-Time Features', style: headingStyle),
+        Text('3. Using the Camera and Real-Time Features', style: headingStyle),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'GabEye\'s real-time mode uses your device\'s camera to identify and remap colors as you move through your environment.',
           style: bodyStyle,
         ),
@@ -215,9 +211,9 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         _buildBulletPoint('Camera access is only used to power color identification, object recognition, and Daltonization while you\'re actively using these features.', bodyStyle),
         const SizedBox(height: 24),
 
-        const Text('4. Your Data and Privacy', style: headingStyle),
+        Text('4. Your Data and Privacy', style: headingStyle),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'We built GabEye to keep your information private and under your control.',
           style: bodyStyle,
         ),
@@ -228,9 +224,9 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         _buildBulletPoint('If you uninstall GabEye or clear its app data, your saved profile and settings will be permanently removed from your device.', bodyStyle),
         const SizedBox(height: 24),
 
-        const Text('5. What GabEye Can\'t Do', style: headingStyle),
+        Text('5. What GabEye Can\'t Do', style: headingStyle),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'While we\'ve built GabEye to be genuinely helpful, please keep the following in mind:',
           style: bodyStyle,
         ),
@@ -264,7 +260,7 @@ void showTermsAndConditionsModal(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
     ),

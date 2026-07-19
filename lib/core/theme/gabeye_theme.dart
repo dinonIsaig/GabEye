@@ -5,22 +5,62 @@ import 'package:gabeye/core/theme/app_colors.dart';
 
 class GabEyeTheme {
 
-  static final ThemeData  lightTheme = ThemeData (
+  static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
-    scaffoldBackgroundColor: Color(0xFFFFFFFF),
+    scaffoldBackgroundColor: AppColors.lightSurface,
+    colorScheme: const ColorScheme.light(
+      primary: AppColors.primaryColor,
+      surface: AppColors.lightSurface,
+      onSurface: AppColors.lightTextPrimary,
+      onSurfaceVariant: AppColors.lightTextSecondary,
+      error: AppColors.errorRed,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.lightPrimaryButton,
+        foregroundColor: AppColors.lightSurface,
+        disabledBackgroundColor: AppColors.disabledButton,
+        disabledForegroundColor: AppColors.disabledText,
+      ),
+    ),
     textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: Colors.black
-      )
-    )
+      bodyMedium: TextStyle(color: AppColors.lightTextPrimary),
+      bodyLarge: TextStyle(color: AppColors.lightTextPrimary),
+      titleLarge: TextStyle(color: AppColors.lightTextPrimary),
+      labelLarge: TextStyle(color: AppColors.lightTextPrimary),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColors.lightSurface,
+    ),
   );
 
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.darkMode,
+    colorScheme: const ColorScheme.dark(
+      primary: AppColors.primaryColor,
+      surface: AppColors.darkMode,
+      onSurface: AppColors.darkTextPrimary,
+      onSurfaceVariant: AppColors.darkTextSecondary,
+      error: AppColors.errorRed,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.darkPrimaryButton,
+        foregroundColor: AppColors.darkSurface,
+        disabledBackgroundColor: AppColors.disabledButton,
+        disabledForegroundColor: AppColors.disabledText,
+      ),
+    ),
     textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: Colors.white
-      )
-    )
+      bodyMedium: TextStyle(color: AppColors.darkTextPrimary),
+      bodyLarge: TextStyle(color: AppColors.darkTextPrimary),
+      titleLarge: TextStyle(color: AppColors.darkTextPrimary),
+      labelLarge: TextStyle(color: AppColors.darkTextPrimary),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColors.darkMode,
+    ),
   );
 
 

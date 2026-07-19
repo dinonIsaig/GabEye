@@ -38,30 +38,30 @@ class GetStartedScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       'Welcome to',
                       style: TextStyle(
                         fontSize: 18,
-                        color: Color(0xFF333333),
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       'GabEye!',
                       style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF111827),
+                        color: Theme.of(context).colorScheme.onSurface,
                         letterSpacing: -1.0,
                       ),
                     ),
                     const SizedBox(height: 5),
-                    const Text(
+                    Text(
                       "We don't just show you how colors look different — we shift them to make things easier to see.",
                       style: TextStyle(
                         fontSize: 16,
-                        color: Color(0xFF4B5563),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         height: 1.5,
                       ),
                     ),
@@ -78,8 +78,6 @@ class GetStartedScreen extends StatelessWidget {
                   showTermsAndConditionsModal(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF193B61),
-                  foregroundColor: Colors.white,
                   elevation: 4,
                   shadowColor: Colors.black.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
