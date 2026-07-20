@@ -9,7 +9,8 @@ class GabEyeTheme {
     brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.lightSurface,
     colorScheme: const ColorScheme.light(
-      primary: AppColors.primaryColor,
+      primary: AppColors.lightPrimaryButton,
+      onPrimary: AppColors.lightPrimaryButton,
       surface: AppColors.lightSurface,
       onSurface: AppColors.lightTextPrimary,
       onSurfaceVariant: AppColors.lightTextSecondary,
@@ -39,6 +40,7 @@ class GabEyeTheme {
     scaffoldBackgroundColor: AppColors.darkMode,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryColor,
+      onPrimary: AppColors.lightPrimaryButton,
       surface: AppColors.darkMode,
       onSurface: AppColors.darkTextPrimary,
       onSurfaceVariant: AppColors.darkTextSecondary,

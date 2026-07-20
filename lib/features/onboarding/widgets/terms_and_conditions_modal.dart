@@ -58,7 +58,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
             ),
 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 30.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -86,7 +86,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
               child: Theme(
                 data: Theme.of(context).copyWith(
                   scrollbarTheme: ScrollbarThemeData(
-                    thumbColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onSurfaceVariant),
+                    thumbColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onPrimary),
                     thickness: WidgetStateProperty.all(8),
                     radius: const Radius.circular(8),
                     mainAxisMargin: 20.0,
@@ -97,7 +97,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                   thumbVisibility: true,
                   child: SingleChildScrollView(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
                     child: _buildTermsTextContent(context),
                   ),
                 ),
@@ -106,31 +106,13 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
 
             
             Container(
-              padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 24.0),
+              padding: const EdgeInsets.only(left:60.0, right: 60.0, top: 16.0, bottom: 24.0),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
               ),
               child: Column(
                 children: [
-                  RichText(
-                    textAlign: TextAlign.justify,
-                    text: TextSpan(
-                      style: GoogleFonts.atkinsonHyperlegibleNext(
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                      children: const [
-                          TextSpan(text: 'By continuing, you confirm that you\'ve read and understood these '),
-                          TextSpan(text: 'Terms and Conditions', style: TextStyle(fontWeight: FontWeight.bold)),
-                          TextSpan(text: ', and that you understand '),
-                          TextSpan(text: 'GabEye\'s assessment is a personalization tool and not a substitute for professional eye care.', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
+
                   ElevatedButton(
                     onPressed: _hasScrolledToBottom
                         ? () {
@@ -161,7 +143,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
 
   Widget _buildTermsTextContent(BuildContext context) {
     final bodyStyle = GoogleFonts.atkinsonHyperlegibleNext(
-      fontSize: 15,
+      fontSize: 16,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
     
@@ -255,7 +237,37 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         _buildBulletPoint('GabEye is intended for use in a way where you can pause, look at your screen, and use the app safely — not for tasks that require constant movement or split-second decisions (like driving).', bodyStyle),
         _buildBulletPoint('GabEye does not replace professional advice for health, safety-critical, or occupational decisions that depend on accurate color perception (for example, certain jobs in aviation, electrical work, or transportation).', bodyStyle),
         
-        const SizedBox(height: 48),
+        const SizedBox(height: 20),
+
+        RichText(
+          textAlign: TextAlign.justify,
+          text: TextSpan(
+            style: GoogleFonts.atkinsonHyperlegibleNext(
+              fontSize: 16,
+              fontStyle: FontStyle.italic,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
+            children: const [
+              TextSpan(
+                text:
+                    'By continuing, you confirm that you\'ve read and understood these ',
+              ),
+              TextSpan(
+                text: 'Terms and Conditions',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextSpan(text: ', and that you understand '),
+              TextSpan(
+                text:
+                    'GabEye\'s assessment is a personalization tool and not a substitute for professional eye care.',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
       ],
     );
   }
