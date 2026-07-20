@@ -167,7 +167,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
     final headingStyle = GoogleFonts.inter(
       fontSize: 18,
       fontWeight: FontWeight.bold,
-      color: Theme.of(context).colorScheme.onSurface,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
       height: 1.5,
     );
 
