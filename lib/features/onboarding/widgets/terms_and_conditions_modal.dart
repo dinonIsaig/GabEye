@@ -86,9 +86,10 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
               child: Theme(
                 data: Theme.of(context).copyWith(
                   scrollbarTheme: ScrollbarThemeData(
-                    thumbColor: WidgetStateProperty.all(Theme.of(context).colorScheme.primary),
-                    thickness: WidgetStateProperty.all(6),
+                    thumbColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onSurfaceVariant),
+                    thickness: WidgetStateProperty.all(8),
                     radius: const Radius.circular(8),
+                    mainAxisMargin: 20.0,
                   ),
                 ),
                 child: Scrollbar(
