@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 
 class TermsAndConditionsModal extends StatefulWidget {
   const TermsAndConditionsModal({Key? key}) : super(key: key);
@@ -62,7 +64,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                 children: [
                   Text(
                     'Terms and Conditions',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
@@ -72,11 +74,11 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                   const SizedBox(height: 4),
                   Text(
                     'Last Update: July 2026',
-                    style: TextStyle(fontSize: 12, color: AppColors.disabledText),
+                    style:  GoogleFonts.atkinsonHyperlegibleNext(fontSize: 12, color: AppColors.disabledText),
                   ),
                 ],
               ),
-            ),
+            ),  
             const SizedBox(height: 16),
 
             // Scrollable Text Area
@@ -112,7 +114,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                   RichText(
                     textAlign: TextAlign.justify,
                     text: TextSpan(
-                      style: TextStyle(
+                      style: GoogleFonts.atkinsonHyperlegibleNext(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -133,7 +135,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                         ? () {
                             Navigator.pop(context);
                             // Navigator.pushNamed(context, '/change this for ur screen');
-                          }
+                          } 
                         : null,
                     style: ElevatedButton.styleFrom(
                       elevation: _hasScrolledToBottom ? 4 : 0,
@@ -157,12 +159,12 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
   }
 
   Widget _buildTermsTextContent(BuildContext context) {
-    final bodyStyle = TextStyle(
+    final bodyStyle = GoogleFonts.atkinsonHyperlegibleNext(
       fontSize: 15,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
     
-    final headingStyle = TextStyle(
+    final headingStyle = GoogleFonts.inter(
       fontSize: 18,
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.onSurface,
