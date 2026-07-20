@@ -13,7 +13,7 @@ class AppRoutes {
       getStarted: (context) => const GetStartedScreen(),
       // assessment: (context) => const AssessmentScreen(),
       // liveCamera: (context) => const LiveCameraScreen(),
-      // Add more routes here as your team creates new pages
+      // Add more routes here
     };
   }
 }
