@@ -110,6 +110,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
               child: Column(
                 children: [
                   RichText(
+                    textAlign: TextAlign.justify,
                     text: TextSpan(
                       style: TextStyle(
                         fontSize: 14,
@@ -174,6 +175,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         Text(
           'Please read these Terms and Conditions carefully before using GabEye. By tapping "I Accept" or by using the app, you agree to these terms. If you don\'t agree, please don\'t continue using GabEye.',
           style: bodyStyle,
+          textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 24),
 
@@ -182,11 +184,23 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         Text(
           'GabEye is a mobile app that helps people with color vision deficiency (CVD) navigate color-dependent tasks. It does this through a built-in color assessment, real-time and static color remapping, color identification, object recognition, and audio feedback.',
           style: bodyStyle,
+          textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 12),
-        Text(
-          'GabEye is a personalization and assistive tool. It is built to adapt to how you see color and make everyday tasks easier — not to diagnose, treat, or replace professional eye care.',
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: 'GabEye is a personalization and assistive tool. ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextSpan(
+                text: 'It is built to adapt to how you see color and make everyday tasks easier — not to diagnose, treat, or replace professional eye care.',
+              ),
+            ],
+          ),
           style: bodyStyle,
+          textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 24),
 
@@ -204,6 +218,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         Text(
           'GabEye\'s real-time mode uses your device\'s camera to identify and remap colors as you move through your environment.',
           style: bodyStyle,
+          textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 12),
         _buildBulletPoint('Please remain stationary while using real-time camera features. This ensures accurate processing and helps prevent accidents while you\'re focused on your screen.', bodyStyle),
@@ -216,6 +231,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         Text(
           'We built GabEye to keep your information private and under your control.',
           style: bodyStyle,
+          textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 12),
         _buildBulletPoint('Your data stays on your device. Your assessment results, color vision profile, and app settings are stored locally, using offline device storage. We do not upload this information to external servers or the cloud.', bodyStyle),
@@ -229,6 +245,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         Text(
           'While we\'ve built GabEye to be genuinely helpful, please keep the following in mind:',
           style: bodyStyle,
+          textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 12),
         _buildBulletPoint('Color identification, object recognition, and audio feedback may not always be perfectly accurate, especially in poor lighting or unusual environments.', bodyStyle),
@@ -248,7 +265,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         children: [
           Text('•  ', style: style.copyWith(fontWeight: FontWeight.bold)),
           Expanded(
-            child: Text(text, style: style),
+            child: Text(text, style: style, textAlign: TextAlign.justify),
           ),
         ],
       ),

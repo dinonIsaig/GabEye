@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // REQUIRED for .svg files!
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/features/onboarding/widgets/terms_and_conditions_modal.dart';
 
@@ -33,7 +33,7 @@ class GetStartedScreen extends StatelessWidget {
             Expanded(
               flex: 3,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                padding: const EdgeInsets.symmetric(horizontal: 50.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,

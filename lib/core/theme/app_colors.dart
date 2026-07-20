@@ -18,7 +18,7 @@ class AppColors {
   static const Color darkTextSecondary = Color(0xFFCAD3DE);
   
   // Semantic Colors
-  static const Color errorRed = Color(0xFFDC2626);
+  static const Color errorRed = Color(0xFF961320);
   static const Color successGreen = Color(0xFF16A34A);
   
   // UI Elements
