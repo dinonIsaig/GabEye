@@ -29,7 +29,11 @@ class AppColors {
   static const Color lightPrimaryButton   = Color(0xFF14395F);
   static const Color darkPrimaryButton   = Color(0xFFB0C6D9);
 
-  //Button Text
+  // Surface
   static const Color lightSurface   = Color(0xFFFFFFFF);
   static const Color darkSurface   = Color(0xFF1B222B);
+
+  // Alt Surfaces
+  static const Color altLightSurface   = Color(0xFFF2F6FA);
+  static const Color altDarkSurface   = Color(0xFF232B36);
 }
