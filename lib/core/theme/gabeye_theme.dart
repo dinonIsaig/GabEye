@@ -40,7 +40,7 @@ class GabEyeTheme {
     scaffoldBackgroundColor: AppColors.darkMode,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryColor,
-      onPrimary: AppColors.lightPrimaryButton,
+      onPrimary: AppColors.darkTextSecondary,
       surface: AppColors.darkMode,
       onSurface: AppColors.darkTextPrimary,
       onSurfaceVariant: AppColors.darkTextSecondary,
