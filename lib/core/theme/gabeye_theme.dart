@@ -1,12 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 
-
-
 class GabEyeTheme {
+  static TextTheme _buildTextTheme(Color color) {
+    return TextTheme(
+      bodyMedium: TextStyle( //body
+        color: color,
+        fontFamily: 'AtkinsonHyperlegible',
+        fontSize: 16,
+        height: 1.5,
+      ),
+      bodyLarge: TextStyle( //body-bold
+        color: color,
+        fontFamily: 'AtkinsonHyperlegible',
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        height: 1.5,
+      ),
+      titleLarge: TextStyle( //heading
+        color: color,
+        fontFamily: 'AtkinsonHyperlegible',
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        height: 1.5,
+      ),
+      labelLarge: TextStyle( //caption
+        color: color,
+        fontFamily: 'AtkinsonHyperlegible',
+        fontSize: 14,
+        height: 1.4,
+      ),
+    );
+  }
 
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
+    fontFamily: 'AtkinsonHyperlegible',
     scaffoldBackgroundColor: AppColors.lightSurface,
     colorScheme: const ColorScheme.light(
       primary: AppColors.primaryColor,
@@ -23,12 +52,7 @@ class GabEyeTheme {
         disabledForegroundColor: AppColors.disabledText,
       ),
     ),
-    textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: AppColors.lightTextPrimary),
-      bodyLarge: TextStyle(color: AppColors.lightTextPrimary),
-      titleLarge: TextStyle(color: AppColors.lightTextPrimary),
-      labelLarge: TextStyle(color: AppColors.lightTextPrimary),
-    ),
+    textTheme: _buildTextTheme(AppColors.lightTextPrimary),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.lightSurface,
     ),
@@ -36,6 +60,7 @@ class GabEyeTheme {
 
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
+    fontFamily: 'AtkinsonHyperlegible',
     scaffoldBackgroundColor: AppColors.darkMode,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryColor,
@@ -52,12 +77,7 @@ class GabEyeTheme {
         disabledForegroundColor: AppColors.disabledText,
       ),
     ),
-    textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: AppColors.darkTextPrimary),
-      bodyLarge: TextStyle(color: AppColors.darkTextPrimary),
-      titleLarge: TextStyle(color: AppColors.darkTextPrimary),
-      labelLarge: TextStyle(color: AppColors.darkTextPrimary),
-    ),
+    textTheme: _buildTextTheme(AppColors.darkTextPrimary),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.darkMode,
     ),
