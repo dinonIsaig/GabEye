@@ -57,8 +57,18 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  fonts:
+    - family: AtkinsonHyperlegible
+      fonts:
+        - asset: lib/core/fonts/AtkinsonHyperlegible-Regular.ttf
+        - asset: lib/core/fonts/AtkinsonHyperlegible-Bold.ttf
+          weight: 700
+        - asset: lib/core/fonts/AtkinsonHyperlegible-Italic.ttf
+          style: italic
+
   # To add assets to your application, add an assets section, like this:
   assets:
+      - assets/images/
       - assets/images/gabEyeLogo.svg
       - assets/icons/gabEyeIcon.svg
   #   - images/a_dot_ham.jpeg
