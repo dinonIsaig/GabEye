@@ -18,7 +18,7 @@ class GabEye extends StatelessWidget {
 
       theme: GabEyeTheme.lightTheme,
       darkTheme: GabEyeTheme.darkTheme,
-      themeMode: ThemeMode.system, // change this to light or Dark for ur preferred workspace
+      themeMode: ThemeMode.light, // change this to light or Dark for ur preferred workspace
 
       initialRoute: AppRoutes.getStarted, // change this initial route so u can directly work on your screens
       routes: AppRoutes.getRoutes(),

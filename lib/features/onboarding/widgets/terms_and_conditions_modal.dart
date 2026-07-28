@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 
 
 class TermsAndConditionsModal extends StatefulWidget {
@@ -116,7 +117,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                   ElevatedButton(
                     onPressed: _hasScrolledToBottom
                         ? () {
-                            Navigator.pop(context);
+                            Navigator.popAndPushNamed(context, AppRoutes.assessment);
                             // Navigator.pushNamed(context, '/change this for ur screen');
                           } 
                         : null,
