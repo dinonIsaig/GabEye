@@ -38,8 +38,10 @@ class GabEyeTheme {
     fontFamily: 'AtkinsonHyperlegible',
     scaffoldBackgroundColor: AppColors.lightSurface,
     colorScheme: const ColorScheme.light(
-      primary: AppColors.primaryColor,
+      primary: AppColors.lightPrimaryButton,
+      onPrimary: AppColors.lightPrimaryButton,
       surface: AppColors.lightSurface,
+      surfaceContainer: AppColors.altLightSurface,
       onSurface: AppColors.lightTextPrimary,
       onSurfaceVariant: AppColors.lightTextSecondary,
       error: AppColors.errorRed,
@@ -64,7 +66,9 @@ class GabEyeTheme {
     scaffoldBackgroundColor: AppColors.darkMode,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryColor,
+      onPrimary: AppColors.darkTextSecondary,
       surface: AppColors.darkMode,
+      surfaceContainer: AppColors.altDarkSurface,
       onSurface: AppColors.darkTextPrimary,
       onSurfaceVariant: AppColors.darkTextSecondary,
       error: AppColors.errorRed,
