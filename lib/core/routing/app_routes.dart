@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:gabeye/features/assessment/practice_screen.dart';
 // Import all your feature screens here
 import 'package:gabeye/features/featured_reads/gabeye_article.dart';
 import 'package:gabeye/features/onboarding/screens/get_started_screen.dart';
-import 'package:gabeye/features/assessment/practice_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/how_it_works_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/what_to_mind_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/disclaimer_screen.dart';
 
 class AppRoutes {
   // Define strict string constants for route names
   static const String getStarted = '/';
   static const String article = '/article';
+  static const String preAssessmentHowItWorks = '/pre-assessment/how-it-works';
+  static const String preAssessmentWhatToMind = '/pre-assessment/what-to-mind';
+  static const String preAssessmentDisclaimer = '/pre-assessment/disclaimer';
+  static const String d15Assessment = '/assessment/d15';
   // use '/' in ur route soo it will be the landing
   // static const String practice = '/practice'; // <-- this is an example of defining
 
@@ -17,7 +22,13 @@ class AppRoutes {
     return {
       getStarted: (context) => const GetStartedScreen(),
       article: (context) => const GabEyeArticleScreen(),
-      
+      preAssessmentHowItWorks: (context) => const HowItWorksScreen(),
+      preAssessmentWhatToMind: (context) => const WhatToMindScreen(),
+      preAssessmentDisclaimer: (context) => const DisclaimerScreen(),
+
+      d15Assessment: (context) => const Scaffold(
+        body: Center(child: Text('D-15 Assessment Screen')),
+      ) 
       // practice: (context) => const PracticeScreen(),
       // assessment: (context) => const AssessmentScreen(),
       // liveCamera: (context) => const LiveCameraScreen(),
