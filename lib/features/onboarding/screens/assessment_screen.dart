@@ -255,7 +255,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
       decoration: BoxDecoration(
         color: ColorCap.getVisualColor(0),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.primary, width: 2),
+        border: Border.all(color: Colors.white, width: 2),
       ),
       alignment: Alignment.center,
       child: const Text(
@@ -288,7 +288,7 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
               border: Border.all(
                 color: isHovered
                     ? colors.primary
-                    : colors.onSurfaceVariant.withOpacity(0.3),
+                    : Colors.white,
                 width: isHovered ? 2 : 1,
               ),
             ),
@@ -373,7 +373,7 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
       decoration: BoxDecoration(
         color: ColorCap.getVisualColor(capNum),
         borderRadius: BorderRadius.circular(14),
-        border: isPool ? Border.all(color: Colors.white.withOpacity(0.2)) : null,
+        border: isPool ? Border.all(color: Colors.white) : null,
       ),
       alignment: Alignment.center,
       child: isPool ? const Icon(Icons.open_with, size: 14, color: Colors.white70) : null,
