@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gabeye/components/article_navbar.dart';
+import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 
 class GabEyeArticleScreen extends StatelessWidget {
@@ -12,18 +12,15 @@ class GabEyeArticleScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            GabEyeNavbar(
+            GabEyeArticleNavbar(
+              title: 'Know More About GabEye',
               onBack: () => Navigator.maybePop(context),
-              onMenu: () {},
             ),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: const [
-                    ArticleHeadingImage(),
-                    MainContent(),
-                  ],
+                  children: const [ArticleHeadingImage(), MainContent()],
                 ),
               ),
             ),
@@ -81,7 +78,7 @@ class MainContent extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
             ),
           ],
@@ -118,9 +115,7 @@ class _BrandHeader extends StatelessWidget {
       children: [
         Text(
           'GabEye',
-          style: textTheme.titleLarge?.copyWith(
-            color: AppColors.primaryColor,
-          ),
+          style: textTheme.titleLarge?.copyWith(color: AppColors.primaryColor),
         ),
         Text(
           'Mobile Application Aid for Color Vision Deficiency',
@@ -152,7 +147,8 @@ class _Disclaimer extends StatelessWidget {
         ),
         children: [
           const TextSpan(
-            text: 'This assessment is for informational and digital '
+            text:
+                'This assessment is for informational and digital '
                 'optimization purposes only. ',
           ),
           TextSpan(
@@ -160,7 +156,8 @@ class _Disclaimer extends StatelessWidget {
             style: boldDisclaimerStyle,
           ),
           const TextSpan(
-            text: 'For official vision certification, please consult a '
+            text:
+                'For official vision certification, please consult a '
                 'licensed optometrist.',
           ),
         ],
@@ -177,7 +174,7 @@ class ImageRow extends StatelessWidget {
     return Container(
       height: 120,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
