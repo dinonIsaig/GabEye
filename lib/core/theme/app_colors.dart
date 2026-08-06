@@ -18,13 +18,15 @@ class AppColors {
   static const Color lightTextPrimary = Color(0xFF12161C);
   static const Color lightTextSecondary = Color(0xFF2B343F);
   static const Color lightPrimaryButton = Color(0xFF14395F);
-
+  static const Color borderLight = Color(0xFF31363D);
+  
   // Dark mode tokens
   static const Color darkSurface = Color(0xFF1B222B);
   static const Color darkMode = Color(0xFF12161C);
   static const Color darkTextPrimary = Color(0xFFF4F6F8);
   static const Color darkTextSecondary = Color(0xFFCAD3DE);
   static const Color darkPrimaryButton = Color(0xFFB0C6D9);
+  static const Color borderDark = Color(0xFF8A8BA2);
 
   // Shared UI state tokens
   static const Color disabledButton = Color(0xFFE5E7EB);

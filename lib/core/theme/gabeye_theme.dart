@@ -46,6 +46,7 @@ class GabEyeTheme {
       onSurfaceVariant: AppColors.lightTextSecondary,
       error: AppColors.errorRed,
       tertiary: AppColors.lightInfo,
+      outline: AppColors.borderLight,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -68,12 +69,13 @@ class GabEyeTheme {
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryColor,
       onPrimary: AppColors.darkTextSecondary,
-      surface: AppColors.darkMode,
+      surface: AppColors.darkSurface,
       surfaceContainer: AppColors.altDarkSurface,
       onSurface: AppColors.darkTextPrimary,
       onSurfaceVariant: AppColors.darkTextSecondary,
       error: AppColors.errorRed,
       tertiary: AppColors.darkInfo,
+      outline: AppColors.borderDark,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
