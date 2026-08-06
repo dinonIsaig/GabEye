@@ -23,7 +23,12 @@ class DisclaimerScreen extends StatelessWidget {
         top: false,
         child: Column(
           children: [
-            const PreAssessmentHeroHeader(),
+            Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + kToolbarHeight - 50,
+              ),
+              child: const PreAssessmentHeroHeader(),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -32,82 +37,84 @@ class DisclaimerScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Before you continue, here\'s something worth knowing. It\'ll only take a moment to read, and it\'ll help you understand exactly what this assessment is for.',
-                      style: textTheme.labelLarge?.copyWith(
+                      style: textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 20),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
                         ),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                color: AppColors.errorRed,
-                                width: 4,
-                              ),
-                            ),
-                          ),
-                          padding: const EdgeInsets.only(left: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        borderRadius: BorderRadius.circular(15),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
-                                'Important Note',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
+                              Container(
+                                width: 17,
+                                color: AppColors.errorRed,
                               ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.warning_amber_rounded,
-                                    color: AppColors.errorRed,
-                                    size: 24,
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Important Note',
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: AppColors.errorRed,
+                                            size: 24,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Disclaimer',
+                                            style: textTheme.titleLarge?.copyWith(
+                                              fontFamily: 'Inter',
+                                              fontSize: 24,
+                                              color: AppColors.errorOrange,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 14),
+                                      Text.rich(
+                                        TextSpan(
+                                          style: textTheme.bodyMedium?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface,
+                                          ),
+                                          children: const [
+                                            TextSpan(
+                                              text: 'This assessment is for informational and digital optimization purposes only. ',
+                                            ),
+                                            TextSpan(
+                                              text: 'It does not constitute a medical diagnosis.',
+                                              style: TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                            TextSpan(
+                                              text: ' For official vision certification, please consult a licensed optometrist.',
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Disclaimer',
-                                    style: textTheme.titleLarge?.copyWith(
-                                      fontFamily: 'Inter',
-                                      fontSize: 20,
-                                      color: AppColors.errorRed,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              Text.rich(
-                                TextSpan(
-                                  style: textTheme.labelLarge?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                  children: const [
-                                    TextSpan(
-                                      text: 'This assessment is for informational and digital optimization purposes only. ',
-                                    ),
-                                    TextSpan(
-                                      text: 'It does not constitute a medical diagnosis.',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                    TextSpan(
-                                      text: ' For official vision certification, please consult a licensed optometrist.',
-                                    ),
-                                  ],
                                 ),
                               ),
                             ],
@@ -119,6 +126,7 @@ class DisclaimerScreen extends StatelessWidget {
                 ),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Column(
@@ -127,6 +135,15 @@ class DisclaimerScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pushNamed(context, AppRoutes.d15Assessment);
                       },
@@ -155,7 +172,8 @@ class DisclaimerScreen extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                         side: BorderSide(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
                         ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
