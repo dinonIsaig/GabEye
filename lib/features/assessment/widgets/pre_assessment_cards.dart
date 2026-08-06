@@ -24,7 +24,7 @@ class PreAssessmentStepCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.surfaceContainer,
+          color: Theme.of(context).colorScheme.outline,
         ),
       ),
       child: ClipRRect(
@@ -50,14 +50,14 @@ class PreAssessmentStepCard extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: 25,
                     vertical: 14,
                   ),
                   child: Text.rich(
                     TextSpan(
-                      style: textTheme.labelLarge?.copyWith(
+                      style: textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface,
-                        height: 1.35,
+                        height: 1.50,
                       ),
                       children: [
                         TextSpan(text: normalTextBefore),
@@ -107,7 +107,7 @@ class PreAssessmentInfoCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.surfaceContainer,
+          color: Theme.of(context).colorScheme.outline,
         ),
       ),
       child: ClipRRect(
@@ -138,9 +138,9 @@ class PreAssessmentInfoCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Text.rich(
                 TextSpan(
-                  style: textTheme.labelLarge?.copyWith(
+                  style: textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.35,
+                    height: 1.45,
                   ),
                   children: [
                     TextSpan(text: normalTextBefore),

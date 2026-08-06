@@ -24,6 +24,8 @@ class PreAssessmentScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: GabEyeAppBar(
@@ -36,7 +38,12 @@ class PreAssessmentScaffold extends StatelessWidget {
         top: false,
         child: Column(
           children: [
-            const PreAssessmentHeroHeader(),
+            Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + kToolbarHeight - 50,
+              ),
+              child: const PreAssessmentHeroHeader(),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -51,7 +58,8 @@ class PreAssessmentScaffold extends StatelessWidget {
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
                         ),
                       ),
                       child: Column(
@@ -59,19 +67,16 @@ class PreAssessmentScaffold extends StatelessWidget {
                         children: [
                           Text(
                             instructionHeader,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                            style: textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            )
                           ),
                           const SizedBox(height: 4),
                           Text(
                             instructionTitle,
                             style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 20,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
@@ -84,6 +89,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                 ),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Column(
@@ -92,6 +98,15 @@ class PreAssessmentScaffold extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       onPressed: onNext,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -118,7 +133,8 @@ class PreAssessmentScaffold extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                         side: BorderSide(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
                         ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
