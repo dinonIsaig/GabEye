@@ -10,6 +10,18 @@ enum ColorDeficiencyType {
   random
 }
 
+/// How far outside the typical range the result falls: Normal, Moderate,
+/// or Strong. Kept to 3 tiers to match the result screens' 3 banner/chip
+/// colors — if you need finer bands later (e.g. a "Mild" tier), add it
+/// here once and every screen that reads `result.severity` picks it up
+/// automatically.
+///
+/// NOTE: the cIndex cut point below (3.0) is a practical banding choice
+/// for presenting results to a general audience, not a clinically
+/// validated scale on its own — cross-check against Vingrys & King-Smith
+/// (1988) or your adviser before treating it as authoritative.
+enum SeverityLevel { none, moderate, strong }
+
 class CrossingError {
   final int capA;
   final int capB;
@@ -32,10 +44,19 @@ class D15ScoreResult {
   final double minorRadius;
   final double totalError;
   final ColorDeficiencyType diagnosisType;
-  final String diagnosisName;
-  final String conesAffected;
-  final String description;
+  final String diagnosisName; // full clinical name, e.g. "Protanopia / Protanomaly"
+  final String shortName; // e.g. "Protan" — safe to use directly in chips/badges
+  final String conesAffected; // full sentence, for the detailed results screen
+  final String conesShortLabel; // e.g. "L-Cones" — for compact chips
+  final String description; // long technical description, for the detailed results screen
   final List<CrossingError> crossings;
+
+  // --- Fields supporting the post-assessment summary UI ---
+  final SeverityLevel severity;
+  final String severityLabel; // e.g. "Moderate"
+  final String rangeHeadline; // e.g. "Your result is above the typical range."
+  final String rangeBody; // one-sentence explanation of the pattern found
+  final String practicalTip; // everyday, plain-language takeaway
 
   const D15ScoreResult({
     required this.cIndex,
@@ -46,9 +67,16 @@ class D15ScoreResult {
     required this.totalError,
     required this.diagnosisType,
     required this.diagnosisName,
+    required this.shortName,
     required this.conesAffected,
+    required this.conesShortLabel,
     required this.description,
     required this.crossings,
+    required this.severity,
+    required this.severityLabel,
+    required this.rangeHeadline,
+    required this.rangeBody,
+    required this.practicalTip,
   });
 }
 
@@ -65,7 +93,6 @@ class ScoringService {
       final int capA = capnumbers[i];
       final int capB = capnumbers[i + 1];
 
-      // Look up CIELUV coordinates
       final capDataA = ColorCap.allCaps[capA];
       final capDataB = ColorCap.allCaps[capB];
 
@@ -97,7 +124,6 @@ class ScoringService {
         v2 * math.cos(a1) * math.cos(a1) -
         2 * uv * math.sin(a1) * math.cos(a1);
 
-    // Ensure major moment (I0) is greater than minor moment (I1)
     if (i0 <= i1) {
       final tempA = a0;
       a0 = a1;
@@ -115,56 +141,10 @@ class ScoringService {
 
     final double sIndex = r0 / r1;
     final double cIndex = r0 / 9.234669;
-    final double angleDegrees = a1 * 57.29577951308232; // Convert radians to degrees
+    final double angleDegrees = a1 * 57.29577951308232;
 
-    // 5. Interpret results
-    ColorDeficiencyType type = ColorDeficiencyType.normal;
-    String name = "Normal Color Vision";
-    String cones = "All Cones Intact";
-    String desc = "";
-
-    final bool isAbnormal = cIndex > 1.78;
-
-    if (isAbnormal) {
-      if (sIndex >= 2.0) {
-        // Selective Color Deficiency
-        if (angleDegrees > 3 && angleDegrees < 17) {
-          type = ColorDeficiencyType.protan;
-          name = "Protanopia / Protanomaly";
-          cones = "L-Cones (Long-Wavelength / Red) Affected / Missing";
-          desc = "You exhibit a Protan color vision defect, commonly known as red-blindness (protanopia) or red-weakness (protanomaly). The L-cones (long-wavelength sensitive photopigments) in your retina are either absent or dysfunctional. This makes it difficult to distinguish red from green, and red colors appear darker or desaturated.";
-        } else if (angleDegrees > -11 && angleDegrees < -4) {
-          type = ColorDeficiencyType.deutan;
-          name = "Deuteranopia / Deuteranomaly";
-          cones = "M-Cones (Medium-Wavelength / Green) Affected / Missing";
-          desc = "You exhibit a Deutan color vision defect, commonly known as green-blindness (deuteranopia) or green-weakness (deuteranomaly). The M-cones (medium-wavelength sensitive photopigments) in your retina are either absent or defective. This is the most common form of color blindness, causing green and red to look similar, along with green and grey/purple.";
-        } else if (angleDegrees > -90 && angleDegrees < -70) {
-          type = ColorDeficiencyType.tritan;
-          name = "Tritanopia / Tritanomaly";
-          cones = "S-Cones (Short-Wavelength / Blue) Affected / Missing";
-          desc = "You exhibit a Tritan color vision defect, commonly known as blue-yellow color blindness. The S-cones (short-wavelength sensitive photopigments) in your retina are either absent or defective. This rare condition makes it difficult to differentiate blue from green, and yellow from pink/violet. It is frequently acquired through ocular health issues.";
-        } else {
-          type = ColorDeficiencyType.unclassified;
-          name = "Unclassified Deficiency";
-          cones = "Multiple / Unspecified Cones Affected";
-          desc = "Your test indicates a significant color vision defect that is selective but does not fall perfectly within the standard Protan, Deutan, or Tritan angular zones. This can indicate a mixed or custom congenital color deficiency.";
-        }
-      } else {
-        // General/Random Errors
-        type = ColorDeficiencyType.random;
-        name = "Anarchic / Random Errors";
-        cones = "Non-Specific General Color Confusion";
-        desc = "Your color arrangement has a high number of errors, but they are scattered randomly rather than aligning along a specific axis of deficiency. This general confusion can result from severe acquired vision problems, fatigue, low ambient lighting, display calibration issues, or a misunderstanding of test instructions.";
-      }
-    } else {
-      // Normal arrangement
-      type = ColorDeficiencyType.normal;
-      name = "Normal Color Vision";
-      cones = "All Cones Intact";
-      desc = "Your cap arrangement is normal! You have excellent color discrimination. Any minor transpositions (e.g. adjacent cap swaps) are within the standard threshold of normal observers under typical viewing conditions.";
-    }
-
-    // 6. Trace transpositions and crossover errors
+    // 5. Trace transpositions and crossover errors (computed before
+    // interpretation so severity/banner copy can reference crossings)
     final List<CrossingError> crossings = [];
     for (int i = 0; i < tSize - 1; i++) {
       final int capA = capnumbers[i];
@@ -181,6 +161,90 @@ class ScoringService {
       }
     }
 
+    // 6. Interpret results
+    ColorDeficiencyType type = ColorDeficiencyType.normal;
+    String name = "Normal Color Vision";
+    String shortName = "Normal";
+    String cones = "All Cones Intact";
+    String conesShort = "All Cones";
+    String desc = "";
+    String tip = "Your color perception falls within the typical range for the assessed hues.";
+
+    final bool isAbnormal = cIndex > 1.78;
+
+    if (isAbnormal) {
+      if (sIndex >= 2.0) {
+        if (angleDegrees > 3 && angleDegrees < 17) {
+          type = ColorDeficiencyType.protan;
+          name = "Protanopia / Protanomaly";
+          shortName = "Protan";
+          cones = "L-Cones (Long-Wavelength / Red) Affected / Missing";
+          conesShort = "L-Cones";
+          desc = "You exhibit a Protan color vision defect, commonly known as red-blindness (protanopia) or red-weakness (protanomaly). The L-cones (long-wavelength sensitive photopigments) in your retina are either absent or dysfunctional. This makes it difficult to distinguish red from green, and red colors appear darker or desaturated.";
+          tip = "Reds can also appear noticeably darker or dimmer than they do for most people.";
+        } else if (angleDegrees > -11 && angleDegrees < -4) {
+          type = ColorDeficiencyType.deutan;
+          name = "Deuteranopia / Deuteranomaly";
+          shortName = "Deutan";
+          cones = "M-Cones (Medium-Wavelength / Green) Affected / Missing";
+          conesShort = "M-Cones";
+          desc = "You exhibit a Deutan color vision defect, commonly known as green-blindness (deuteranopia) or green-weakness (deuteranomaly). The M-cones (medium-wavelength sensitive photopigments) in your retina are either absent or defective. This is the most common form of color blindness, causing green and red to look similar, along with green and grey/purple.";
+          tip = "Greens and reds can look muted or similar in shade, especially in low light.";
+        } else if (angleDegrees > -90 && angleDegrees < -70) {
+          type = ColorDeficiencyType.tritan;
+          name = "Tritanopia / Tritanomaly";
+          shortName = "Tritan";
+          cones = "S-Cones (Short-Wavelength / Blue) Affected / Missing";
+          conesShort = "S-Cones";
+          desc = "You exhibit a Tritan color vision defect, commonly known as blue-yellow color blindness. The S-cones (short-wavelength sensitive photopigments) in your retina are either absent or defective. This rare condition makes it difficult to differentiate blue from green, and yellow from pink/violet. It is frequently acquired through ocular health issues.";
+          tip = "Blues and yellows can be the hardest to tell apart, especially in dim lighting.";
+        } else {
+          type = ColorDeficiencyType.unclassified;
+          name = "Unclassified Deficiency";
+          shortName = "Unclassified";
+          cones = "Multiple / Unspecified Cones Affected";
+          conesShort = "Multiple Cones";
+          desc = "Your test indicates a significant color vision defect that is selective but does not fall perfectly within the standard Protan, Deutan, or Tritan angular zones. This can indicate a mixed or custom congenital color deficiency.";
+          tip = "Your results don't cleanly match a single cone type — a follow-up test may help clarify the pattern.";
+        }
+      } else {
+        type = ColorDeficiencyType.random;
+        name = "Anarchic / Random Errors";
+        shortName = "Random";
+        cones = "Non-Specific General Color Confusion";
+        conesShort = "Non-Specific";
+        desc = "Your color arrangement has a high number of errors, but they are scattered randomly rather than aligning along a specific axis of deficiency. This general confusion can result from severe acquired vision problems, fatigue, low ambient lighting, display calibration issues, or a misunderstanding of test instructions.";
+        tip = "Color differences may be inconsistent across lighting conditions — retesting in better lighting is recommended.";
+      }
+    }
+
+    // 7. Severity band (3 tiers) + banner copy for the summary screen
+    SeverityLevel severity;
+    String severityLabel;
+    if (!isAbnormal) {
+      severity = SeverityLevel.none;
+      severityLabel = "Normal";
+    } else if (cIndex <= 3.0) {
+      severity = SeverityLevel.moderate;
+      severityLabel = "Moderate";
+    } else {
+      severity = SeverityLevel.strong;
+      severityLabel = "Strong";
+    }
+
+    final String rangeHeadline = isAbnormal
+        ? "Your result is above the typical range."
+        : "Your result is within the typical range.";
+
+    String rangeBody;
+    if (!isAbnormal) {
+      rangeBody = "Your cap arrangement closely matches what's expected for normal color vision, with only minor transpositions if any.";
+    } else if (severity == SeverityLevel.moderate) {
+      rangeBody = "A small number of caps were placed slightly out of order, forming a mild pattern rather than a strong one.";
+    } else {
+      rangeBody = "Many caps were placed significantly out of sequence, forming a strong, consistent pattern.";
+    }
+
     return D15ScoreResult(
       cIndex: cIndex,
       sIndex: sIndex,
@@ -190,9 +254,16 @@ class ScoringService {
       totalError: totalError,
       diagnosisType: type,
       diagnosisName: name,
+      shortName: shortName,
       conesAffected: cones,
+      conesShortLabel: conesShort,
       description: desc,
       crossings: crossings,
+      severity: severity,
+      severityLabel: severityLabel,
+      rangeHeadline: rangeHeadline,
+      rangeBody: rangeBody,
+      practicalTip: tip,
     );
   }
 }

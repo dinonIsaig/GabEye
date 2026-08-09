@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/app_semantic_colors.dart';
 import 'package:gabeye/features/onboarding/services/scoring_service.dart';
 import 'package:gabeye/features/onboarding/widgets/confusion_diagram.dart';
 
@@ -295,16 +295,3 @@ class ResultsPage extends StatelessWidget {
   }
 }
 
-// semantic colors for diagnosis results and error severity.
-// These are intentionally NOT pulled from the light/dark theme 
-// will change this according to the updated ui
-class AppSemanticColors {
-  AppSemanticColors._();
-
-  static const Color normal = AppColors.successGreen;
-  static const Color protan = AppColors.errorRed;
-  static const Color deutan = Color(0xFFF59E0B); // amber-500 — not yet in AppColors
-  static const Color tritan = Color(0xFF3B82F6); // blue-500 — not yet in AppColors
-  static const Color majorError = Color(0xFFF43F5E); // rose-500 — not yet in AppColors
-  static const Color minorError = AppColors.successGreen;
-}

@@ -19,6 +19,7 @@ class AppColors {
   
   // Semantic Colors
   static const Color errorRed = Color(0xFF961320);
+  static const Color warningYellow = Color(0xFFD39201);
   static const Color successGreen = Color(0xFF16A34A);
   
   // UI Elements

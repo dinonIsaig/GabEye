@@ -5,6 +5,8 @@ import 'package:gabeye/features/onboarding/models/cap.dart';
 import 'package:gabeye/features/onboarding/screens/results_screen.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/onboarding/widgets/assessment_intro_modal.dart';
+import 'package:gabeye/features/onboarding/screens/assessment_summary_screen.dart';
+
 
 // --- Data class to track the dragged cap's origin ---
 class CapDragData {
@@ -385,17 +387,17 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
       children: [
         ElevatedButton(
           onPressed: _isTestComplete
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ResultsPage(
-                        arrangedCaps: _arrangedCaps.cast<int>(),
-                      ),
-                    ),
-                  );
-                }
-              : null,
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AssessmentSummaryScreen(
+                    arrangedCaps: _arrangedCaps.cast<int>(),
+                  ),
+                ),
+              );
+            }
+          : null,
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 50),
