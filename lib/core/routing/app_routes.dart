@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 // Import all your feature screens here
 import 'package:gabeye/features/onboarding/screens/get_started_screen.dart';
-import 'package:gabeye/features/onboarding/screens/assessment_screen.dart';
+import 'package:gabeye/features/assessment/screens/assessment_screen.dart';
 
 class AppRoutes {
   // Define strict string constants for route names

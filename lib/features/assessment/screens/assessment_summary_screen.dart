@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gabeye/core/theme/app_semantic_colors.dart';
-import 'package:gabeye/features/onboarding/screens/results_screen.dart';
-import 'package:gabeye/features/onboarding/services/scoring_service.dart';
+import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
+import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/services/scoring_service.dart';
+import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
+import 'package:gabeye/features/assessment/screens/assessment_keyfindings_screen.dart';
+
 
 /// Post-assessment 9: the plain-language summary shown right after the
 /// user finishes arranging the caps, before the technical breakdown on
@@ -14,12 +16,12 @@ class AssessmentSummaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Follows whichever theme is currently active (light or dark),
-    // same as main.dart's ThemeMode.system — no override here.
+    // Follows whichever theme is currently active (light or dark), same
+    // as main.dart's ThemeMode.system — no override here.
     final colors = Theme.of(context).colorScheme;
     final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
-    final severityStyle = _severityStyles[result.severity]!;
-    final diagnosisStyle = _diagnosisStyles[result.diagnosisType]!;
+    final severityStyle = severityStyles[result.severity]!;
+    final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
     return Scaffold(
       body: SafeArea(
@@ -30,31 +32,34 @@ class AssessmentSummaryScreen extends StatelessWidget {
               // NOTE: the step progress bar ("Profile 1/4" + "...") is
               // intentionally not built here — it's provided by your
               // existing reusable token, meant to sit above this screen.
-              _buildHeadingArt(colors),
+              const ProfileHeadingBanner(),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildRangeBanner(colors, result, severityStyle),
-                    const SizedBox(height: 16),
-                    _buildDiagnosisCard(context, colors, result, severityStyle, diagnosisStyle),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: proceed to the next onboarding step
-                      },
-                      iconAlignment: IconAlignment.end,
-                      icon: const Icon(Icons.arrow_forward, size: 20),
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      label: const Text('Next', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildRangeBanner(colors, result, severityStyle),
+                        const SizedBox(height: 16),
+                        _buildDiagnosisCard(context, colors, result, severityStyle, diagnosisStyle),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: ()=> _goToKeyfindings(context),
+                          iconAlignment: IconAlignment.end,
+                          icon: const Icon(Icons.arrow_forward, size: 20),
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
+                          label: const Text('Next', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -64,35 +69,8 @@ class AssessmentSummaryScreen extends StatelessWidget {
     );
   }
 
-  // -------------------- Heading art --------------------
-  Widget _buildHeadingArt(ColorScheme colors) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-      child: Container(
-        width: double.infinity,
-        height: 140,
-        color: colors.surface,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            SvgPicture.asset('assets/images/articleHeading.svg', fit: BoxFit.cover),
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: 16,
-              child: Text(
-                'Color Vision Profile',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // -------------------- "Above/within typical range" banner --------------------
-  Widget _buildRangeBanner(ColorScheme colors, D15ScoreResult result, _SeverityStyle severityStyle) {
+  Widget _buildRangeBanner(ColorScheme colors, D15ScoreResult result, SeverityStyle severityStyle) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -118,7 +96,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   result.rangeHeadline,
-                  style: TextStyle(color: colors.onSurface, fontSize: 16, fontWeight: FontWeight.bold, height: 1.9),
+                  style: TextStyle(color: colors.onSurface, fontSize: 16, fontWeight: FontWeight.bold, height: 2.0),
                 ),
               ),
             ],
@@ -138,8 +116,8 @@ class AssessmentSummaryScreen extends StatelessWidget {
     BuildContext context,
     ColorScheme colors,
     D15ScoreResult result,
-    _SeverityStyle severityStyle,
-    _DiagnosisStyle diagnosisStyle,
+    SeverityStyle severityStyle,
+    DiagnosisStyle diagnosisStyle,
   ) {
     return Container(
       width: double.infinity,
@@ -179,7 +157,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _buildMetricBox(label: 'Type', value: result.shortName, backgroundColor: diagnosisStyle.primaryColor),
+                child: _buildMetricBox(label: 'Type', value: result.shortName, backgroundColor: colors.primary),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -222,13 +200,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
   }
 
   // -------------------- Description --------------------
-  /// Generates the short, plain-language sentence for this card — as
-  /// opposed to `result.description`, which is the longer technical
-  /// version used on the detailed results screen. Reads its wording
-  /// entirely from `diagnosisStyle`, so it's automatically correct for
-  /// every type (e.g. Tritan gets "blue-yellow" instead of the
-  /// "red-green" wording that only applies to Protan/Deutan).
-  Widget _buildDescription(ColorScheme colors, D15ScoreResult result, _DiagnosisStyle style) {
+  Widget _buildDescription(ColorScheme colors, D15ScoreResult result, DiagnosisStyle style) {
     final baseStyle = TextStyle(color: colors.onSurfaceVariant, fontSize: 13, height: 1.5);
 
     if (result.diagnosisType == ColorDeficiencyType.normal) {
@@ -254,7 +226,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
   }
 
   // -------------------- Overlapping color circles --------------------
-  Widget _buildOverlappingCircles(_DiagnosisStyle style) {
+  Widget _buildOverlappingCircles(DiagnosisStyle style) {
     return SizedBox(
       width: 32,
       height: 20,
@@ -268,13 +240,6 @@ class AssessmentSummaryScreen extends StatelessWidget {
   }
 
   // -------------------- Metric chip --------------------
-  /// White text throughout regardless of accent color — every severity
-  /// and diagnosis color in this app is a deeply saturated tone (amber,
-  /// red, blue, green), so white reads reliably across all of them
-  /// instead of picking a text color per-background. This part is
-  /// intentionally NOT theme-reactive, same reasoning as
-  /// AppSemanticColors: chip backgrounds are fixed semantic colors, so
-  /// their text stays fixed too, regardless of light/dark mode.
   Widget _buildMetricBox({required String label, required String value, required Color backgroundColor}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
@@ -303,94 +268,23 @@ class AssessmentSummaryScreen extends StatelessWidget {
 
   // -------------------- Navigation / actions --------------------
   void _goToDetailedResult(BuildContext context) {
-    // TODO: once the profile step flow exists, confirm whether this
-    // should always land here, or on a different step in that flow.
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: arrangedCaps)),
     );
   }
 
+  void _goToKeyfindings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AssessmentKeyfindingsScreen(arrangedCaps: arrangedCaps)),
+    );
+  }
+
   void _exportAsPdf(BuildContext context) {
-    // TODO: wire up real PDF export (e.g. the `pdf` + `printing`
-    // packages) once you're ready — that needs a pubspec dependency
-    // addition, so left as a stub rather than adding a package without
-    // checking with you first.
+    // TODO: wire up real PDF export (e.g. the `pdf` + `printing` packages).
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('PDF export coming soon')),
     );
   }
 }
-
-// ============================================================================
-// CONFIG: severity -> visual style
-// ============================================================================
-
-class _SeverityStyle {
-  final Color color;
-  final IconData icon;
-  const _SeverityStyle({required this.color, required this.icon});
-}
-
-const Map<SeverityLevel, _SeverityStyle> _severityStyles = {
-  SeverityLevel.none: _SeverityStyle(color: AppSemanticColors.severityNormal, icon: Icons.check),
-  SeverityLevel.moderate: _SeverityStyle(color: AppSemanticColors.severityModerate, icon: Icons.info_outline),
-  SeverityLevel.strong: _SeverityStyle(color: AppSemanticColors.severityStrong, icon: Icons.priority_high),
-};
-
-// ============================================================================
-// CONFIG: diagnosis type -> visual style + plain-language copy
-// ============================================================================
-
-class _DiagnosisStyle {
-  final Color primaryColor;
-  final Color secondaryColor;
-  final String? axisFamily; // "red-green" / "blue-yellow" / null (not axis-based)
-  final String highlightPhrase; // the bolded clause in the summary sentence
-
-  const _DiagnosisStyle({
-    required this.primaryColor,
-    required this.secondaryColor,
-    required this.axisFamily,
-    required this.highlightPhrase,
-  });
-}
-
-const Map<ColorDeficiencyType, _DiagnosisStyle> _diagnosisStyles = {
-  ColorDeficiencyType.protan: _DiagnosisStyle(
-    primaryColor: AppSemanticColors.protan,
-    secondaryColor: AppSemanticColors.deutan,
-    axisFamily: 'red-green',
-    highlightPhrase: 'harder time telling red apart from green.',
-  ),
-  ColorDeficiencyType.deutan: _DiagnosisStyle(
-    primaryColor: AppSemanticColors.deutan,
-    secondaryColor: AppSemanticColors.protan,
-    axisFamily: 'red-green',
-    highlightPhrase: 'harder time telling green apart from red.',
-  ),
-  ColorDeficiencyType.tritan: _DiagnosisStyle(
-    primaryColor: AppSemanticColors.tritan,
-    secondaryColor: AppSemanticColors.deutan,
-    axisFamily: 'blue-yellow',
-    highlightPhrase: 'harder time telling blue apart from yellow.',
-  ),
-  ColorDeficiencyType.unclassified: _DiagnosisStyle(
-    primaryColor: AppSemanticColors.unclassified,
-    secondaryColor: AppSemanticColors.deutan,
-    axisFamily: null,
-    highlightPhrase: "pattern that doesn't fit neatly into one category.",
-  ),
-  ColorDeficiencyType.random: _DiagnosisStyle(
-    primaryColor: AppSemanticColors.unclassified,
-    secondaryColor: AppSemanticColors.tritan,
-    axisFamily: null,
-    highlightPhrase: 'inconsistent pattern rather than one specific difference.',
-  ),
-  ColorDeficiencyType.normal: _DiagnosisStyle(
-    primaryColor: AppSemanticColors.normal,
-    secondaryColor: AppSemanticColors.tritan,
-    axisFamily: null,
-    highlightPhrase: '',
-  ),
-};

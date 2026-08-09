@@ -11,7 +11,7 @@ class AppSemanticColors {
   static const Color protan = AppColors.errorRed;
   static const Color deutan = Color(0xFFF59E0B); // amber-500
   static const Color tritan = Color(0xFF3B82F6); // blue-500
-  static const Color unclassified = Color(0xFF9CA3AF); // slate-400
+  static const Color unclassified = Color.fromARGB(255, 94, 98, 105); // slate-400
 
   // Confusion-line error severity
   static const Color majorError = Color(0xFFF43F5E); // rose-500

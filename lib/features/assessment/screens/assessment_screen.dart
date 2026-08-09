@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gabeye/features/onboarding/models/cap.dart';
-import 'package:gabeye/features/onboarding/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/models/cap.dart';
+import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
-import 'package:gabeye/features/onboarding/widgets/assessment_intro_modal.dart';
-import 'package:gabeye/features/onboarding/screens/assessment_summary_screen.dart';
+import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
+import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
 
 
 // --- Data class to track the dragged cap's origin ---
