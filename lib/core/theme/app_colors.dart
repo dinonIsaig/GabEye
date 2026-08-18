@@ -11,7 +11,7 @@ class AppColors {
   static const Color successGreen = Color(0xFF16A34A);
 
   // Light mode tokens
-  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightSurface = Color(0xFFF7F9FB);
   static const Color lightMode = lightSurface;
   static const Color lightTextPrimary = Color(0xFF12161C);
   static const Color lightTextSecondary = Color(0xFF2B343F);
@@ -27,14 +27,6 @@ class AppColors {
   // Shared UI state tokens
   static const Color disabledButton = Color(0xFFE5E7EB);
   static const Color disabledText = Color(0xFF6B7684);
-
-  //Button Colors
-  static const Color lightPrimaryButton   = Color(0xFF14395F);
-  static const Color darkPrimaryButton   = Color(0xFFB0C6D9);
-
-  // Surface
-  static const Color lightSurface   = Color(0xFFFFFFFF);
-  static const Color darkSurface   = Color(0xFF1B222B);
 
   // Alt Surfaces
   static const Color altLightSurface   = Color(0xFFF2F6FA);
