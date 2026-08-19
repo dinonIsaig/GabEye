@@ -1,0 +1,255 @@
+import 'package:flutter/material.dart';
+import 'package:gabeye/components/navbar/article_navbar.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
+import 'help_feedback_screen.dart';
+import 'terms_and_conditions_page.dart';
+
+// Models for settings content
+class SettingItem {
+  final String title;
+  final VoidCallback onTap;
+
+  SettingItem({required this.title, required this.onTap});
+}
+
+class SettingSection {
+  final String? title;
+  final List<SettingItem> items;
+
+  SettingSection({this.title, required this.items});
+}
+
+class SettingsContent {
+  final List<SettingSection> sections;
+
+  SettingsContent({required this.sections});
+
+  // Factory constructor with default content
+  factory SettingsContent.defaultContent(BuildContext context) {
+    return SettingsContent(
+      sections: [
+        SettingSection(
+          title: 'More About GabEye',
+          items: [
+            SettingItem(
+              title: 'Terms & Conditions',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TermsAndConditionsPage(),
+                  ),
+                );
+              },
+            ),
+            SettingItem(
+              title: 'Help & Feedback',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HelpFeedbackScreen(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        SettingSection(
+          title: 'Help & Safety',
+          items: [
+            SettingItem(
+              title: 'How to Use GabEye',
+              onTap: () {
+                // Navigate to how to use
+              },
+            ),
+            SettingItem(
+              title: 'Real-time Mode Safety',
+              onTap: () {
+                // Navigate to real-time mode safety
+              },
+            ),
+            SettingItem(
+              title: 'Understanding CVD',
+              onTap: () {
+                // Navigate to understanding CVD
+              },
+            ),
+            SettingItem(
+              title: 'About Farnsworth D-15',
+              onTap: () {
+                // Navigate to farnsworth d-15
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class GabEyeSettingsScreen extends StatelessWidget {
+  const GabEyeSettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsContent = SettingsContent.defaultContent(context);
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            GabEyeArticleNavbar(
+              title: 'Settings',
+              onBack: () => Navigator.maybePop(context),
+              onMenuSelected: (option) {
+                if (option.label == 'Settings') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Already on Settings')),
+                  );
+                } else if (option.label == 'Help & Feedback') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HelpFeedbackScreen(),
+                    ),
+                  );
+                } else if (option.label == 'About GabEye') {
+                  Navigator.pushNamed(context, '/article');
+                }
+              },
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: _buildSettingsSections(
+                      settingsContent.sections,
+                      context,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildSettingsSections(
+    List<SettingSection> sections,
+    BuildContext context,
+  ) {
+    final widgets = <Widget>[];
+
+    for (int i = 0; i < sections.length; i++) {
+      final section = sections[i];
+
+      widgets.add(SettingsSectionWidget(section: section));
+
+      if (i < sections.length - 1) {
+        widgets.add(const SizedBox(height: 32));
+      }
+    }
+
+    return widgets;
+  }
+}
+
+class SettingsSectionWidget extends StatelessWidget {
+  final SettingSection section;
+
+  const SettingsSectionWidget({super.key, required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (section.title != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              section.title!,
+              style: textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ...List.generate(
+          section.items.length,
+          (index) => Padding(
+            padding: EdgeInsets.only(
+              bottom: index < section.items.length - 1 ? 12 : 0,
+            ),
+            child: SettingContainer(item: section.items[index]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class SettingContainer extends StatefulWidget {
+  final SettingItem item;
+
+  const SettingContainer({super.key, required this.item});
+
+  @override
+  State<SettingContainer> createState() => _SettingContainerState();
+}
+
+class _SettingContainerState extends State<SettingContainer> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.item.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.15),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.item.title,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.primaryColor,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

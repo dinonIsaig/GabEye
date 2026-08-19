@@ -17,7 +17,7 @@ class MenuButton extends StatelessWidget {
 
   static const defaultOptions = [
     MenuButtonOption(label: 'Settings', icon: Icons.settings_outlined),
-    MenuButtonOption(label: 'Help and feedback', icon: Icons.help_outline),
+    MenuButtonOption(label: 'Help & Feedback', icon: Icons.help_outline),
     MenuButtonOption(label: 'About GabEye', icon: Icons.info_outline),
   ];
 
