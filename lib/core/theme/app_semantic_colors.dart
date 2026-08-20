@@ -19,6 +19,6 @@ class AppSemanticColors {
 
   // Result severity band colors (Normal / Moderate / Strong)
   static const Color severityNormal = AppColors.successGreen;
-  static const Color severityModerate = AppColors.warningYellow;
+  static const Color severityModerate = AppColors.warning;
   static const Color severityStrong = AppColors.errorRed;
 }

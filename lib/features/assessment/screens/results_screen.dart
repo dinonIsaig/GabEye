@@ -122,12 +122,13 @@ class ResultsPage extends StatelessWidget {
 
   Widget _buildOverlappingCircles(DiagnosisStyle style) {
     return SizedBox(
-      width: 32,
+      width: 40,
       height: 20,
       child: Stack(
         children: [
           Positioned(left: 0, child: CircleAvatar(radius: 10, backgroundColor: style.primaryColor)),
-          Positioned(left: 12, child: CircleAvatar(radius: 10, backgroundColor: style.secondaryColor)),
+          Positioned(left: 8, child: CircleAvatar(radius: 10, backgroundColor: style.secondaryColor)),
+          Positioned(left: 16, child: CircleAvatar(radius: 10, backgroundColor: style.secondaryColor)),
         ],
       ),
     );

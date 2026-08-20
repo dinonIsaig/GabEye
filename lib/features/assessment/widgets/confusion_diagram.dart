@@ -138,18 +138,12 @@ class ConfusionDiagramPainter extends CustomPainter {
     }
 
     drawAxis(
-      -124 * math.pi / 180, 
-      Colors.red.withOpacity(0.3), // Protan
-      shift: Offset(-40, 25), 
-    ); 
+      -124 * math.pi / 180, Colors.amber.withOpacity(0.3), shift: Offset(-40, 25)); // Deutan
 
     drawAxis(
-      -146 * math.pi / 180, 
-      Colors.amber.withOpacity(0.3), // Deutan
-      shift: Offset(-23, 30),
-    ); 
+      -146 * math.pi / 180, Colors.red.withOpacity(0.3), shift: Offset(-23, 30)); // Protan
 
-    drawAxis(-15 * math.pi / 180, Colors.blue.withOpacity(0.3)); // Tritan
+    drawAxis(-62 * math.pi / 180, Colors.blue.withOpacity(0.3), shift: Offset (13, 0)); // Tritan
 
     // Precompute coordinates for each cap in a circular layout
     final List<Offset> capCoords = [];
@@ -157,7 +151,7 @@ class ConfusionDiagramPainter extends CustomPainter {
     final double angleDelta = 22.5 * math.pi / 180; // 360 / 16
 
     for (int i = 0; i < 16; i++) {
-      final double angle = startAngle - i * angleDelta;
+      final double angle = startAngle + i * angleDelta;
       capCoords.add(Offset(
         center.dx + math.cos(angle) * radius,
         center.dy + math.sin(angle) * radius,
