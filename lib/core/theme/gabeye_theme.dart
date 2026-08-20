@@ -80,6 +80,7 @@ class GabEyeTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.darkPrimaryButton,
+        surfaceTintColor: AppColors.lightTextSecondary,
         foregroundColor: AppColors.darkSurface,
         disabledBackgroundColor: AppColors.disabledButton,
         disabledForegroundColor: AppColors.disabledText,
