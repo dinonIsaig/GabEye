@@ -59,7 +59,7 @@ class AssessmentIntroModal extends StatelessWidget {
                   const SizedBox(height: 24),
                   OutlinedButton(
                     onPressed: () {
-                      // TODO: show detailed instructions
+                        Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colors.onSurface,

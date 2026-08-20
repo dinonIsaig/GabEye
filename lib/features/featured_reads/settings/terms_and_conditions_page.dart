@@ -1,136 +1,53 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:gabeye/core/routing/app_routes.dart';
+import 'help_feedback_screen.dart';
 
-class TermsAndConditionsModal extends StatefulWidget {
-  const TermsAndConditionsModal({Key? key}) : super(key: key);
-
-  @override
-  State<TermsAndConditionsModal> createState() =>
-      _TermsAndConditionsModalState();
-}
-
-class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
-  late ScrollController _scrollController;
-  bool _hasScrolledToBottom = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-
-    _scrollController.addListener(() {
-      if (_scrollController.offset >=
-              _scrollController.position.maxScrollExtent - 50 &&
-          !_scrollController.position.outOfRange) {
-        if (!_hasScrolledToBottom) {
-          setState(() {
-            _hasScrolledToBottom = true;
-          });
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
+class TermsAndConditionsPage extends StatelessWidget {
+  const TermsAndConditionsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: FractionallySizedBox(
-        heightFactor: 0.9,
-
-        child: Stack(
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
           children: [
-            
-            Positioned.fill(
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  scrollbarTheme: ScrollbarThemeData(
-                    thumbColor: WidgetStateProperty.all(
-                      Theme.of(context).colorScheme.onPrimary,
+            GabEyeArticleNavbar(
+              title: 'Terms & Conditions',
+              onBack: () => Navigator.maybePop(context),
+              onMenuSelected: (option) {
+                if (option.label == 'Help & Feedback') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HelpFeedbackScreen(),
                     ),
-                    thickness: WidgetStateProperty.all(8),
-                    radius: const Radius.circular(8),
-                    mainAxisMargin: 20.0,
-                  ),
-                ),
-                child: Scrollbar(
-                  controller: _scrollController,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.only(
-                      left: 30.0,
-                      right: 30.0,
-                      top: 10.0, 
-                      bottom: 120.0
-                    ),
-                    child: _buildTermsTextContent(context),
-                  ),
-                ),
-              ),
+                  );
+                } else if (option.label == 'About GabEye') {
+                  Navigator.pushNamed(context, '/article');
+                }
+              },
             ),
-
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.only(
-                  left: 60.0,
-                  right: 60.0,
-                  top: 16.0,
-                  bottom: 24.0,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
-                        child: ElevatedButton(
-                          onPressed: _hasScrolledToBottom
-                              ? () {
-                                  Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            
-                            backgroundColor: Theme.of(context).colorScheme.onPrimary,
-                            disabledBackgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
-                            
-                            foregroundColor: Theme.of(context).colorScheme.surface,
-                            disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                            
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                                width: 1.5,
-                              ),
-                            ),
-                            minimumSize: const Size(double.infinity, 60),
-                          ),
-                          child: Text(
-                            _hasScrolledToBottom ? 'I Accept' : 'Scroll to See More  ↓',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+                  child: _buildTermsTextContent(context),
                 ),
               ),
             ),
@@ -173,15 +90,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
             color: AppColors.disabledText,
           ),
         ),
-        const SizedBox(height: 16),
-
-        Text(
-          'Please read these Terms and Conditions carefully before using GabEye. By tapping "I Accept" or by using the app, you agree to these terms. If you don\'t agree, please don\'t continue using GabEye.',
-          style: bodyStyle,
-          textAlign: TextAlign.justify,
-        ),
         const SizedBox(height: 24),
-
         Text('1. What is GabEye', style: headingStyle),
         const SizedBox(height: 8),
         Text(
@@ -207,7 +116,6 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
           textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 24),
-
         Text('2. About the Color Assessment', style: headingStyle),
         const SizedBox(height: 8),
         _buildBulletPoint(
@@ -231,7 +139,6 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
           bodyStyle,
         ),
         const SizedBox(height: 24),
-
         Text('3. Using the Camera and Real-Time Features', style: headingStyle),
         const SizedBox(height: 8),
         Text(
@@ -253,7 +160,6 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
           bodyStyle,
         ),
         const SizedBox(height: 24),
-
         Text('4. Your Data and Privacy', style: headingStyle),
         const SizedBox(height: 8),
         Text(
@@ -279,7 +185,6 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
           bodyStyle,
         ),
         const SizedBox(height: 24),
-
         Text('5. What GabEye Can\'t Do', style: headingStyle),
         const SizedBox(height: 8),
         Text(
@@ -300,9 +205,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
           'GabEye does not replace professional advice for health, safety-critical, or occupational decisions that depend on accurate color perception (for example, certain jobs in aviation, electrical work, or transportation).',
           bodyStyle,
         ),
-
         const SizedBox(height: 20),
-
         RichText(
           textAlign: TextAlign.justify,
           text: TextSpan(
@@ -312,22 +215,6 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
             ),
-            children: const [
-              TextSpan(
-                text:
-                    'By continuing, you confirm that you\'ve read and understood these ',
-              ),
-              TextSpan(
-                text: 'Terms and Conditions',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              TextSpan(text: ', and that you understand '),
-              TextSpan(
-                text:
-                    'GabEye\'s assessment is a personalization tool and not a substitute for professional eye care.',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -349,18 +236,4 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
       ),
     );
   }
-}
-
-void showTermsAndConditionsModal(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
-    ),
-    builder: (BuildContext context) {
-      return const TermsAndConditionsModal();
-    },
-  );
 }

@@ -18,8 +18,7 @@ enum ColorDeficiencyType {
 ///
 /// NOTE: the cIndex cut point below (3.0) is a practical banding choice
 /// for presenting results to a general audience, not a clinically
-/// validated scale on its own — cross-check against Vingrys & King-Smith
-/// (1988) or your adviser before treating it as authoritative.
+/// validated scale on its own 
 enum SeverityLevel { none, moderate, strong }
 
 class CrossingError {
