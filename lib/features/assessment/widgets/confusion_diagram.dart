@@ -107,8 +107,7 @@ class ConfusionDiagramPainter extends CustomPainter {
       ..strokeWidth = 1.0;
     canvas.drawCircle(center, radius, circlePaint);
 
-    // Dashed reference axes
-    void drawAxis(double angleRad, Color color) {
+    void drawAxis(double angleRad, Color color, {Offset shift = Offset.zero}) {
       final axisPaint = Paint()
         ..color = color
         ..style = PaintingStyle.stroke
@@ -117,8 +116,9 @@ class ConfusionDiagramPainter extends CustomPainter {
       final dx = math.cos(angleRad) * radius;
       final dy = math.sin(angleRad) * radius;
       const int dashCount = 15;
-      final start = center - Offset(dx, dy);
-      final end = center + Offset(dx, dy);
+      final axisCenter = center + shift;
+      final start = axisCenter - Offset(dx, dy);
+      final end = axisCenter + Offset(dx, dy);
 
       for (int i = 0; i < dashCount; i++) {
         if (i % 2 == 0) {
@@ -137,9 +137,19 @@ class ConfusionDiagramPainter extends CustomPainter {
       }
     }
 
-    drawAxis(12 * math.pi / 180, Colors.red.withOpacity(0.3)); // Protan
-    drawAxis(-2 * math.pi / 180, Colors.amber.withOpacity(0.3)); // Deutan
-    drawAxis(-80 * math.pi / 180, Colors.blue.withOpacity(0.3)); // Tritan
+    drawAxis(
+      -124 * math.pi / 180, 
+      Colors.red.withOpacity(0.3), // Protan
+      shift: Offset(-40, 25), 
+    ); 
+
+    drawAxis(
+      -146 * math.pi / 180, 
+      Colors.amber.withOpacity(0.3), // Deutan
+      shift: Offset(-23, 30),
+    ); 
+
+    drawAxis(-15 * math.pi / 180, Colors.blue.withOpacity(0.3)); // Tritan
 
     // Precompute coordinates for each cap in a circular layout
     final List<Offset> capCoords = [];

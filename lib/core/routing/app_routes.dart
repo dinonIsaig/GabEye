@@ -11,7 +11,6 @@ class AppRoutes {
   // Define strict string constants for route names
   static const String getStarted = '/';
   static const String assessment = '/assessment';
-
   static const String article = '/article';
   static const String preAssessmentHowItWorks = '/pre-assessment/how-it-works';
   static const String preAssessmentWhatToMind = '/pre-assessment/what-to-mind';

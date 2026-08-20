@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
@@ -182,7 +183,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
 
   Widget _buildHowItWorksPill(ColorScheme colors) {
     return OutlinedButton.icon(
-      onPressed: () => showAssessmentIntroModal(context),
+      onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);}, 
       icon: const Icon(Icons.help_outline, size: 16),
       label: const Text('How it works?'),
       style: OutlinedButton.styleFrom(
