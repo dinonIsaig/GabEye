@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
-import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
+import 'package:gabeye/features//featured_reads/settings/help_feedback_screen.dart';
+import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
+import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 
 
 // --- Data class to track the dragged cap's origin ---
@@ -136,21 +138,64 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
     );
   }
 
-// To be replaced with alr made nav bar
   Widget _buildTopBar(ColorScheme colors) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: Colors.transparent,
-          child:  SvgPicture.asset('assets/images/gabEyeLogo.svg',fit: BoxFit.contain,),
+        InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.getStarted,
+            (route) => false,
+          ),
+          child: CircleAvatar(
+            radius: 20,
+            backgroundColor: Colors.transparent,
+            child: SvgPicture.asset('assets/images/gabEyeLogo.svg', fit: BoxFit.contain),
+          ),
         ),
-        IconButton(
+        PopupMenuButton<String>(
           icon: Icon(Icons.more_vert, color: colors.onSurface),
-          onPressed: () {
-            // TODO: options menu
+          color: colors.surface, 
+          onSelected: (String value) {
+            if (value == 'Settings') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GabEyeSettingsScreen(),
+                ),
+              );
+            } else if (value == 'Help & Feedback') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpFeedbackScreen(),
+                ),
+              );
+            } else if (value == 'About GabEye') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GabEyeArticleScreen(),
+                ),
+              );
+            }
           },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'Settings',
+              child: Text('Settings'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'Help & Feedback',
+              child: Text('Help & Feedback'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'About GabEye',
+              child: Text('About GabEye'),
+            ),
+          ],
         ),
       ],
     );
