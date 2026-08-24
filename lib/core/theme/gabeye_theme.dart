@@ -56,6 +56,12 @@ class GabEyeTheme {
         disabledForegroundColor: AppColors.disabledText,
       ),
     ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.lightSurface,
+        foregroundColor: AppColors.lightPrimaryButton,
+      ),
+    ),
     textTheme: _buildTextTheme(AppColors.lightTextPrimary),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.lightSurface,
@@ -84,6 +90,12 @@ class GabEyeTheme {
         foregroundColor: AppColors.darkSurface,
         disabledBackgroundColor: AppColors.disabledButton,
         disabledForegroundColor: AppColors.disabledText,
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.darkPrimaryButton,
+        foregroundColor: AppColors.darkSurface,
       ),
     ),
     textTheme: _buildTextTheme(AppColors.darkTextPrimary),
