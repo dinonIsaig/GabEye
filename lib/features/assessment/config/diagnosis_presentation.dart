@@ -119,9 +119,9 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
   ),
 
   ColorDeficiencyType.unclassified: DiagnosisStyle(
-    primaryColor: AppSemanticColors.darkgray,
+    primaryColor: AppSemanticColors.lightgray,
     secondaryColor: AppSemanticColors.gray,
-    tertiaryColor: AppSemanticColors.lightgray,
+    tertiaryColor: AppSemanticColors.darkgray,
     axisFamily: null,
     subtitle: 'Mixed color vision difference',
     highlightPhrase: "pattern that doesn't fit neatly into one category.",

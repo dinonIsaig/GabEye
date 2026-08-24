@@ -9,13 +9,13 @@ import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dar
 import 'package:gabeye/features//featured_reads/settings/help_feedback_screen.dart';
 import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
 
 
-// --- Data class to track the dragged cap's origin ---
 class CapDragData {
   final int capNum;
   final int? sourceSlotIdx; // null if coming from the pool
-
   const CapDragData({required this.capNum, this.sourceSlotIdx});
 }
 
@@ -36,7 +36,6 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   void initState() {
     super.initState();
     _resetTest();
-    // Wait until the first frame is fully built, then show modal
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showAssessmentIntroModal(context);
     });
@@ -58,6 +57,14 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
       }
     });
   }
+
+// Debugging/Testing. Wired to the floating testing-panel button below.
+void _applyDebugProfile(List<int> caps) {
+  setState(() {
+    _arrangedCaps = List<int?>.from(caps);
+    _poolCaps = [];
+  });
+}
 
 // Tapping a cap in the pool
   void _placeNextCap(int capNum) {
@@ -132,6 +139,12 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                 ),
               ),
             ),
+              floatingActionButton: kDebugMode
+                  ? FloatingActionButton(
+                    onPressed: () => showDebugTestPanel(context, onProfileSelected: _applyDebugProfile),
+                    child: const Icon(Icons.bug_report),
+                  )
+              : null,
           );
         },
       ),
