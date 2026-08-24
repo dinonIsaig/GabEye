@@ -17,25 +17,19 @@ class GabEyeArticleNavbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final headerTextColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : colorScheme.onSurfaceVariant;
 
     return Material(
-      color: colorScheme.surfaceContainerHighest,
+      color: colorScheme.surfaceContainer,
       elevation: 0,
       child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(color: colorScheme.surfaceContainer),
         child: SafeArea(
           bottom: false,
           child: SizedBox(
-            height: 64,
+            height: kToolbarHeight,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -61,7 +55,7 @@ class GabEyeArticleNavbar extends StatelessWidget {
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: colorScheme.onSurfaceVariant,
+                                    color: headerTextColor,
                                   ),
                             ),
                           ),

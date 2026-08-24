@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
 class TroubleshootingItem {
   const TroubleshootingItem({
@@ -111,57 +111,44 @@ class HelpFeedbackScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _HelpHeadingImage(),
-                    Transform.translate(
-                      offset: const Offset(0, -24),
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(24),
-                            topRight: Radius.circular(24),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 720),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _intro(context),
-                                const SizedBox(height: 24),
-                                _sectionTitle(
-                                  context,
-                                  'What do you need help with?',
+                    const PreAssessmentHeroHeader(title: 'Help & Feedback'),
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 720),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _intro(context),
+                              const SizedBox(height: 24),
+                              _sectionTitle(
+                                context,
+                                'What do you need help with?',
+                              ),
+                              const SizedBox(height: 12),
+                              ..._quickHelp.map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _QuickHelpTile(item: item),
                                 ),
-                                const SizedBox(height: 12),
-                                ..._quickHelp.map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: _QuickHelpTile(item: item),
-                                  ),
+                              ),
+                              const SizedBox(height: 12),
+                              _sectionTitle(context, 'Quick Troubleshooting'),
+                              const SizedBox(height: 12),
+                              ..._troubleshooting.map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _TroubleshootingTile(item: item),
                                 ),
-                                const SizedBox(height: 12),
-                                _sectionTitle(context, 'Quick Troubleshooting'),
-                                const SizedBox(height: 12),
-                                ..._troubleshooting.map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: _TroubleshootingTile(item: item),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                const _ImportantInformationCard(),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: 12),
+                              const _ImportantInformationCard(),
+                            ],
                           ),
                         ),
                       ),
@@ -182,7 +169,9 @@ class HelpFeedbackScreen extends StatelessWidget {
       Text(
         'Need help with GabEye?',
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          color: AppColors.primaryColor,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : AppColors.primaryColor,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -199,34 +188,12 @@ class HelpFeedbackScreen extends StatelessWidget {
   Widget _sectionTitle(BuildContext context, String title) => Text(
     title,
     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: AppColors.primaryColor,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.white
+          : AppColors.primaryColor,
       fontWeight: FontWeight.bold,
     ),
   );
-}
-
-class _HelpHeadingImage extends StatelessWidget {
-  const _HelpHeadingImage();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: SvgPicture.asset(
-        'assets/images/articleHeading.svg',
-        height: 120,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) => Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(24),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _QuickHelpTile extends StatelessWidget {
@@ -237,6 +204,12 @@ class _QuickHelpTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.darkPrimaryButton
+        : AppColors.primaryColor;
+    final arrowColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : AppColors.primaryColor;
     return Semantics(
       button: true,
       label: '${item.title}. ${item.text}',
@@ -266,7 +239,7 @@ class _QuickHelpTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(item.icon, color: AppColors.primaryColor, size: 24),
+                Icon(item.icon, color: iconColor, size: 24),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -291,11 +264,7 @@ class _QuickHelpTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: AppColors.primaryColor,
-                  size: 18,
-                ),
+                Icon(Icons.arrow_forward_ios, color: arrowColor, size: 18),
               ],
             ),
           ),
@@ -313,6 +282,12 @@ class _TroubleshootingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.darkPrimaryButton
+        : AppColors.primaryColor;
+    final arrowColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : AppColors.primaryColor;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.transparent,
@@ -320,13 +295,9 @@ class _TroubleshootingTile extends StatelessWidget {
         border: Border.all(color: colors.primary.withValues(alpha: .15)),
       ),
       child: ExpansionTile(
-        leading: const Icon(
-          Icons.build_outlined,
-          color: AppColors.primaryColor,
-          size: 24,
-        ),
-        iconColor: AppColors.primaryColor,
-        collapsedIconColor: AppColors.primaryColor,
+        leading: Icon(Icons.build_outlined, color: iconColor, size: 24),
+        iconColor: arrowColor,
+        collapsedIconColor: arrowColor,
         title: Text(
           item.title,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -374,11 +345,7 @@ class _TroubleshootingTile extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color: AppColors.primaryColor,
-                ),
+                Icon(Icons.info_outline, size: 20, color: iconColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -421,6 +388,9 @@ class _ImportantInformationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.darkPrimaryButton
+        : AppColors.primaryColor;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -430,11 +400,7 @@ class _ImportantInformationCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: AppColors.primaryColor,
-            size: 28,
-          ),
+          Icon(Icons.info_outline, color: iconColor, size: 28),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -443,7 +409,9 @@ class _ImportantInformationCard extends StatelessWidget {
                 Text(
                   'Keep in Mind',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppColors.primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -614,8 +582,9 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
         const SizedBox(height: 28),
         ElevatedButton.icon(
           onPressed: () {
-            if (_formKey.currentState!.validate())
+            if (_formKey.currentState!.validate()) {
               setState(() => _submitted = true);
+            }
           },
           icon: const Icon(Icons.send_outlined),
           label: const Text('Submit Feedback'),

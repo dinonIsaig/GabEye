@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'menu_button.dart';
+
 class GabEyeNavbar extends StatelessWidget {
   const GabEyeNavbar({super.key, this.onBack, this.onMenu});
 
@@ -12,14 +14,14 @@ class GabEyeNavbar extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
-      color: colorScheme.surfaceVariant,
+      color: colorScheme.surfaceContainerHighest,
       elevation: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant,
+          color: colorScheme.surfaceContainerHighest,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               blurRadius: 2,
               offset: const Offset(0, 4),
             ),
@@ -54,9 +56,7 @@ class GabEyeNavbar extends StatelessWidget {
                               alignment: Alignment.center,
                               child: Text(
                                 'LOGO',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
+                                style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -67,18 +67,7 @@ class GabEyeNavbar extends StatelessWidget {
                       ),
                     ),
                   ),
-                  InkWell(
-                    onTap: onMenu,
-                    borderRadius: BorderRadius.circular(20),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Icon(
-                        Icons.more_vert,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
+                  MenuButton(onPressed: onMenu),
                 ],
               ),
             ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 import '../settings/help_feedback_screen.dart';
 import '../settings/gabeye_settings.dart';
 
@@ -219,6 +219,7 @@ class GabEyeArticleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArticleScreenLayout(
       navbarTitle: 'Know More About GabEye',
+      heroTitle: 'About GabEye',
       content: ArticleContent.defaultContent(context),
     );
   }
@@ -231,6 +232,7 @@ class ProtanArticleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArticleScreenLayout(
       navbarTitle: 'About Protan',
+      heroTitle: 'About Protan',
       content: ArticleContent.protanContent(),
     );
   }
@@ -243,6 +245,7 @@ class DeutanArticleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArticleScreenLayout(
       navbarTitle: 'About Deutan',
+      heroTitle: 'About Deutan',
       content: ArticleContent.deutanContent(),
     );
   }
@@ -255,6 +258,7 @@ class TritanArticleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArticleScreenLayout(
       navbarTitle: 'About Tritan',
+      heroTitle: 'About Tritan',
       content: ArticleContent.tritanContent(),
     );
   }
@@ -262,11 +266,13 @@ class TritanArticleScreen extends StatelessWidget {
 
 class ArticleScreenLayout extends StatelessWidget {
   final String navbarTitle;
+  final String heroTitle;
   final ArticleContent content;
 
   const ArticleScreenLayout({
     super.key,
     required this.navbarTitle,
+    required this.heroTitle,
     required this.content,
   });
 
@@ -315,8 +321,8 @@ class ArticleScreenLayout extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const ArticleHeadingImage(),
-                    MainContent(content: content),
+                    PreAssessmentHeroHeader(title: heroTitle),
+                    MainContent(content: content, overlapHeading: false),
                   ],
                 ),
               ),
@@ -328,73 +334,57 @@ class ArticleScreenLayout extends StatelessWidget {
   }
 }
 
-class ArticleHeadingImage extends StatelessWidget {
-  const ArticleHeadingImage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: SvgPicture.asset(
-        'assets/images/articleHeading.svg',
-        height: 120,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) {
-          return Container(
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.primaryColor,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'Heading image placeholder',
-              style: TextStyle(color: Colors.white),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class MainContent extends StatelessWidget {
   final ArticleContent content;
+  final bool overlapHeading;
 
-  const MainContent({super.key, required this.content});
+  const MainContent({
+    super.key,
+    required this.content,
+    this.overlapHeading = true,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final contentContainer = Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: overlapHeading
+            ? const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              )
+            : null,
+        boxShadow: overlapHeading
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                ),
+              ]
+            : null,
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _BrandHeader(
+            brandName: content.brandName,
+            tagline: content.brandTagline,
+          ),
+          const SizedBox(height: 24),
+          ..._buildSectionList(content.sections),
+        ],
+      ),
+    );
+
+    if (!overlapHeading) {
+      return contentContainer;
+    }
+
     return Transform.translate(
       offset: const Offset(0, -24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _BrandHeader(
-              brandName: content.brandName,
-              tagline: content.brandTagline,
-            ),
-            const SizedBox(height: 24),
-            ..._buildSectionList(content.sections),
-          ],
-        ),
-      ),
+      child: contentContainer,
     );
   }
 
@@ -429,7 +419,9 @@ class _BrandHeader extends StatelessWidget {
         Text(
           brandName,
           style: textTheme.titleLarge?.copyWith(
-            color: AppColors.primaryColor,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : AppColors.primaryColor,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -463,7 +455,9 @@ class ArticleSectionWidget extends StatelessWidget {
             child: Text(
               section.title!,
               style: textTheme.titleMedium?.copyWith(
-                color: AppColors.primaryColor,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : AppColors.primaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -558,7 +552,9 @@ class _FeatureContainerState extends State<FeatureContainer> {
               const SizedBox(width: 12),
               Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.primaryColor,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : AppColors.primaryColor,
                 size: 18,
               ),
             ],

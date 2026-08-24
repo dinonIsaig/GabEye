@@ -5,6 +5,8 @@ import 'package:gabeye/features/onboarding/screens/get_started_screen.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/how_it_works_screen.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/what_to_mind_screen.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/disclaimer_screen.dart';
+import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
+import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
 
 class AppRoutes {
   // Define strict string constants for route names
@@ -14,6 +16,8 @@ class AppRoutes {
   static const String preAssessmentWhatToMind = '/pre-assessment/what-to-mind';
   static const String preAssessmentDisclaimer = '/pre-assessment/disclaimer';
   static const String d15Assessment = '/assessment/d15';
+  static const String settings = '/settings';
+  static const String helpFeedback = '/help-feedback';
   // use '/' in ur route soo it will be the landing
   // static const String practice = '/practice'; // <-- this is an example of defining
 
@@ -25,10 +29,11 @@ class AppRoutes {
       preAssessmentHowItWorks: (context) => const HowItWorksScreen(),
       preAssessmentWhatToMind: (context) => const WhatToMindScreen(),
       preAssessmentDisclaimer: (context) => const DisclaimerScreen(),
+      settings: (context) => const GabEyeSettingsScreen(),
+      helpFeedback: (context) => const HelpFeedbackScreen(),
 
-      d15Assessment: (context) => const Scaffold(
-        body: Center(child: Text('D-15 Assessment Screen')),
-      ) 
+      d15Assessment: (context) =>
+          const Scaffold(body: Center(child: Text('D-15 Assessment Screen'))),
       // practice: (context) => const PracticeScreen(),
       // assessment: (context) => const AssessmentScreen(),
       // liveCamera: (context) => const LiveCameraScreen(),
