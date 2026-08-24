@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 import 'package:gabeye/features/onboarding/screens/get_started_screen.dart';
 import 'package:gabeye/features/assessment/screens/assessment_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/intro_screen.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/how_it_works_screen.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/what_to_mind_screen.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/disclaimer_screen.dart';
@@ -13,6 +14,7 @@ class AppRoutes {
   static const String assessment = '/assessment';
 
   static const String article = '/article';
+  static const String preAssessmentIntro = '/pre-assessment/intro';
   static const String preAssessmentHowItWorks = '/pre-assessment/how-it-works';
   static const String preAssessmentWhatToMind = '/pre-assessment/what-to-mind';
   static const String preAssessmentDisclaimer = '/pre-assessment/disclaimer';
@@ -25,6 +27,7 @@ class AppRoutes {
       getStarted: (context) => const GetStartedScreen(),
       assessment: (context) => const AssessmentScreen(),
       article: (context) => const GabEyeArticleScreen(),
+      preAssessmentIntro: (context) => const PreAssessmentIntroScreen(),
       preAssessmentHowItWorks: (context) => const HowItWorksScreen(),
       preAssessmentWhatToMind: (context) => const WhatToMindScreen(),
       preAssessmentDisclaimer: (context) => const DisclaimerScreen(),
