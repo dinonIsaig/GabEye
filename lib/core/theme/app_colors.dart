@@ -26,9 +26,6 @@ class AppColors {
   static const Color darkTextPrimary = Color(0xFFF4F6F8);
   static const Color darkTextSecondary = Color(0xFFCAD3DE);
   
-  // To be Removed
-  static const Color warningYellow = Color(0xFFD39201);
-  
   // UI Elements
   static const Color darkPrimaryButton = Color(0xFFB0C6D9);
   static const Color borderDark = Color(0xFF8A8BA2);
