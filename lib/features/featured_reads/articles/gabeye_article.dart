@@ -18,6 +18,7 @@ class ArticleSection {
   final String? description;
   final bool showImage;
   final String imageLabel;
+  final String? imagePath;
   final List<FeatureItem>? features;
 
   ArticleSection({
@@ -25,6 +26,7 @@ class ArticleSection {
     this.description,
     this.showImage = false,
     this.imageLabel = 'Article image placeholder',
+    this.imagePath,
     this.features,
   });
 }
@@ -52,6 +54,7 @@ class ArticleContent {
               'Most people with CVD still see color, but some colors can look very similar.',
           showImage: true,
           imageLabel: 'GabEye and color vision deficiency image',
+          imagePath: 'assets/images/cvd_cover.png',
         ),
         ArticleSection(
           description:
@@ -59,6 +62,7 @@ class ArticleContent {
               "GabEye includes a digital Farnsworth D-15 pre-assessment. It helps identify whether the user's color difficulty is Protan, Deutan, or Tritan.",
           showImage: true,
           imageLabel: 'GabEye pre-assessment image',
+          imagePath: 'assets/images/gabeye_cover.png',
         ),
         ArticleSection(
           title: 'Learn About CVD Types',
@@ -117,6 +121,7 @@ class ArticleContent {
               'Protan is a type of red-green Color Vision Deficiency. It involves the L-cones, which are associated with sensitivity to red light.',
           showImage: true,
           imageLabel: 'Protan color comparison image',
+          imagePath: 'assets/images/nv_protan.png',
         ),
         ArticleSection(
           title: 'What You Might Notice',
@@ -125,6 +130,7 @@ class ArticleContent {
               'Some colors can also become harder to separate from one another. This can affect color-dependent information in everyday situations.',
           showImage: true,
           imageLabel: 'Everyday Protan example image',
+          imagePath: 'assets/images/ev_protan.png',
         ),
         ArticleSection(
           title: 'How Does GabEye Help You?',
@@ -152,6 +158,7 @@ class ArticleContent {
               'Deutan is another type of red-green Color Vision Deficiency. It involves the M-cones, which are associated with sensitivity to green light.',
           showImage: true,
           imageLabel: 'Deutan color comparison image',
+          imagePath: 'assets/images/nv_deutan.png',
         ),
         ArticleSection(
           title: 'What You Might Notice',
@@ -160,6 +167,7 @@ class ArticleContent {
               'The level of difficulty can vary between users. This makes personalized color assistance important for everyday tasks.',
           showImage: true,
           imageLabel: 'Everyday Deutan example image',
+          imagePath: 'assets/images/ev_deutan.png',
         ),
         ArticleSection(
           title: 'How Does GabEye Help You?',
@@ -187,6 +195,7 @@ class ArticleContent {
               'Tritan is a rarer type of Color Vision Deficiency. It affects the S-cones, which are associated with sensitivity to blue light.',
           showImage: true,
           imageLabel: 'Tritan color comparison image',
+          imagePath: 'assets/images/nv_tritan.png',
         ),
         ArticleSection(
           title: 'What You Might Notice',
@@ -195,6 +204,7 @@ class ArticleContent {
               "Blue may sometimes appear greenish. Yellow may appear gray or light purple, depending on the person's deficiency.",
           showImage: true,
           imageLabel: 'Everyday Tritan example image',
+          imagePath: 'assets/images/ev_tritan.png',
         ),
         ArticleSection(
           title: 'How Does GabEye Help You?',
@@ -475,7 +485,7 @@ class ArticleSectionWidget extends StatelessWidget {
           if (section.features != null && section.features!.isNotEmpty)
             FeatureContainerGroup(features: section.features!)
           else
-            ImageRow(label: section.imageLabel),
+            ImageRow(label: section.imageLabel, imagePath: section.imagePath),
         ],
       ],
     );
@@ -567,11 +577,25 @@ class _FeatureContainerState extends State<FeatureContainer> {
 
 class ImageRow extends StatelessWidget {
   final String label;
+  final String? imagePath;
 
-  const ImageRow({super.key, required this.label});
+  const ImageRow({super.key, required this.label, this.imagePath});
 
   @override
   Widget build(BuildContext context) {
+    if (imagePath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset(
+          imagePath!,
+          height: 120,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          semanticLabel: label,
+        ),
+      );
+    }
+
     return Container(
       height: 120,
       width: double.infinity,

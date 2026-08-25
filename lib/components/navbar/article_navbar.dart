@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../menu_button.dart';
 
-class GabEyeArticleNavbar extends StatelessWidget {
+class GabEyeArticleNavbar extends StatefulWidget {
   const GabEyeArticleNavbar({
     super.key,
     this.title = 'Know More About GabEye',
@@ -15,6 +15,43 @@ class GabEyeArticleNavbar extends StatelessWidget {
   final ValueChanged<MenuButtonOption>? onMenuSelected;
 
   @override
+  State<GabEyeArticleNavbar> createState() => _GabEyeArticleNavbarState();
+}
+
+class _GabEyeArticleNavbarState extends State<GabEyeArticleNavbar> {
+  ScrollNotificationObserverState? _scrollNotificationObserver;
+  bool _isScrolledUnder = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final observer = ScrollNotificationObserver.maybeOf(context);
+    if (observer == _scrollNotificationObserver) return;
+
+    _scrollNotificationObserver?.removeListener(_handleScrollNotification);
+    _scrollNotificationObserver = observer;
+    _scrollNotificationObserver?.addListener(_handleScrollNotification);
+  }
+
+  void _handleScrollNotification(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return;
+    }
+
+    final isScrolledUnder = notification.metrics.extentBefore > 0;
+    if (isScrolledUnder != _isScrolledUnder && mounted) {
+      setState(() => _isScrolledUnder = isScrolledUnder);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollNotificationObserver?.removeListener(_handleScrollNotification);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final headerTextColor = Theme.of(context).brightness == Brightness.dark
@@ -23,7 +60,9 @@ class GabEyeArticleNavbar extends StatelessWidget {
 
     return Material(
       color: colorScheme.surfaceContainer,
-      elevation: 0,
+      elevation: _isScrolledUnder ? 6 : 0,
+      shadowColor: Colors.black.withValues(alpha: 0.6),
+      surfaceTintColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(color: colorScheme.surfaceContainer),
         child: SafeArea(
@@ -37,7 +76,7 @@ class GabEyeArticleNavbar extends StatelessWidget {
                 children: [
                   Expanded(
                     child: InkWell(
-                      onTap: onBack,
+                      onTap: widget.onBack,
                       borderRadius: BorderRadius.circular(8),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -50,7 +89,7 @@ class GabEyeArticleNavbar extends StatelessWidget {
                           const SizedBox(width: 10),
                           Flexible(
                             child: Text(
-                              title,
+                              widget.title,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
@@ -64,7 +103,7 @@ class GabEyeArticleNavbar extends StatelessWidget {
                     ),
                   ),
                   // No onPressed passed -> renders as PopupMenuButton.
-                  MenuButton(onSelected: onMenuSelected),
+                  MenuButton(onSelected: widget.onMenuSelected),
                 ],
               ),
             ),

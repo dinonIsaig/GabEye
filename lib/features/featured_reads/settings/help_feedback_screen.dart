@@ -223,17 +223,42 @@ class _QuickHelpTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: () => showDialog<void>(
             context: context,
-            builder: (context) => AlertDialog(
-              icon: Icon(item.icon, color: colors.primary),
-              title: Text(item.title),
-              content: Text(item.text),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Done'),
+            barrierColor: Colors.black.withValues(alpha: 0.65),
+            builder: (dialogContext) {
+              final isDark =
+                  Theme.of(dialogContext).brightness == Brightness.dark;
+
+              return AlertDialog(
+                elevation: 24,
+                shadowColor: Colors.black.withValues(alpha: 0.8),
+                icon: Icon(
+                  item.icon,
+                  color: isDark ? AppColors.darkPrimaryButton : colors.primary,
                 ),
-              ],
-            ),
+                title: Text(item.title),
+                content: Text(item.text),
+                actions: [
+                  if (isDark)
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkPrimaryButton,
+                        foregroundColor: AppColors.darkSurface,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: const Text('Done'),
+                    )
+                  else
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Done'),
+                    ),
+                ],
+              );
+            },
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
