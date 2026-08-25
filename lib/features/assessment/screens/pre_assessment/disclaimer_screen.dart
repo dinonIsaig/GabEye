@@ -145,7 +145,7 @@ class DisclaimerScreen extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.d15Assessment);
+                        Navigator.pushNamed(context, AppRoutes.assessment);
                       },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,

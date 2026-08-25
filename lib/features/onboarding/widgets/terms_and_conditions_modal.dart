@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 
 class TermsAndConditionsModal extends StatefulWidget {
   const TermsAndConditionsModal({super.key});
@@ -97,8 +98,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                         child: ElevatedButton(
                           onPressed: _hasScrolledToBottom
                               ? () {
-                                  Navigator.pop(context);
-                                  // Navigator.pushNamed(context, '/change this for ur screen');
+                                  Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
