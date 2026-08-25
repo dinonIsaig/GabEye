@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gabeye/components/menu_button.dart';
 
 class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final bool showLogo;
-  final double?progressValue; // Requires a decimal between 0.0 and 1.0 (0.25 for 1/4)
+  // Requires a decimal between 0.0 and 1.0 (0.25 for 1/4).
+  final double? progressValue;
   final String? progressText; // e.g., "Step 4/4"
   final VoidCallback? onMenuPressed;
 
   const GabEyeAppBar({
-    Key? key,
+    super.key,
     this.showBackButton = true,
     this.showLogo = false,
     this.progressValue,
     this.progressText,
     this.onMenuPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final headerTextColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : colorScheme.onSurface;
 
     return AppBar(
       backgroundColor: colorScheme.surfaceContainer,
@@ -44,19 +49,18 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
               'assets/images/gabEyeLogo.svg',
               height: 40,
               fit: BoxFit.contain,
-              
             )
           : progressValue != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(4.0),
-                  child: LinearProgressIndicator(
-                    value: progressValue,
-                    minHeight: 4.0,
-                    backgroundColor: Colors.grey.shade300,
-                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                  ),
-                )
-              : null,
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(4.0),
+              child: LinearProgressIndicator(
+                value: progressValue,
+                minHeight: 4.0,
+                backgroundColor: Colors.grey.shade300,
+                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+              ),
+            )
+          : null,
 
       // 3. ACTIONS (Right Side)
       actions: [
@@ -69,22 +73,14 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
+                  color: headerTextColor,
                 ),
               ),
             ),
           ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: IconButton(
-            icon: Icon(Icons.more_vert, color: colorScheme.onSurface),
-            onPressed:
-                onMenuPressed ??
-                () {
-                  // Default action if none is provided
-                  print("Menu clicked");
-                },
-          ),
+          child: MenuButton(onPressed: onMenuPressed),
         ),
       ],
     );

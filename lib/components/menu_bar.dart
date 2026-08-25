@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/theme/theme_controller.dart';
 
 class NavbarMenuItem {
   const NavbarMenuItem({required this.icon, required this.label});
@@ -55,6 +56,48 @@ class NavbarMenuPanel extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
+              ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeController,
+                builder: (context, themeMode, child) {
+                  final isDarkMode = themeMode == ThemeMode.dark;
+                  return Semantics(
+                    label: 'Dark Mode',
+                    toggled: isDarkMode,
+                    child: InkWell(
+                      onTap: () => themeController.setDarkMode(!isDarkMode),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.dark_mode_outlined,
+                              size: 20,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'Dark Mode',
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            Switch(
+                              value: isDarkMode,
+                              onChanged: themeController.setDarkMode,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 1),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -77,10 +120,13 @@ class NavbarMenuPanel extends StatelessWidget {
                               color: colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 16),
-                            Text(
-                              item.label,
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
+                            Expanded(
+                              child: Text(
+                                item.label,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ],

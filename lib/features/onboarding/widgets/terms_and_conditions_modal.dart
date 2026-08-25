@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 
 class TermsAndConditionsModal extends StatefulWidget {
-  const TermsAndConditionsModal({Key? key}) : super(key: key);
+  const TermsAndConditionsModal({super.key});
 
   @override
   State<TermsAndConditionsModal> createState() =>
@@ -48,7 +48,6 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
 
         child: Stack(
           children: [
-            
             Positioned.fill(
               child: Theme(
                 data: Theme.of(context).copyWith(
@@ -69,8 +68,8 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                     padding: const EdgeInsets.only(
                       left: 30.0,
                       right: 30.0,
-                      top: 10.0, 
-                      bottom: 120.0
+                      top: 10.0,
+                      bottom: 120.0,
                     ),
                     child: _buildTermsTextContent(context),
                   ),
@@ -104,24 +103,37 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                               : null,
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
-                            
-                            backgroundColor: Theme.of(context).colorScheme.onPrimary,
-                            disabledBackgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
-                            
-                            foregroundColor: Theme.of(context).colorScheme.surface,
-                            disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                            
+
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
+                            disabledBackgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0.3),
+
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
+                            disabledForegroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24),
                               side: BorderSide(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.6),
                                 width: 1.5,
                               ),
                             ),
                             minimumSize: const Size(double.infinity, 60),
                           ),
                           child: Text(
-                            _hasScrolledToBottom ? 'I Accept' : 'Scroll to See More  ↓',
+                            _hasScrolledToBottom
+                                ? 'I Accept'
+                                : 'Scroll to See More  ↓',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 
+import 'menu_button.dart';
+
 class GabEyeNavbar extends StatelessWidget {
   const GabEyeNavbar({super.key, this.onBack, this.onMenu});
- 
+
   final VoidCallback? onBack;
   final VoidCallback? onMenu;
- 
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
-      color: colorScheme.surfaceVariant,
+      color: colorScheme.surfaceContainerHighest,
       elevation: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant,
+          color: colorScheme.surfaceContainerHighest,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               blurRadius: 2,
               offset: const Offset(0, 4),
             ),
@@ -50,28 +52,18 @@ class GabEyeNavbar extends StatelessWidget {
                             child: Text(
                               'Know More About GabEye', // change based on the article
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  InkWell(
-                    onTap: onMenu,
-                    borderRadius: BorderRadius.circular(20),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Icon(
-                        Icons.more_vert,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
+                  MenuButton(onPressed: onMenu),
                 ],
               ),
             ),
