@@ -15,7 +15,7 @@ class ProfileHeadingBanner extends StatelessWidget {
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
       child: Container(
         width: double.infinity,
-        height: 140,
+        height: 170,
         color: colors.surface,
         child: Stack(
           fit: StackFit.expand,

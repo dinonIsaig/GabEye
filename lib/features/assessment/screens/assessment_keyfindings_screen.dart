@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
-import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/screens/assessment_recommendations_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
@@ -53,7 +53,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
 
                         ElevatedButton.icon(
-                          onPressed: () => _goToDetailedResult(context),
+                          onPressed: () => _goToRecommendations(context),
                           iconAlignment: IconAlignment.end,
                           icon: const Icon(Icons.arrow_forward, size: 20),
                           style: ElevatedButton.styleFrom(
@@ -112,7 +112,6 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   }
 
   // -------------------- Key Findings --------------------
-
   Widget _buildKeyFindingsCard(
     ColorScheme colors,
     DiagnosisStyle diagnosisStyle,
@@ -250,7 +249,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
             style: TextStyle(
               color: colors.onSurfaceVariant,
               fontSize: 12,
-              height: 1.4, // Matches the height from _buildKeyFindingsRow
+              height: 1.4, 
             ),
           ),
 
@@ -261,13 +260,12 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
     );
   }
 
-  // -------------------- Navigation / actions --------------------
-  // to be changed once recommended Steps has been donw
-  void _goToDetailedResult(BuildContext context) {
+
+  void _goToRecommendations(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ResultsPage(
+        builder: (context) => AssessmentRecommendationScreen(
           arrangedCaps: arrangedCaps,
         ),
       ),
