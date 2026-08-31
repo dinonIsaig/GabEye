@@ -26,63 +26,82 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ? Colors.white
         : colorScheme.onSurface;
 
-    return AppBar(
-      backgroundColor: colorScheme.surfaceContainer,
-      elevation: 0,
-      centerTitle: !showLogo,
-      automaticallyImplyLeading: false,
-
-      leadingWidth: showBackButton ? 56 : 0,
-
-      leading: showBackButton
-          ? Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: IconButton(
-                icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-                onPressed: () => Navigator.pop(context),
-              ),
-            )
-          : null,
-
-      title: showLogo
-          ? SvgPicture.asset(
-              'assets/images/gabEyeLogo.svg',
-              height: 40,
-              fit: BoxFit.contain,
-            )
-          : progressValue != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(4.0),
-              child: LinearProgressIndicator(
-                value: progressValue,
-                minHeight: 4.0,
-                backgroundColor: Colors.grey.shade300,
-                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-              ),
-            )
-          : null,
-
-      // 3. ACTIONS (Right Side)
-      actions: [
-        if (progressText != null)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Text(
-                progressText!,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: headerTextColor,
+    return Material(
+      color: colorScheme.surfaceContainer,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.3),
+      surfaceTintColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainer,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: !showLogo,
+          automaticallyImplyLeading: false,
+          leadingWidth: showBackButton ? 56 : 0,
+          leading: showBackButton
+              ? Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                )
+              : null,
+          title: showLogo
+              ? SvgPicture.asset(
+                  'assets/images/gabEyeLogo.svg',
+                  height: 40,
+                  fit: BoxFit.contain,
+                )
+              : progressValue != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(4.0),
+                      child: LinearProgressIndicator(
+                        value: progressValue,
+                        minHeight: 4.0,
+                        backgroundColor: Colors.grey.shade300,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                      ),
+                    )
+                  : null,
+          actions: [
+            if (progressText != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: Text(
+                    progressText!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: headerTextColor,
+                    ),
+                  ),
                 ),
               ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: MenuButton(onPressed: onMenuPressed),
             ),
-          ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: MenuButton(onPressed: onMenuPressed),
+          ],
         ),
-      ],
+      ),
     );
   }
 

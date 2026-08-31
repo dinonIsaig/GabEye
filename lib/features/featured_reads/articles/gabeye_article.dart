@@ -289,55 +289,52 @@ class ArticleScreenLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            GabEyeArticleNavbar(
-              title: navbarTitle,
-              onBack: () => Navigator.maybePop(context),
-              onMenuSelected: (option) {
-                if (option.label == 'Settings') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const GabEyeSettingsScreen(),
-                    ),
-                  );
-                } else if (option.label == 'Help & Feedback') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HelpFeedbackScreen(),
-                    ),
-                  );
-                } else if (option.label == 'About GabEye') {
-                  if (content.brandName == 'GabEye') {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Already on About GabEye')),
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GabEyeArticleScreen(),
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    PreAssessmentHeroHeader(title: heroTitle),
-                    MainContent(content: content, overlapHeading: false),
-                  ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: GabEyeArticleNavbar(
+          title: navbarTitle,
+          onBack: () => Navigator.maybePop(context),
+          onMenuSelected: (option) {
+            if (option.label == 'Settings') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GabEyeSettingsScreen(),
                 ),
-              ),
-            ),
-          ],
+              );
+            } else if (option.label == 'Help & Feedback') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpFeedbackScreen(),
+                ),
+              );
+            } else if (option.label == 'About GabEye') {
+              if (content.brandName == 'GabEye') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Already on About GabEye')),
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const GabEyeArticleScreen(),
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PreAssessmentHeroHeader(title: heroTitle),
+              MainContent(content: content, overlapHeading: false),
+            ],
+          ),
         ),
       ),
     );

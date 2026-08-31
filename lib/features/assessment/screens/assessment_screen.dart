@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gabeye/features/assessment/models/cap.dart';
-import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
-import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
+import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
+import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 
 
 // --- Data class to track the dragged cap's origin ---
@@ -58,12 +59,15 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
 
 // Tapping a cap in the pool
   void _placeNextCap(int capNum) {
+    // Find the first empty slot in the tray
+    final firstEmptyIdx = _arrangedCaps.indexOf(null);
+
+    // If all 15 slots are full, do nothing
+    if (firstEmptyIdx == -1) return;
+
     setState(() {
-      final firstEmptyIdx = _arrangedCaps.indexOf(null);
-      if (firstEmptyIdx != -1) {
-        _arrangedCaps[firstEmptyIdx] = capNum;
-        _poolCaps.remove(capNum);
-      }
+      _poolCaps.remove(capNum);
+      _arrangedCaps[firstEmptyIdx] = capNum;
     });
   }
 
@@ -75,7 +79,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
     });
   }
 
-// --- Drag & Drop Logic ---
+// Drag & drop logic
   void _handleDrop(CapDragData dragData, int targetIdx) {
     setState(() {
       final draggedCapNum = dragData.capNum;
@@ -111,14 +115,18 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(64),
+              child: GabEyeHomeNavbar(
+                onBack: () => Navigator.pop(context),
+              ),
+            ),
             body: SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildTopBar(colors),
-                    const SizedBox(height: 16),
                     _buildHowItWorksPill(colors),
                     const SizedBox(height: 20),
                     _buildAssessmentCard(colors),
@@ -132,26 +140,6 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
           );
         },
       ),
-    );
-  }
-
-// To be replaced with alr made nav bar
-  Widget _buildTopBar(ColorScheme colors) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: Colors.transparent,
-          child:  SvgPicture.asset('assets/images/gabEyeLogo.svg',fit: BoxFit.contain,),
-        ),
-        IconButton(
-          icon: Icon(Icons.more_vert, color: colors.onSurface),
-          onPressed: () {
-            // TODO: options menu
-          },
-        ),
-      ],
     );
   }
 

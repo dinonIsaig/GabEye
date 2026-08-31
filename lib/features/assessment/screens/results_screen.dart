@@ -343,30 +343,15 @@ class ResultsPage extends StatelessWidget {
 
   // -------------------- Footer buttons --------------------
   Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
-    return Column(
-      children: [
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 55),
-          ),
-          child: const Text('Exit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => _exportAsPdf(context),
-          iconAlignment: IconAlignment.end,
-          icon: const Icon(Icons.download, size: 16),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: colors.onSurface,
-            side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            minimumSize: const Size(double.infinity, 55),
-          ),
-          label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        ),
-      ],
+    return ElevatedButton.icon(
+      onPressed: () => _exportAsPdf(context),
+      iconAlignment: IconAlignment.end,
+      icon: const Icon(Icons.download, size: 20),
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        minimumSize: const Size(double.infinity, 55),
+      ),
+      label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
     );
   }
 

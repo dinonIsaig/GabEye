@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
         description:
             'The Farnsworth D-15 is a quick color arrangement test designed to screen for moderate to severe color vision deficiencies.',
         imageAsset: 'assets/images/cvd_cover.png',
-        ctaLabel: 'Take Assessment',
+        ctaLabel: 'Read more',
         onReadMore: (ctx) =>
             Navigator.pushNamed(ctx, AppRoutes.preAssessmentHowItWorks),
       ),

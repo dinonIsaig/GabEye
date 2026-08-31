@@ -70,18 +70,6 @@ class SettingsContent {
                 // Navigate to real-time mode safety
               },
             ),
-            SettingItem(
-              title: 'Understanding CVD',
-              onTap: () {
-                // Navigate to understanding CVD
-              },
-            ),
-            SettingItem(
-              title: 'About Farnsworth D-15',
-              onTap: () {
-                // Navigate to farnsworth d-15
-              },
-            ),
           ],
         ),
       ],
@@ -97,44 +85,41 @@ class GabEyeSettingsScreen extends StatelessWidget {
     final settingsContent = SettingsContent.defaultContent(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            GabEyeArticleNavbar(
-              title: 'Settings',
-              onBack: () => Navigator.maybePop(context),
-              onMenuSelected: (option) {
-                if (option.label == 'Settings') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Already on Settings')),
-                  );
-                } else if (option.label == 'Help & Feedback') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HelpFeedbackScreen(),
-                    ),
-                  );
-                } else if (option.label == 'About GabEye') {
-                  Navigator.pushNamed(context, '/article');
-                }
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: _buildSettingsSections(
-                      settingsContent.sections,
-                      context,
-                    ),
-                  ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: GabEyeArticleNavbar(
+          title: 'Settings',
+          onBack: () => Navigator.maybePop(context),
+          onMenuSelected: (option) {
+            if (option.label == 'Settings') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Already on Settings')),
+              );
+            } else if (option.label == 'Help & Feedback') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpFeedbackScreen(),
                 ),
+              );
+            } else if (option.label == 'About GabEye') {
+              Navigator.pushNamed(context, '/article');
+            }
+          },
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: _buildSettingsSections(
+                settingsContent.sections,
+                context,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class PreAssessmentHeroHeader extends StatelessWidget {
   final String title;
@@ -22,8 +21,8 @@ class PreAssessmentHeroHeader extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(24),
               ),
-              child: SvgPicture.asset(
-                'assets/images/articleHeading.svg',
+              child: Image.asset(
+                'assets/images/articleHeading.png',
                 fit: BoxFit.cover,
               ),
             ),
