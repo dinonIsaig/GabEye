@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
@@ -23,12 +24,23 @@ class ResultsPage extends StatelessWidget {
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: GabEyeArticleNavbar(
+          title: 'Color Vision Profile',
+          onBack: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const ProfileHeadingBanner(),
+              const ProfileHeadingBanner(title: 'Color Vision Profile'),
               const SizedBox(height: 20),
               Center(
                 child: ConstrainedBox(
@@ -97,7 +109,7 @@ class ResultsPage extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             result.diagnosisType == ColorDeficiencyType.normal ? result.description : diagnosisStyle.shortSummary,
-            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13, height: 1.5),
+            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16, height: 1.5),
           ),
           const SizedBox(height: 20),
           Row(
@@ -184,7 +196,7 @@ class ResultsPage extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             'Own reference, or share with an eye care provider',
-            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
           ),
           const SizedBox(height: 28),
           _buildTechnicalRow(
@@ -250,9 +262,9 @@ class ResultsPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(title, style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 2),
-              Text(description, style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12, height: 1.4)),
+              Text(description, style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16, height: 1.4)),
             ],
           ),
         ),
@@ -282,7 +294,7 @@ class ResultsPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
                 'No crossing errors detected. Perfect arrangement!',
-                style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
+                style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
               ),
             )
           else
@@ -337,7 +349,7 @@ class ResultsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 50),
+            minimumSize: const Size(double.infinity, 55),
           ),
           child: const Text('Exit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ),
@@ -350,9 +362,9 @@ class ResultsPage extends StatelessWidget {
             foregroundColor: colors.onSurface,
             side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            minimumSize: const Size(double.infinity, 44),
+            minimumSize: const Size(double.infinity, 55),
           ),
-          label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ),
       ],
     );

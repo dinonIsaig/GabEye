@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 // Import all your feature screens here
+import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
+import 'package:gabeye/features/home/screens/home_screen.dart';
 import 'package:gabeye/features/onboarding/screens/get_started_screen.dart';
 import 'package:gabeye/features/assessment/screens/assessment_screen.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/how_it_works_screen.dart';
@@ -12,6 +14,7 @@ import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dar
 class AppRoutes {
   // Define strict string constants for route names
   static const String getStarted = '/';
+  static const String home = '/home';
   static const String assessment = '/assessment';
 
   static const String article = '/article';
@@ -21,6 +24,7 @@ class AppRoutes {
   static const String d15Assessment = '/assessment/d15';
   static const String settings = '/settings';
   static const String helpFeedback = '/help-feedback';
+  static const String colorVisionProfileLookback = '/color-vision-profile-lookback';
   // use '/' in ur route soo it will be the landing
   // static const String practice = '/practice'; // <-- this is an example of defining
 
@@ -28,6 +32,7 @@ class AppRoutes {
   static Map<String, WidgetBuilder> getRoutes() {
     return {
       getStarted: (context) => const GetStartedScreen(),
+      home: (context) => const HomeScreen(),
       assessment: (context) => const AssessmentScreen(),
       article: (context) => const GabEyeArticleScreen(),
       preAssessmentHowItWorks: (context) => const HowItWorksScreen(),
@@ -35,6 +40,8 @@ class AppRoutes {
       preAssessmentDisclaimer: (context) => const DisclaimerScreen(),
       settings: (context) => const GabEyeSettingsScreen(),
       helpFeedback: (context) => const HelpFeedbackScreen(),
+      colorVisionProfileLookback: (context) =>
+          const ColorVisionProfileLookbackScreen(),
 
       d15Assessment: (context) =>
           const Scaffold(body: Center(child: Text('D-15 Assessment Screen'))),

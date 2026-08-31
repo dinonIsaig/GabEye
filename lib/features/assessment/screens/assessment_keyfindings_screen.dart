@@ -50,7 +50,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             minimumSize:
-                                const Size(double.infinity, 50),
+                                const Size(double.infinity, 55),
                           ),
                           label: const Text(
                             'Next',
@@ -83,7 +83,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             minimumSize:
-                                const Size(double.infinity, 50),
+                                const Size(double.infinity, 55),
                           ),
                         ),
 

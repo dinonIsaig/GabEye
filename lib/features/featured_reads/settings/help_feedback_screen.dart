@@ -596,7 +596,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
           icon: const Icon(Icons.add_photo_alternate_outlined),
           label: const Text('Add Screenshot (Optional)'),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size.fromHeight(55),
           ),
         ),
         const SizedBox(height: 4),
@@ -614,7 +614,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
           icon: const Icon(Icons.send_outlined),
           label: const Text('Submit Feedback'),
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(54),
+            minimumSize: const Size.fromHeight(55),
           ),
         ),
       ],
@@ -647,7 +647,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
           child: ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
+              minimumSize: const Size.fromHeight(55),
             ),
             child: const Text('Done'),
           ),

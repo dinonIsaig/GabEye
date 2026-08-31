@@ -400,7 +400,7 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
           : null,
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 50),
+            minimumSize: const Size(double.infinity, 55),
             elevation: _isTestComplete ? 4 : 0,
           ),
           child: const Text('Finish Assessment', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -412,7 +412,7 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
             foregroundColor: colors.onSurface,
             side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 50),
+            minimumSize: const Size(double.infinity, 55),
           ),
           child: const Text('Start Over', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
