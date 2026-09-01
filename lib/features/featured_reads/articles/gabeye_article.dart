@@ -20,6 +20,7 @@ class ArticleSection {
   final String imageLabel;
   final String? imagePath;
   final List<FeatureItem>? features;
+  final ComparisonTable? table;
 
   ArticleSection({
     this.title,
@@ -28,7 +29,16 @@ class ArticleSection {
     this.imageLabel = 'Article image placeholder',
     this.imagePath,
     this.features,
+    this.table,
   });
+}
+
+// Simple row/column comparison table (e.g. Ishihara vs. D-15).
+class ComparisonTable {
+  final List<String> columnHeaders; // e.g. ['', 'Ishihara (dot test)', 'This test (D-15)']
+  final List<List<String>> rows; // each row: [rowLabel, col1Value, col2Value]
+
+  ComparisonTable({required this.columnHeaders, required this.rows});
 }
 
 class ArticleContent {
@@ -63,6 +73,26 @@ class ArticleContent {
           showImage: true,
           imageLabel: 'GabEye pre-assessment image',
           imagePath: 'assets/images/gabeye_cover.png',
+        ),
+        ArticleSection(
+          title: 'Learn About Your Assessment',
+          description:
+              'Before GabEye personalizes itself for you, it asks you to sort a few colors. Learn how this works and what your results mean.',
+          showImage: true,
+          imageLabel: 'Farnsworth D-15 assessment image',
+          features: [
+            FeatureItem(
+              title: 'What is the Farnsworth D-15 Test?',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const FarnsworthD15ArticleScreen(),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         ArticleSection(
           title: 'Learn About CVD Types',
@@ -220,6 +250,54 @@ class ArticleContent {
       ],
     );
   }
+
+  factory ArticleContent.farnsworthD15Content() {
+    return ArticleContent(
+      brandName: 'Farnsworth D-15',
+      brandTagline: 'Understanding Your Pre-Assessment',
+      sections: [
+        ArticleSection(
+          title: 'What is the Farnsworth D-15 Test?',
+          description:
+              "It's a simple color sorting test. You arrange 15 colored discs in order, "
+              'from one color to the next.',
+          showImage: true,
+          imageLabel: 'Farnsworth D-15 color discs image',
+          imagePath: 'assets/images/farnsworth_cover.jpg',
+        ),
+        ArticleSection(
+          description:
+              'No numbers to spot, no letters to squint at. Just sort the colors.',
+        ),
+        ArticleSection(
+          title: 'How Does It Figure Out My CVD Type?',
+          description:
+              'Everyone\'s eyes see color differently. Sorting reveals which colors are hardest for you to tell apart. This pattern shows whether you have Protanopia (red), Deuteranopia (green), or Tritanopia (blue-yellow).',
+        ),
+        ArticleSection(
+          title: 'How Is It Different From Other Tests?',
+          description:
+              'You may have taken the Ishihara test before, the one with colored dots hiding a number inside.',
+          table: ComparisonTable(
+            columnHeaders: const ['', 'Ishihara (dot test)', 'Farnsworth (D-15)'],
+            rows: const [
+              [
+                'What it catches',
+                'Mostly red green issues',
+                'Red green and blue yellow issues',
+              ],
+              ['What you do', 'Spot a number', 'Sort discs by color'],
+            ],
+          ),
+        ),
+        ArticleSection(
+          title: 'Remember',
+          description:
+              "GabEye's assessment helps personalize the application. It does not replace a professional eye exam or diagnosis For an official diagnosis, see an eye doctor. For using the app, your results here are enough..",
+        ),
+      ],
+    );
+  }
 }
 
 class GabEyeArticleScreen extends StatelessWidget {
@@ -270,6 +348,19 @@ class TritanArticleScreen extends StatelessWidget {
       navbarTitle: 'About Tritan',
       heroTitle: 'About Tritan',
       content: ArticleContent.tritanContent(),
+    );
+  }
+}
+
+class FarnsworthD15ArticleScreen extends StatelessWidget {
+  const FarnsworthD15ArticleScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ArticleScreenLayout(
+      navbarTitle: 'About the D-15 Test',
+      heroTitle: 'About the Farnsworth D-15',
+      content: ArticleContent.farnsworthD15Content(),
     );
   }
 }
@@ -451,6 +542,13 @@ class ArticleSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (section.title?.toLowerCase() == 'remember') {
+      return RememberCard(
+        title: section.title!,
+        text: section.description ?? '',
+      );
+    }
+
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
@@ -477,6 +575,10 @@ class ArticleSectionWidget extends StatelessWidget {
               height: 1.6,
             ),
           ),
+        if (section.table != null) ...[
+          const SizedBox(height: 16),
+          ComparisonTableWidget(table: section.table!),
+        ],
         if (section.showImage) ...[
           const SizedBox(height: 24),
           if (section.features != null && section.features!.isNotEmpty)
@@ -485,6 +587,65 @@ class ArticleSectionWidget extends StatelessWidget {
             ImageRow(label: section.imageLabel, imagePath: section.imagePath),
         ],
       ],
+    );
+  }
+}
+
+class RememberCard extends StatelessWidget {
+  final String title;
+  final String text;
+
+  const RememberCard({super.key, required this.title, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentRed = isDark ? const Color(0xFFFFB4AB) : AppColors.errorRed;
+    final bgRed = isDark
+        ? AppColors.errorRed.withValues(alpha: 0.18)
+        : AppColors.errorRed.withValues(alpha: 0.08);
+    final borderRed = isDark
+        ? const Color(0xFFFFB4AB).withValues(alpha: 0.35)
+        : AppColors.errorRed.withValues(alpha: 0.25);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: bgRed,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderRed),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, color: accentRed, size: 28),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: accentRed,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (text.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    text,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -567,6 +728,85 @@ class _FeatureContainerState extends State<FeatureContainer> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ComparisonTableWidget extends StatelessWidget {
+  final ComparisonTable table;
+
+  const ComparisonTableWidget({super.key, required this.table});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final borderColor = Theme.of(
+      context,
+    ).colorScheme.outlineVariant.withValues(alpha: 0.6);
+
+    TableRow buildRow(List<String> cells, {bool isHeader = false}) {
+      return TableRow(
+        decoration: BoxDecoration(
+          color: isHeader
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+              : Colors.transparent,
+        ),
+        children: cells
+            .asMap()
+            .entries
+            .map(
+              (entry) {
+                final index = entry.key;
+                final cell = entry.value;
+                final isFirstColumn = index == 0;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  child: Text(
+                    cell,
+                    style: (textTheme.bodyMedium ??
+                            const TextStyle(
+                              fontFamily: 'AtkinsonHyperlegible',
+                              fontSize: 16,
+                            ))
+                        .copyWith(
+                      fontSize: 16,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: (isHeader || isFirstColumn)
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      height: 1.4,
+                    ),
+                  ),
+                );
+              },
+            )
+            .toList(),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Table(
+        columnWidths: const {
+          0: FlexColumnWidth(0.9),
+          1: FlexColumnWidth(1.1),
+          2: FlexColumnWidth(1.1),
+        },
+        border: TableBorder(
+          horizontalInside: BorderSide(color: borderColor),
+        ),
+        children: [
+          buildRow(table.columnHeaders, isHeader: true),
+          for (final row in table.rows) buildRow(row),
+        ],
       ),
     );
   }

@@ -11,7 +11,7 @@ class HeroSection extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
-        height: 260,
+        height: 270,
         child: Stack(
           fit: StackFit.expand,
           children: [

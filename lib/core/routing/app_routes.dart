@@ -10,6 +10,8 @@ import 'package:gabeye/features/assessment/screens/pre_assessment/what_to_mind_s
 import 'package:gabeye/features/assessment/screens/pre_assessment/disclaimer_screen.dart';
 import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
 import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
+import 'package:gabeye/features/featured_reads/settings/how_to_use_gabeye.dart';
+import 'package:gabeye/features/featured_reads/settings/real-time_mode_safety.dart';
 
 class AppRoutes {
   // Define strict string constants for route names
@@ -24,6 +26,8 @@ class AppRoutes {
   static const String d15Assessment = '/assessment/d15';
   static const String settings = '/settings';
   static const String helpFeedback = '/help-feedback';
+  static const String howToUseGabEye = '/settings/how-to-use';
+  static const String realTimeModeSafety = '/settings/real-time-safety';
   static const String colorVisionProfileLookback = '/color-vision-profile-lookback';
   // use '/' in ur route soo it will be the landing
   // static const String practice = '/practice'; // <-- this is an example of defining
@@ -40,6 +44,8 @@ class AppRoutes {
       preAssessmentDisclaimer: (context) => const DisclaimerScreen(),
       settings: (context) => const GabEyeSettingsScreen(),
       helpFeedback: (context) => const HelpFeedbackScreen(),
+      howToUseGabEye: (context) => const HowToUseGabEyeScreen(),
+      realTimeModeSafety: (context) => const RealTimeModeSafetyScreen(),
       colorVisionProfileLookback: (context) =>
           const ColorVisionProfileLookbackScreen(),
 

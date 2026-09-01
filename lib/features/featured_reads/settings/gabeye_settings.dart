@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'help_feedback_screen.dart';
+import 'how_to_use_gabeye.dart';
+import 'real-time_mode_safety.dart';
 import 'terms_and_conditions_page.dart';
 
 // Models for settings content
@@ -61,13 +63,23 @@ class SettingsContent {
             SettingItem(
               title: 'How to Use GabEye',
               onTap: () {
-                // Navigate to how to use
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HowToUseGabEyeScreen(),
+                  ),
+                );
               },
             ),
             SettingItem(
               title: 'Real-time Mode Safety',
               onTap: () {
-                // Navigate to real-time mode safety
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RealTimeModeSafetyScreen(),
+                  ),
+                );
               },
             ),
           ],
