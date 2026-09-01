@@ -2,7 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gabeye/components/navbar/home_navbar.dart';
+import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
+import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
+import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
@@ -68,12 +73,15 @@ void _applyDebugProfile(List<int> caps) {
 
 // Tapping a cap in the pool
   void _placeNextCap(int capNum) {
+    // Find the first empty slot in the tray
+    final firstEmptyIdx = _arrangedCaps.indexOf(null);
+
+    // If all 15 slots are full, do nothing
+    if (firstEmptyIdx == -1) return;
+
     setState(() {
-      final firstEmptyIdx = _arrangedCaps.indexOf(null);
-      if (firstEmptyIdx != -1) {
-        _arrangedCaps[firstEmptyIdx] = capNum;
-        _poolCaps.remove(capNum);
-      }
+      _poolCaps.remove(capNum);
+      _arrangedCaps[firstEmptyIdx] = capNum;
     });
   }
 
@@ -85,7 +93,7 @@ void _applyDebugProfile(List<int> caps) {
     });
   }
 
-// --- Drag & Drop Logic ---
+// Drag & drop logic
   void _handleDrop(CapDragData dragData, int targetIdx) {
     setState(() {
       final draggedCapNum = dragData.capNum;
@@ -121,14 +129,18 @@ void _applyDebugProfile(List<int> caps) {
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(64),
+              child: GabEyeHomeNavbar(
+                onBack: () => Navigator.pop(context),
+              ),
+            ),
             body: SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildTopBar(colors),
-                    const SizedBox(height: 16),
                     _buildHowItWorksPill(colors),
                     const SizedBox(height: 20),
                     _buildAssessmentCard(colors),
@@ -459,7 +471,7 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
           : null,
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 50),
+            minimumSize: const Size(double.infinity, 55),
             elevation: _isTestComplete ? 4 : 0,
           ),
           child: const Text('Finish Assessment', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -471,7 +483,7 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
             foregroundColor: colors.onSurface,
             side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 50),
+            minimumSize: const Size(double.infinity, 55),
           ),
           child: const Text('Start Over', style: TextStyle(fontWeight: FontWeight.bold)),
         ),

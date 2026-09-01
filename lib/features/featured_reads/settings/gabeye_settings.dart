@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'help_feedback_screen.dart';
+import 'how_to_use_gabeye.dart';
+import 'real-time_mode_safety.dart';
 import 'terms_and_conditions_page.dart';
 
 // Models for settings content
@@ -61,25 +63,23 @@ class SettingsContent {
             SettingItem(
               title: 'How to Use GabEye',
               onTap: () {
-                // Navigate to how to use
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HowToUseGabEyeScreen(),
+                  ),
+                );
               },
             ),
             SettingItem(
               title: 'Real-time Mode Safety',
               onTap: () {
-                // Navigate to real-time mode safety
-              },
-            ),
-            SettingItem(
-              title: 'Understanding CVD',
-              onTap: () {
-                // Navigate to understanding CVD
-              },
-            ),
-            SettingItem(
-              title: 'About Farnsworth D-15',
-              onTap: () {
-                // Navigate to farnsworth d-15
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RealTimeModeSafetyScreen(),
+                  ),
+                );
               },
             ),
           ],
@@ -97,44 +97,41 @@ class GabEyeSettingsScreen extends StatelessWidget {
     final settingsContent = SettingsContent.defaultContent(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            GabEyeArticleNavbar(
-              title: 'Settings',
-              onBack: () => Navigator.maybePop(context),
-              onMenuSelected: (option) {
-                if (option.label == 'Settings') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Already on Settings')),
-                  );
-                } else if (option.label == 'Help & Feedback') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HelpFeedbackScreen(),
-                    ),
-                  );
-                } else if (option.label == 'About GabEye') {
-                  Navigator.pushNamed(context, '/article');
-                }
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: _buildSettingsSections(
-                      settingsContent.sections,
-                      context,
-                    ),
-                  ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: GabEyeArticleNavbar(
+          title: 'Settings',
+          onBack: () => Navigator.maybePop(context),
+          onMenuSelected: (option) {
+            if (option.label == 'Settings') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Already on Settings')),
+              );
+            } else if (option.label == 'Help & Feedback') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpFeedbackScreen(),
                 ),
+              );
+            } else if (option.label == 'About GabEye') {
+              Navigator.pushNamed(context, '/article');
+            }
+          },
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: _buildSettingsSections(
+                settingsContent.sections,
+                context,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

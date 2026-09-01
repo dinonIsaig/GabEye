@@ -85,7 +85,7 @@ class GetStartedScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  minimumSize: const Size(double.infinity, 60),
+                  minimumSize: const Size(double.infinity, 55),
                 ),
                 child: const Text(
                   'Get Started',

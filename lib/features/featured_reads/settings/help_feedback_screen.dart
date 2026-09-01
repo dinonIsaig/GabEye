@@ -90,28 +90,28 @@ class HelpFeedbackScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: GabEyeArticleNavbar(
+          title: 'Help & Feedback',
+          onBack: () => Navigator.maybePop(context),
+          onMenuSelected: (option) {
+            if (option.label == 'Help & Feedback') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Already on Help & Feedback')),
+              );
+            } else if (option.label == 'About GabEye') {
+              Navigator.pushNamed(context, '/article');
+            }
+          },
+        ),
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            GabEyeArticleNavbar(
-              title: 'Help & Feedback',
-              onBack: () => Navigator.maybePop(context),
-              onMenuSelected: (option) {
-                if (option.label == 'Help & Feedback') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Already on Help & Feedback')),
-                  );
-                } else if (option.label == 'About GabEye') {
-                  Navigator.pushNamed(context, '/article');
-                }
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const PreAssessmentHeroHeader(title: 'Help & Feedback'),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PreAssessmentHeroHeader(title: 'Help & Feedback'),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -157,9 +157,6 @@ class HelpFeedbackScreen extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -509,25 +506,22 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: GabEyeArticleNavbar(
+          title: _submitted ? 'Feedback Sent' : 'Send Feedback',
+          onBack: () => Navigator.maybePop(context),
+        ),
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            GabEyeArticleNavbar(
-              title: _submitted ? 'Feedback Sent' : 'Send Feedback',
-              onBack: () => Navigator.maybePop(context),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 48),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: _submitted ? _confirmation(context) : _form(context),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 48),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 640),
-                    child: _submitted ? _confirmation(context) : _form(context),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -596,7 +590,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
           icon: const Icon(Icons.add_photo_alternate_outlined),
           label: const Text('Add Screenshot (Optional)'),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size.fromHeight(55),
           ),
         ),
         const SizedBox(height: 4),
@@ -614,7 +608,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
           icon: const Icon(Icons.send_outlined),
           label: const Text('Submit Feedback'),
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(54),
+            minimumSize: const Size.fromHeight(55),
           ),
         ),
       ],
@@ -647,7 +641,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
           child: ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
+              minimumSize: const Size.fromHeight(55),
             ),
             child: const Text('Done'),
           ),

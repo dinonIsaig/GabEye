@@ -142,7 +142,7 @@ class AssessmentIntroModal extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      minimumSize: const Size(double.infinity, 50),
+                      minimumSize: const Size(double.infinity, 55),
                     ),
                     child: const Text(
                       'Start Now',
@@ -160,7 +160,7 @@ class AssessmentIntroModal extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      minimumSize: const Size(double.infinity, 50),
+                      minimumSize: const Size(double.infinity, 55),
                     ),
                     child: const Text(
                       'Not Ready',
