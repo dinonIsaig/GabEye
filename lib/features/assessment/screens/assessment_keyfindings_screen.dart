@@ -3,6 +3,8 @@ import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
+import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
+
 
 class AssessmentKeyfindingsScreen extends StatelessWidget {
   final List<int> arrangedCaps;
@@ -19,8 +21,11 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         ScoringService.calculateScore(arrangedCaps);
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
-    return Scaffold(
-      body: SafeArea(
+    return ProgressBarScaffold(
+      currentStep: 2,
+      totalSteps: 3,
+      child: SafeArea(
+        top: false,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -40,6 +45,12 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                           diagnosisStyle,
                         ),
                         const SizedBox(height: 20),
+                        _buildCloserLookCard(
+                          colors,
+                          diagnosisStyle,
+                        ),
+                        const SizedBox(height: 20),
+
 
                         ElevatedButton.icon(
                           onPressed: () => _goToDetailedResult(context),
@@ -198,6 +209,55 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+
+  Widget _buildCloserLookCard(
+    ColorScheme colors,
+    DiagnosisStyle diagnosisStyle,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colors.onSurfaceVariant.withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What this means to you?',
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontSize: 12,
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          Text(
+            'A closer look...',
+            style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+
+          Text(
+            diagnosisStyle.closerLook,
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontSize: 12,
+              height: 1.4, // Matches the height from _buildKeyFindingsRow
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+        ],
+      ),
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:gabeye/features/assessment/widgets/pre_assessment_scaffold.dart'
 class HowItWorksScreen extends StatelessWidget {
   const HowItWorksScreen({super.key});
 
+
   @override
   Widget build(BuildContext context) {
     return PreAssessmentScaffold(
