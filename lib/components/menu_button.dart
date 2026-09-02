@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'menu_bar.dart';
+
 class MenuButtonOption {
   const MenuButtonOption({required this.label, required this.icon});
 
@@ -25,47 +27,67 @@ class MenuButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final ValueChanged<MenuButtonOption>? onSelected;
 
+  void _openMenu(BuildContext context) {
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: NavbarMenuPanel(
+            items: [
+              for (final option in options)
+                NavbarMenuItem(icon: option.icon, label: option.label),
+            ],
+            onClose: () => Navigator.of(dialogContext).pop(),
+            onItemTap: (item) {
+              Navigator.of(dialogContext).pop();
+              final option = options.firstWhere(
+                (candidate) => candidate.label == item.label,
+              );
+              if (onSelected != null) {
+                onSelected!(option);
+              } else {
+                _handleDefaultSelection(context, option);
+              }
+            },
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final offset = Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
+        return SlideTransition(position: offset, child: child);
+      },
+    );
+  }
+
+  void _handleDefaultSelection(BuildContext context, MenuButtonOption option) {
+    switch (option.label) {
+      case 'Settings':
+        Navigator.of(context).pushNamed('/settings');
+        return;
+      case 'Help & Feedback':
+        Navigator.of(context).pushNamed('/help-feedback');
+        return;
+      case 'About GabEye':
+        Navigator.of(context).pushNamed('/article');
+        return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (onPressed != null) {
-      return MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(
-              Icons.more_vert,
-              size: 20,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return PopupMenuButton<MenuButtonOption>(
+    return IconButton(
       tooltip: 'Open menu',
-      position: PopupMenuPosition.under,
-      offset: const Offset(0, 8),
-      onSelected: onSelected,
-      itemBuilder: (context) => [
-        for (final option in options)
-          PopupMenuItem<MenuButtonOption>(
-            value: option,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(option.icon, size: 20),
-                const SizedBox(width: 12),
-                Text(option.label),
-              ],
-            ),
-          ),
-      ],
+      onPressed: onPressed ?? () => _openMenu(context),
       icon: Icon(
         Icons.more_vert,
         size: 20,

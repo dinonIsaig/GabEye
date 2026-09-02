@@ -5,8 +5,8 @@ import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.da
 class PreAssessmentScaffold extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
-  final String instructionHeader;
-  final String instructionTitle;
+  final String? instructionHeader;
+  final String? instructionTitle;
   final Widget body;
   final VoidCallback onNext;
   final VoidCallback onBack;
@@ -15,8 +15,8 @@ class PreAssessmentScaffold extends StatelessWidget {
     super.key,
     required this.currentStep,
     this.totalSteps = 4,
-    required this.instructionHeader,
-    required this.instructionTitle,
+    this.instructionHeader,
+    this.instructionTitle,
     required this.body,
     required this.onNext,
     required this.onBack,
@@ -50,40 +50,41 @@ class PreAssessmentScaffold extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline,
-                          width: 1,
+                    if (instructionHeader != null && instructionTitle != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              instructionHeader!,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              )
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              instructionTitle!,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            instructionHeader,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            )
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            instructionTitle,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     body,
                   ],
                 ),

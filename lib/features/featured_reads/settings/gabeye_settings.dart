@@ -243,7 +243,9 @@ class _SettingContainerState extends State<SettingContainer> {
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.primaryColor,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : AppColors.primaryColor,
                 size: 18,
               ),
             ],

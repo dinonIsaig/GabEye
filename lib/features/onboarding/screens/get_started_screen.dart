@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/features/onboarding/widgets/terms_and_conditions_modal.dart';
 
 class GetStartedScreen extends StatelessWidget {
-  const GetStartedScreen({Key? key}) : super(key: key);
+  const GetStartedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +26,7 @@ class GetStartedScreen extends StatelessWidget {
                       fit: BoxFit.contain,
                     ),
                   ),
-                ]
+                ],
               ),
             ),
 
@@ -69,9 +68,13 @@ class GetStartedScreen extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             Padding(
-              padding: const EdgeInsets.only(left: 60.0, right: 60.0, bottom: 40.0),
+              padding: const EdgeInsets.only(
+                left: 60.0,
+                right: 60.0,
+                bottom: 40.0,
+              ),
               child: ElevatedButton(
                 onPressed: () {
                   showTermsAndConditionsModal(context);
@@ -86,15 +89,12 @@ class GetStartedScreen extends StatelessWidget {
                 ),
                 child: const Text(
                   'Get Started',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
           ],
-        )
+        ),
       ),
     );
   }
