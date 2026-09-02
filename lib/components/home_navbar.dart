@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 
 import 'menu_button.dart';
 
 class GabEyeNavbar extends StatelessWidget {
-  const GabEyeNavbar({super.key, this.onBack, this.onMenu});
+  const GabEyeNavbar({super.key, this.onBack, this.onMenu, this.onLogoTap});
 
   final VoidCallback? onBack;
   final VoidCallback? onMenu;
+  final VoidCallback? onLogoTap;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +47,20 @@ class GabEyeNavbar extends StatelessWidget {
                 children: [
                   Expanded(
                     child: InkWell(
-                      onTap: onBack,
+                      onTap: () {
+                        if (onLogoTap != null) {
+                          onLogoTap!();
+                        } else if (ModalRoute.of(context)?.settings.name !=
+                            AppRoutes.home) {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRoutes.home,
+                            (route) => false,
+                          );
+                        } else if (onBack != null) {
+                          onBack!();
+                        }
+                      },
                       borderRadius: BorderRadius.circular(8),
                       child: SizedBox(
                         height: 64,

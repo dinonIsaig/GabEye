@@ -42,7 +42,7 @@ class FeatureRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 36,
@@ -64,14 +64,18 @@ class FeatureRow extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  data.title,
-                  style: theme.textTheme.titleMedium ??
-                      const TextStyle(
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    data.title,
+                    textAlign: TextAlign.left,
+                    style: theme.textTheme.titleMedium ??
+                        const TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                  ),
                 ),
               ),
             ],
@@ -119,7 +123,7 @@ class FeatureRow extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: 16,
                 ),
               ),
             ),

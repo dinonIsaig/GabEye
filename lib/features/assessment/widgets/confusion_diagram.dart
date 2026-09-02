@@ -73,7 +73,7 @@ class ConfusionDiagram extends StatelessWidget {
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant)),
+        Text(label, style: TextStyle(fontSize: 16, color: colors.onSurfaceVariant)),
       ],
     );
   }

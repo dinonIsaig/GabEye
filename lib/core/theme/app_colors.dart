@@ -12,6 +12,12 @@ class AppColors {
   static const Color warning = Color(0xFFD39201);
   static const Color successGreen = Color(0xFF16A34A);
 
+  // Result state colors (UX audit 2.1)
+  static const Color resultAboveTypicalColor = Color(0xFFDC2626); // Red
+  static const Color resultModerateColor = Color(0xFFEA580C);     // Orange
+  static const Color resultNormalColor = Color(0xFF16A34A);       // Green
+  static const Color resultUnidentifiedColor = Color(0xFF64748B); // Gray
+
   // Light mode tokens
   static const Color lightSurface = Color(0xFFF7F9FB);
   static const Color lightMode = lightSurface;

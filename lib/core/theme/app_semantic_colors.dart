@@ -21,4 +21,10 @@ class AppSemanticColors {
   static const Color severityNormal = AppColors.successGreen;
   static const Color severityModerate = AppColors.warningYellow;
   static const Color severityStrong = AppColors.errorRed;
+
+  // Result state colors (UX audit 2.1)
+  static const Color resultAboveTypical = AppColors.resultAboveTypicalColor;
+  static const Color resultModerate = AppColors.resultModerateColor;
+  static const Color resultNormal = AppColors.resultNormalColor;
+  static const Color resultUnidentified = AppColors.resultUnidentifiedColor;
 }

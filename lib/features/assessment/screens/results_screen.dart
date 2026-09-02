@@ -102,7 +102,7 @@ class ResultsPage extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             diagnosisStyle.subtitle,
-            style: TextStyle(color: diagnosisStyle.primaryColor, fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(color: diagnosisStyle.primaryColor, fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 20),
           Center(child: ConfusionDiagram(arrangedCaps: arrangedCaps)),
@@ -148,7 +148,7 @@ class ResultsPage extends StatelessWidget {
 
   Widget _buildMetricBox({required String label, required String value, required Color backgroundColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(color: Colors.white.withOpacity(0.25), width: 1),
@@ -158,13 +158,13 @@ class ResultsPage extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w200),
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
         ],
@@ -238,20 +238,20 @@ class ResultsPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 90,
+          width: 105,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(color: colors.primary, borderRadius: BorderRadius.circular(8)),
           child: Column(
             children: [
               Text(
                 badgeLabel,
-                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 10, fontWeight: FontWeight.w600),
+                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 16, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
                 badgeValue,
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -322,13 +322,13 @@ class ResultsPage extends StatelessWidget {
                     children: [
                       Text(
                         'Cap ${error.capA} → Cap ${error.capB}',
-                        style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       Text(
                         isMajor ? 'Major Crossover (dist: ${error.distance})' : 'Minor Swap (dist: ${error.distance})',
                         style: TextStyle(
                           color: isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError,
-                          fontSize: 12,
+                          fontSize: 16,
                         ),
                       ),
                     ],
