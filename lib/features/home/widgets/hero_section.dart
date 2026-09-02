@@ -54,7 +54,7 @@ class HeroSection extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 220),
+                    constraints: const BoxConstraints(maxWidth: 250),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -62,29 +62,32 @@ class HeroSection extends StatelessWidget {
                           header: true,
                           child: Text(
                             'GabEye',
-                            style: Theme.of(context).textTheme.headlineMedium ??
-                                const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 28,
-                                  color: Colors.white,
-                                ),
+                            style: (Theme.of(context).textTheme.headlineMedium ??
+                                    const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontWeight: FontWeight.bold,
+                                    ))
+                                .copyWith(
+                              fontSize: 34,
+                              height: 1.2,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         const Text(
                           'A Mobile Application Aid for Color Vision Deficiency (CVD)',
                           style: TextStyle(
                             fontFamily: 'AtkinsonHyperlegible',
                             color: Colors.white,
                             fontSize: 16,
-                            height: 1.5,
+                            height: 1.4,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   Semantics(
                     button: true,
                     label: 'Know more about GabEye',
@@ -116,7 +119,7 @@ class HeroSection extends StatelessWidget {
                                 style: TextStyle(
                                   fontFamily: 'AtkinsonHyperlegible',
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 16,
                                   color: AppColors.mutedAccent,
                                 ),
                               ),

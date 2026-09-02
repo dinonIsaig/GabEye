@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
+import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
@@ -40,7 +41,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildRangeBanner(colors, result, severityStyle),
+                        _buildRangeBanner(context, colors, result, severityStyle),
                         const SizedBox(height: 16),
                         _buildDiagnosisCard(context, colors, result, severityStyle, diagnosisStyle),
                         const SizedBox(height: 20),
@@ -68,29 +69,35 @@ class AssessmentSummaryScreen extends StatelessWidget {
   }
 
   // -------------------- "Above/within typical range" banner --------------------
-  Widget _buildRangeBanner(ColorScheme colors, D15ScoreResult result, SeverityStyle severityStyle) {
+  Widget _buildRangeBanner(BuildContext context, ColorScheme colors, D15ScoreResult result, SeverityStyle severityStyle) {
+    final stateColor = ColorVisionProfileLookbackContent.getResultStateColor(result);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colors.onSurfaceVariant.withOpacity(0.05),
+        color: stateColor.withValues(alpha: isDark ? 0.16 : 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.onSurfaceVariant.withOpacity(0.2)),
+        border: Border.all(
+          color: stateColor.withValues(alpha: isDark ? 0.6 : 0.4),
+          width: 2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(color: severityStyle.color, borderRadius: BorderRadius.circular(8)),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: stateColor, borderRadius: BorderRadius.circular(8)),
                 alignment: Alignment.center,
-                child: Icon(severityStyle.icon, size: 20, color: Colors.white),
+                child: Icon(severityStyle.icon, size: 22, color: Colors.white),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   result.rangeHeadline,
@@ -99,7 +106,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Text(
             result.rangeBody,
             style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16, height: 1.5),
@@ -242,7 +249,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
   // -------------------- Metric chip --------------------
   Widget _buildMetricBox({required String label, required String value, required Color backgroundColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(color: Colors.white.withOpacity(0.85), width: 1),
@@ -252,13 +259,13 @@ class AssessmentSummaryScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 10, fontWeight: FontWeight.w600),
+            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
         ],

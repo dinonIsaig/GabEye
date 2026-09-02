@@ -57,7 +57,12 @@ class ProfileHeadingBanner extends StatelessWidget {
                 bottom: 16,
                 child: Text(
                   title,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
+import 'package:gabeye/core/constants/app_spacing.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
@@ -125,28 +126,28 @@ class HelpFeedbackScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _intro(context),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: AppSpacing.sectionSpacing),
                               _sectionTitle(
                                 context,
                                 'What do you need help with?',
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.itemSpacing),
                               ..._quickHelp.map(
                                 (item) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.only(bottom: AppSpacing.itemSpacing),
                                   child: _QuickHelpTile(item: item),
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.sectionSpacing - AppSpacing.itemSpacing),
                               _sectionTitle(context, 'Quick Troubleshooting'),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.itemSpacing),
                               ..._troubleshooting.map(
                                 (item) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.only(bottom: AppSpacing.itemSpacing),
                                   child: _TroubleshootingTile(item: item),
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.sectionSpacing - AppSpacing.itemSpacing),
                               const _ImportantInformationCard(),
                             ],
                           ),
@@ -226,33 +227,57 @@ class _QuickHelpTile extends StatelessWidget {
                   Theme.of(dialogContext).brightness == Brightness.dark;
 
               return AlertDialog(
-                elevation: 24,
-                shadowColor: Colors.black.withValues(alpha: 0.8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 icon: Icon(
                   item.icon,
                   color: isDark ? AppColors.darkPrimaryButton : colors.primary,
+                  size: 28,
                 ),
-                title: Text(item.title),
-                content: Text(item.text),
+                title: Text(
+                  item.title,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: colors.onSurface,
+                  ),
+                ),
+                content: Text(
+                  item.text,
+                  style: TextStyle(
+                    fontFamily: 'AtkinsonHyperlegible',
+                    fontSize: 16,
+                    height: 1.5,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
                 actions: [
-                  if (isDark)
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.darkPrimaryButton,
-                        foregroundColor: AppColors.darkSurface,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark
+                          ? AppColors.darkPrimaryButton
+                          : AppColors.lightPrimaryButton,
+                      foregroundColor:
+                          isDark ? AppColors.darkSurface : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Text('Done'),
-                    )
-                  else
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Done'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               );
             },
@@ -310,95 +335,188 @@ class _TroubleshootingTile extends StatelessWidget {
     final arrowColor = Theme.of(context).brightness == Brightness.dark
         ? Colors.white
         : AppColors.primaryColor;
-    return DecoratedBox(
-      decoration: BoxDecoration(
+
+    return Semantics(
+      button: true,
+      label: item.title,
+      child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.primary.withValues(alpha: .15)),
-      ),
-      child: ExpansionTile(
-        leading: Icon(Icons.build_outlined, color: iconColor, size: 24),
-        iconColor: arrowColor,
-        collapsedIconColor: arrowColor,
-        title: Text(
-          item.title,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: colors.onSurface,
-            fontWeight: FontWeight.w500,
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: colors.primary.withValues(alpha: .15)),
         ),
-        shape: const RoundedRectangleBorder(),
-        collapsedShape: const RoundedRectangleBorder(),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Try this:',
-              style: TextStyle(
-                color: colors.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...item.steps.indexed.map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(width: 24, child: Text('${entry.$1 + 1}.')),
-                  Expanded(
-                    child: Text(
-                      entry.$2,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurface,
-                        height: 1.6,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => showDialog<void>(
+            context: context,
+            barrierColor: Colors.black.withValues(alpha: 0.65),
+            builder: (dialogContext) {
+              final isDark =
+                  Theme.of(dialogContext).brightness == Brightness.dark;
+
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                icon: Icon(
+                  Icons.build_outlined,
+                  color: isDark ? AppColors.darkPrimaryButton : colors.primary,
+                  size: 28,
+                ),
+                title: Text(
+                  item.title,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: colors.onSurface,
+                  ),
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Try this:',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          color: colors.onSurface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ...item.steps.indexed.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                child: Text(
+                                  '${entry.$1 + 1}.',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  entry.$2,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: colors.onSurface,
+                                        fontSize: 16,
+                                        height: 1.5,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (item.note != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline, size: 20, color: iconColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item.note!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: colors.onSurface,
+                                      fontSize: 16,
+                                      height: 1.5,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (item.actionLabel != null) ...[
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(dialogContext);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Open Settings, then allow Camera access for GabEye.',
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.settings_outlined),
+                            label: Text(
+                              item.actionLabel!,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                actions: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark
+                          ? AppColors.darkPrimaryButton
+                          : AppColors.lightPrimaryButton,
+                      foregroundColor:
+                          isDark ? AppColors.darkSurface : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
+              );
+            },
           ),
-          if (item.note != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
               children: [
-                Icon(Icons.info_outline, size: 20, color: iconColor),
-                const SizedBox(width: 8),
+                Icon(Icons.build_outlined, color: iconColor, size: 24),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    item.note!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurface,
-                      height: 1.6,
-                    ),
+                    item.title,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: colors.onSurface,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                        ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward_ios, color: arrowColor, size: 18),
               ],
             ),
-          ],
-          if (item.actionLabel != null) ...[
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Open Settings, then allow Camera access for GabEye.',
-                    ),
-                  ),
-                ),
-                icon: const Icon(Icons.settings_outlined),
-                label: Text(item.actionLabel!),
-              ),
-            ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
