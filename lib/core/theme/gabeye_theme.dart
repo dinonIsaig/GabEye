@@ -4,6 +4,34 @@ import 'package:gabeye/core/theme/app_colors.dart';
 class GabEyeTheme {
   static TextTheme _buildTextTheme(Color color) {
     return TextTheme(
+      displayLarge: TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 34,
+        height: 1.3,
+        color: color,
+      ),
+      displayMedium: TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 30,
+        height: 1.3,
+        color: color,
+      ),
+      displaySmall: TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 26,
+        height: 1.3,
+        color: color,
+      ),
+      headlineLarge: TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 32,
+        height: 1.3,
+        color: color,
+      ),
       headlineMedium: const TextStyle(
         fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
@@ -20,12 +48,18 @@ class GabEyeTheme {
       ),
       titleLarge: TextStyle( //heading
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 24,
         fontWeight: FontWeight.bold,
         height: 1.5,
       ),
       titleMedium: TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 18,
+        color: color,
+      ),
+      titleSmall: TextStyle(
         fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 16,
@@ -44,10 +78,28 @@ class GabEyeTheme {
         fontSize: 16,
         height: 1.5,
       ),
-      labelLarge: TextStyle( //caption
+      bodySmall: TextStyle(
         color: color,
         fontFamily: 'AtkinsonHyperlegible',
-        fontSize: 14,
+        fontSize: 16,
+        height: 1.5,
+      ),
+      labelLarge: TextStyle( //caption / button
+        color: color,
+        fontFamily: 'AtkinsonHyperlegible',
+        fontSize: 16,
+        height: 1.4,
+      ),
+      labelMedium: TextStyle(
+        color: color,
+        fontFamily: 'AtkinsonHyperlegible',
+        fontSize: 16,
+        height: 1.4,
+      ),
+      labelSmall: TextStyle(
+        color: color,
+        fontFamily: 'AtkinsonHyperlegible',
+        fontSize: 16,
         height: 1.4,
       ),
     );

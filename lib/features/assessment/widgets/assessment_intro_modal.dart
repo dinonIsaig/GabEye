@@ -36,7 +36,7 @@ class AssessmentIntroModal extends StatelessWidget {
                 children: [
                   Text(
                     'How it works?',
-                    style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
+                    style: TextStyle(fontSize: 16, color: colors.onSurfaceVariant),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -51,7 +51,7 @@ class AssessmentIntroModal extends StatelessWidget {
                   Text(
                     'Drag and drop the color discs below to arrange them in a continuous sequence, starting from the fixed reference disc on the left.',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       height: 1.5,
                       color: colors.onSurfaceVariant,
                     ),
@@ -112,7 +112,7 @@ class AssessmentIntroModal extends StatelessWidget {
                 children: [
                   Text(
                     'Checking in...',
-                    style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
+                    style: TextStyle(fontSize: 16, color: colors.onSurfaceVariant),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -127,7 +127,7 @@ class AssessmentIntroModal extends StatelessWidget {
                   Text(
                     'Drag and drop the color discs below to arrange them in a continuous sequence, starting from the fixed reference disc on the left.',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       height: 1.5,
                       color: colors.onSurfaceVariant,
                     ),

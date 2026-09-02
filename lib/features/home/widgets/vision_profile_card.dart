@@ -113,7 +113,7 @@ class VisionProfileCard extends StatelessWidget {
                             style: const TextStyle(
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                              fontSize: 16,
                             ),
                           ),
                           const SizedBox(width: 6),

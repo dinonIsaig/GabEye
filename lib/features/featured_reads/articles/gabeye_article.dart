@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 import '../settings/help_feedback_screen.dart';
@@ -361,6 +362,23 @@ class FarnsworthD15ArticleScreen extends StatelessWidget {
       navbarTitle: 'About the D-15 Test',
       heroTitle: 'About the Farnsworth D-15',
       content: ArticleContent.farnsworthD15Content(),
+      actionButton: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        child: ElevatedButton(
+          onPressed: () =>
+              Navigator.pushNamed(context, AppRoutes.preAssessmentHowItWorks),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 55),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+          child: const Text(
+            'Take Assessment',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -369,12 +387,14 @@ class ArticleScreenLayout extends StatelessWidget {
   final String navbarTitle;
   final String heroTitle;
   final ArticleContent content;
+  final Widget? actionButton;
 
   const ArticleScreenLayout({
     super.key,
     required this.navbarTitle,
     required this.heroTitle,
     required this.content,
+    this.actionButton,
   });
 
   @override
@@ -424,6 +444,7 @@ class ArticleScreenLayout extends StatelessWidget {
             children: [
               PreAssessmentHeroHeader(title: heroTitle),
               MainContent(content: content, overlapHeading: false),
+              ?actionButton,
             ],
           ),
         ),
@@ -516,7 +537,11 @@ class _BrandHeader extends StatelessWidget {
       children: [
         Text(
           brandName,
-          style: textTheme.titleLarge?.copyWith(
+          style: (textTheme.titleLarge ??
+                  const TextStyle(fontFamily: 'Inter'))
+              .copyWith(
+            fontFamily: 'Inter',
+            fontSize: 32,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white
                 : AppColors.primaryColor,

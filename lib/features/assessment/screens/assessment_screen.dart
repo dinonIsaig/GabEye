@@ -236,7 +236,7 @@ void _applyDebugProfile(List<int> caps) {
             child: Text(
               'Start',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: colors.onSurfaceVariant,
               ),
@@ -289,7 +289,7 @@ void _applyDebugProfile(List<int> caps) {
             child: Text(
               'Select Next Color',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: colors.onSurfaceVariant,
               ),
@@ -335,7 +335,7 @@ void _applyDebugProfile(List<int> caps) {
         'FIXED',
         style: TextStyle(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: 16,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.5,
         ),
@@ -400,7 +400,7 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
         padding: const EdgeInsets.symmetric(vertical: 12.0),
         child: Text(
           'All caps placed — ready to finish!',
-          style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
+          style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
         ),
       );
     }

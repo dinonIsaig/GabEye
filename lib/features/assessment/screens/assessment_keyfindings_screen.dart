@@ -134,7 +134,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
             'What this means to you?',
             style: TextStyle(
               color: colors.onSurfaceVariant,
-              fontSize: 12,
+              fontSize: 16,
             ),
           ),
 
@@ -203,7 +203,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
             description,
             style: TextStyle(
               color: colors.onSurfaceVariant,
-              fontSize: 12,
+              fontSize: 16,
               height: 1.4,
             ),
           ),

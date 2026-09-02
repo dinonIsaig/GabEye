@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
@@ -18,45 +20,21 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
-    final severityStyle = severityStyles[result.severity]!;
-    final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
-
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const ProfileHeadingBanner(title: 'Color Vision Profile'),
-              const SizedBox(height: 20),
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildRangeBanner(colors, result, severityStyle),
-                        const SizedBox(height: 16),
-                        _buildDiagnosisCard(
-                          context,
-                          colors,
-                          result,
-                          severityStyle,
-                          diagnosisStyle,
-                        ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: GabEyeHomeNavbar(
+          onBack: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+            }
+          },
         ),
+      ),
+      body: SafeArea(
+        child: ColorVisionProfileLookbackContent(arrangedCaps: arrangedCaps),
       ),
       bottomNavigationBar: GabEyeBottomNav(
         selectedIndex: 2,
@@ -78,54 +56,126 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Standalone content widget for Color Vision Profile lookback, reusable in
+/// [HomeScreen]'s [IndexedStack] and in [ColorVisionProfileLookbackScreen].
+class ColorVisionProfileLookbackContent extends StatelessWidget {
+  final List<int> arrangedCaps;
+
+  const ColorVisionProfileLookbackContent({
+    super.key,
+    this.arrangedCaps = const [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  });
+
+  static Color getResultStateColor(D15ScoreResult result) {
+    if (result.diagnosisType == ColorDeficiencyType.random ||
+        result.diagnosisType == ColorDeficiencyType.unclassified) {
+      return AppColors.resultUnidentifiedColor;
+    }
+    switch (result.severity) {
+      case SeverityLevel.none:
+        return AppColors.resultNormalColor;
+      case SeverityLevel.moderate:
+        return AppColors.resultModerateColor;
+      case SeverityLevel.strong:
+        return AppColors.resultAboveTypicalColor;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
+    final severityStyle = severityStyles[result.severity]!;
+    final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ProfileHeadingBanner(title: 'Color Vision Profile'),
+          const SizedBox(height: 20),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildRangeBanner(context, colors, result, severityStyle),
+                    const SizedBox(height: 16),
+                    _buildDiagnosisCard(
+                      context,
+                      colors,
+                      result,
+                      severityStyle,
+                      diagnosisStyle,
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // -------------------- "Above/within typical range" banner --------------------
   Widget _buildRangeBanner(
+    BuildContext context,
     ColorScheme colors,
     D15ScoreResult result,
     SeverityStyle severityStyle,
   ) {
+    final stateColor = getResultStateColor(result);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colors.onSurfaceVariant.withValues(alpha: 0.05),
+        color: stateColor.withValues(alpha: isDark ? 0.16 : 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colors.onSurfaceVariant.withValues(alpha: 0.2),
+          color: stateColor.withValues(alpha: isDark ? 0.6 : 0.4),
+          width: 2,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: severityStyle.color,
+                  color: stateColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
-                child: Icon(severityStyle.icon, size: 20, color: Colors.white),
+                child: Icon(severityStyle.icon, size: 22, color: Colors.white),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   result.rangeHeadline,
                   style: TextStyle(
                     color: colors.onSurface,
-                    fontSize: 16,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    height: 1.4,
+                    height: 1.25,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Text(
             result.rangeBody,
             style: TextStyle(
@@ -345,8 +395,8 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 10,
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -356,7 +406,7 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,

@@ -83,7 +83,7 @@ class TermsAndConditionsPage extends StatelessWidget {
         Text(
           'Last Update: July 2026',
           style: GoogleFonts.atkinsonHyperlegibleNext(
-            fontSize: 12,
+            fontSize: 16,
             color: AppColors.disabledText,
           ),
         ),
