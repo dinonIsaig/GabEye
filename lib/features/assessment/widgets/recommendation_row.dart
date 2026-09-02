@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class RecommendationRow extends StatelessWidget {
   final String description;
@@ -15,12 +14,20 @@ class RecommendationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTheme = Theme.of(context).textTheme; 
+    final colors = Theme.of(context).colorScheme; 
+    
+    final imagePath = isDark 
+        ? 'assets/images/reco_dark.png' 
+        : 'assets/images/reco_light.png';
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: Stack(
         children: [
-          Positioned.fill(          // will change this to the recommendationBanner svg, placeholder only for now >:((
-            child: SvgPicture.asset('assets/images/articleHeader.svg', fit: BoxFit.cover),
+          Positioned.fill(
+            child: Image.asset(imagePath, fit: BoxFit.cover),
           ),
           Positioned.fill(
             child: Container(color: Colors.black.withOpacity(0.15)),
@@ -33,12 +40,17 @@ class RecommendationRow extends StatelessWidget {
               children: [
                 Text(
                   description,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: Colors.white, 
+                    height: 1.5,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: onPressed,
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? null : Colors.white,
+                    foregroundColor: Colors.black, 
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -50,9 +62,9 @@ class RecommendationRow extends StatelessWidget {
                     children: [
                       Text(
                         buttonText,
-                        style: const TextStyle(
+                        style: textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          color:Colors.black,
                         ),
                       ),
                       const Icon(

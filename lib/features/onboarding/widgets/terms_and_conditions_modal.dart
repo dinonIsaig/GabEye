@@ -128,7 +128,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                                 width: 1.5,
                               ),
                             ),
-                            minimumSize: const Size(double.infinity, 60),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                           child: Text(
                             _hasScrolledToBottom

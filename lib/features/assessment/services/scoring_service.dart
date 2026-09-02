@@ -239,7 +239,7 @@ class ScoringService {
     if (!isAbnormal) {
       rangeBody = "Your cap arrangement closely matches what's expected for normal color vision, with only minor transpositions if any.";
     } else if (severity == SeverityLevel.moderate) {
-      rangeBody = "A small number of caps were placed slightly out of order, forming a mild pattern rather than a strong one.";
+      rangeBody = "Your caps arrangement shows a measurable deviation from the typical range.";
     } else {
       rangeBody = "Many caps were placed significantly out of sequence, forming a strong, consistent pattern.";
     }

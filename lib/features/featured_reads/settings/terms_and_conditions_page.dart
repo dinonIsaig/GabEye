@@ -10,28 +10,28 @@ class TermsAndConditionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: GabEyeArticleNavbar(
+          title: 'Terms & Conditions',
+          onBack: () => Navigator.maybePop(context),
+          onMenuSelected: (option) {
+            if (option.label == 'Help & Feedback') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpFeedbackScreen(),
+                ),
+              );
+            } else if (option.label == 'About GabEye') {
+              Navigator.pushNamed(context, '/article');
+            }
+          },
+        ),
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            GabEyeArticleNavbar(
-              title: 'Terms & Conditions',
-              onBack: () => Navigator.maybePop(context),
-              onMenuSelected: (option) {
-                if (option.label == 'Help & Feedback') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HelpFeedbackScreen(),
-                    ),
-                  );
-                } else if (option.label == 'About GabEye') {
-                  Navigator.pushNamed(context, '/article');
-                }
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Container(
+        child: SingleChildScrollView(
+          child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
@@ -51,9 +51,6 @@ class TermsAndConditionsPage extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 

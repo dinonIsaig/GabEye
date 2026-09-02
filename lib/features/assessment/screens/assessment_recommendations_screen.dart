@@ -16,6 +16,7 @@ class AssessmentRecommendationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return ProgressBarScaffold(
       currentStep: 3,
@@ -36,13 +37,13 @@ class AssessmentRecommendationScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildRecommendationCard(colors),
+                        _buildRecommendationCard(colors, textTheme),
                         const SizedBox(height: 16),
                         RecommendationRow(
                           description:
                               "Read more about your results, know what is GabEye and what it can do for you.",
                           buttonText: 'Featured Reads',
-                          onPressed: () => _goToFeaturedReads(context),
+                          onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.home);}, 
                         ),
                         const SizedBox(height: 12),
                         RecommendationRow(
@@ -67,7 +68,7 @@ class AssessmentRecommendationScreen extends StatelessWidget {
                           icon: const Icon(Icons.arrow_forward, size: 20),
                           style: ElevatedButton.styleFrom(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            minimumSize: const Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                           label: const Text(
                             'Go to Home',
@@ -81,10 +82,11 @@ class AssessmentRecommendationScreen extends StatelessWidget {
                           iconAlignment: IconAlignment.start,
                           icon: const Icon(Icons.arrow_back, size: 20),
                           style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
                             foregroundColor: colors.onSurface,
                             side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            minimumSize: const Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -100,7 +102,7 @@ class AssessmentRecommendationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecommendationCard(ColorScheme colors) {
+  Widget _buildRecommendationCard(ColorScheme colors, TextTheme textTheme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -119,12 +121,17 @@ class AssessmentRecommendationScreen extends StatelessWidget {
         children: [
           Text(
             'What you can do?',
-            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+            style: textTheme.labelLarge?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             'Recommended Steps',
-            style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -153,9 +160,9 @@ class AssessmentRecommendationScreen extends StatelessWidget {
   }
 
   void _goToFeaturedReads(BuildContext context) {
-    // TODO: navigate to the Featured Reads screen once it exists.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Featured Reads coming soon')),
+      Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: arrangedCaps)),
     );
   }
 

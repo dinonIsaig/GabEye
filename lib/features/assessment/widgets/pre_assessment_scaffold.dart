@@ -97,7 +97,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 55,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         side: BorderSide(
@@ -129,7 +129,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 55,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.surfaceContainer,

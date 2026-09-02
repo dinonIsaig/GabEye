@@ -60,11 +60,25 @@ class _GabEyeArticleNavbarState extends State<GabEyeArticleNavbar> {
 
     return Material(
       color: colorScheme.surfaceContainer,
-      elevation: _isScrolledUnder ? 6 : 0,
-      shadowColor: Colors.black.withValues(alpha: 0.6),
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       surfaceTintColor: Colors.transparent,
       child: Container(
-        decoration: BoxDecoration(color: colorScheme.surfaceContainer),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainer,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
         child: SafeArea(
           bottom: false,
           child: SizedBox(

@@ -15,15 +15,22 @@ class GabEyeHomeNavbar extends StatelessWidget {
 
     return Material(
       color: colorScheme.surfaceContainerHighest,
-      elevation: 0,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.3),
+      surfaceTintColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 2,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 1),
             ),
           ],
         ),

@@ -61,6 +61,7 @@ class DebugTestPanelModal extends StatelessWidget {
                           onProfileSelected(profile.arrangedCaps);
                         },
                         style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.transparent, 
                           foregroundColor: colors.onSurface,
                           side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -79,7 +80,7 @@ class DebugTestPanelModal extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: const Text('Close', style: TextStyle(color: Colors.white)),
               ),
             ),
           ],

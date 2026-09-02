@@ -5,7 +5,6 @@ import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 
-
 class AssessmentKeyfindingsScreen extends StatelessWidget {
   final List<int> arrangedCaps;
 
@@ -17,8 +16,8 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result =
-        ScoringService.calculateScore(arrangedCaps);
+    final textTheme = Theme.of(context).textTheme;
+    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
     return ProgressBarScaffold(
@@ -42,15 +41,16 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                       children: [
                         _buildKeyFindingsCard(
                           colors,
+                          textTheme,
                           diagnosisStyle,
                         ),
                         const SizedBox(height: 20),
                         _buildCloserLookCard(
                           colors,
+                          textTheme,
                           diagnosisStyle,
                         ),
                         const SizedBox(height: 20),
-
 
                         ElevatedButton.icon(
                           onPressed: () => _goToRecommendations(context),
@@ -60,8 +60,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            minimumSize:
-                                const Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                           label: const Text(
                             'Next',
@@ -86,6 +85,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                           iconAlignment: IconAlignment.start,
                           icon: const Icon(Icons.arrow_back, size: 20),
                           style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
                             foregroundColor: colors.onSurface,
                             side: BorderSide(
                               color: colors.onSurfaceVariant.withOpacity(0.4),
@@ -93,8 +93,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            minimumSize:
-                                const Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                         ),
 
@@ -114,6 +113,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   // -------------------- Key Findings --------------------
   Widget _buildKeyFindingsCard(
     ColorScheme colors,
+    TextTheme textTheme,
     DiagnosisStyle diagnosisStyle,
   ) {
     return Container(
@@ -131,23 +131,24 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         children: [
           Text(
             'What this means to you?',
-            style: TextStyle(
+            style: textTheme.labelLarge?.copyWith(
               color: colors.onSurfaceVariant,
-              fontSize: 12,
             ),
           ),
-
           const SizedBox(height: 2),
-
           Text(
             'Key Findings',
-            style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
           const SizedBox(height: 20),
 
           _buildKeyFindingsRow(
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.palette_outlined,
             description: diagnosisStyle.keyFindingOne,
           ),
@@ -156,6 +157,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
           _buildKeyFindingsRow(
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.visibility_outlined,
             description: diagnosisStyle.keyFindingTwo,
           ),
@@ -164,6 +166,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
           _buildKeyFindingsRow(
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.warning_amber_rounded,
             description: diagnosisStyle.keyFindingThree,
           ),
@@ -174,6 +177,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
   Widget _buildKeyFindingsRow({
     required ColorScheme colors,
+    required TextTheme textTheme,
     required IconData icon,
     required String description,
   }) {
@@ -200,10 +204,9 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         Expanded(
           child: Text(
             description,
-            style: TextStyle(
+            style: textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
-              fontSize: 12,
-              height: 1.4,
+              height: 1.5,
             ),
           ),
         ),
@@ -211,9 +214,9 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
     );
   }
 
-
   Widget _buildCloserLookCard(
     ColorScheme colors,
+    TextTheme textTheme,
     DiagnosisStyle diagnosisStyle,
   ) {
     return Container(
@@ -231,35 +234,54 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         children: [
           Text(
             'What this means to you?',
-            style: TextStyle(
+            style: textTheme.labelLarge?.copyWith(
               color: colors.onSurfaceVariant,
-              fontSize: 12,
             ),
           ),
 
           const SizedBox(height: 2),
 
           Text(
-            'A closer look...',
-            style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-
-          Text(
-            diagnosisStyle.closerLook,
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 12,
-              height: 1.4, 
+            'A closer look...', 
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.bold,
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              diagnosisStyle.imagePath,
+              width: double.infinity,
+              height: 140,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: double.infinity,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: colors.onSurfaceVariant.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.image_outlined, color: colors.onSurfaceVariant),
+              ),
+            ),
+          ),
 
+          const SizedBox(height: 16),
+
+          Text(
+            diagnosisStyle.closerLook,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
   }
-
 
   void _goToRecommendations(BuildContext context) {
     Navigator.push(

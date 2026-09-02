@@ -4,11 +4,32 @@ import 'package:gabeye/core/theme/app_colors.dart';
 class GabEyeTheme {
   static TextTheme _buildTextTheme(Color color) {
     return TextTheme(
-      bodyMedium: TextStyle( //body
+      headlineMedium: const TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 28,
+        height: 1.5,
+        color: Colors.white,
+      ),
+      headlineSmall: TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 24,
+        height: 1.5,
+        color: color,
+      ),
+      titleLarge: TextStyle( //heading
         color: color,
         fontFamily: 'AtkinsonHyperlegible',
-        fontSize: 16,
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
         height: 1.5,
+      ),
+      titleMedium: TextStyle(
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+        color: color,
       ),
       bodyLarge: TextStyle( //body-bold
         color: color,
@@ -17,11 +38,10 @@ class GabEyeTheme {
         fontWeight: FontWeight.bold,
         height: 1.5,
       ),
-      titleLarge: TextStyle( //heading
+      bodyMedium: TextStyle( //body
         color: color,
         fontFamily: 'AtkinsonHyperlegible',
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
+        fontSize: 16,
         height: 1.5,
       ),
       labelLarge: TextStyle( //caption
@@ -48,16 +68,29 @@ class GabEyeTheme {
       tertiary: AppColors.lightInfo,
       outline: AppColors.borderLight,
     ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.primaryNavy,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 55),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+      ),
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.lightPrimaryButton,
         foregroundColor: AppColors.lightSurface,
         disabledBackgroundColor: AppColors.disabledButton,
         disabledForegroundColor: AppColors.disabledText,
+        minimumSize: const Size(double.infinity, 55),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 55),
         backgroundColor: AppColors.lightSurface,
         foregroundColor: AppColors.lightPrimaryButton,
       ),
@@ -83,6 +116,17 @@ class GabEyeTheme {
       tertiary: AppColors.darkInfo,
       outline: AppColors.borderDark,
     ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.darkPrimaryButton,
+        foregroundColor: AppColors.darkSurface,
+        minimumSize: const Size(double.infinity, 55),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+      ),
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.darkPrimaryButton,
@@ -90,10 +134,12 @@ class GabEyeTheme {
         foregroundColor: AppColors.darkSurface,
         disabledBackgroundColor: AppColors.disabledButton,
         disabledForegroundColor: AppColors.disabledText,
+        minimumSize: const Size(double.infinity, 55),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 55),
         backgroundColor: AppColors.darkPrimaryButton,
         foregroundColor: AppColors.darkSurface,
       ),
