@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/components/menu_button.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 
 class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
@@ -63,10 +64,23 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
                 )
               : null,
           title: showLogo
-              ? SvgPicture.asset(
-                  'assets/images/gabEyeLogo.svg',
-                  height: 40,
-                  fit: BoxFit.contain,
+              ? InkWell(
+                  onTap: () {
+                    if (ModalRoute.of(context)?.settings.name !=
+                        AppRoutes.home) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        AppRoutes.home,
+                        (route) => false,
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: SvgPicture.asset(
+                    'assets/images/gabEyeLogo.svg',
+                    height: 40,
+                    fit: BoxFit.contain,
+                  ),
                 )
               : progressValue != null
                   ? ClipRRect(

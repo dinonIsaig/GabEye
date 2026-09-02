@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
+import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 import 'package:gabeye/features/home/widgets/feature_row.dart';
 import 'package:gabeye/features/home/widgets/featured_reads_section.dart';
@@ -60,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         ctaLabel: 'View Vision Profile',
         onCtaPressed: () {
-          Navigator.pushNamed(context, AppRoutes.preAssessmentHowItWorks);
+          _onBottomNavTapped(2);
         },
       ),
       FeatureRowData(
@@ -137,19 +138,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onBottomNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
     if (index == 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Camera feature coming soon!'),
         ),
       );
-    } else if (index == 2) {
-      Navigator.pushNamed(context, AppRoutes.colorVisionProfileLookback);
+      return;
     }
+
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
@@ -163,43 +163,63 @@ class _HomeScreenState extends State<HomeScreen> {
         preferredSize: const Size.fromHeight(64),
         child: GabEyeHomeNavbar(
           onBack: () {
-            if (Navigator.of(context).canPop()) {
+            if (_selectedIndex != 0) {
+              setState(() {
+                _selectedIndex = 0;
+              });
+            } else if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
+            }
+          },
+          onLogoTap: () {
+            if (_selectedIndex != 0) {
+              setState(() {
+                _selectedIndex = 0;
+              });
             }
           },
         ),
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          children: [
-            HeroSection(
-              onKnowMoreTap: () {
-                Navigator.pushNamed(context, AppRoutes.article);
-              },
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'Core Features',
-              style: theme.textTheme.headlineSmall ??
-                  const TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              children: [
+                HeroSection(
+                  onKnowMoreTap: () {
+                    Navigator.pushNamed(context, AppRoutes.article);
+                  },
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Core Features',
+                  style: theme.textTheme.headlineSmall ??
+                      const TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                ...features.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: FeatureRow(data: f),
                   ),
+                ),
+                const SizedBox(height: 32),
+                FeaturedReadsSection(reads: reads),
+                const SizedBox(height: 20),
+              ],
             ),
-            const SizedBox(height: 16),
-            ...features.map(
-              (f) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: FeatureRow(data: f),
-              ),
-            ),
-            const SizedBox(height: 32),
-            FeaturedReadsSection(reads: reads),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+          const SizedBox.shrink(),
+          const SafeArea(
+            child: ColorVisionProfileLookbackContent(),
+          ),
+        ],
       ),
       bottomNavigationBar: GabEyeBottomNav(
         selectedIndex: _selectedIndex,

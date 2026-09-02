@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 
 import '../menu_button.dart';
 
 class GabEyeHomeNavbar extends StatelessWidget {
-  const GabEyeHomeNavbar({super.key, this.onBack, this.onMenuSelected});
+  const GabEyeHomeNavbar({
+    super.key,
+    this.onBack,
+    this.onLogoTap,
+    this.onMenuSelected,
+  });
 
   final VoidCallback? onBack;
+  final VoidCallback? onLogoTap;
   final ValueChanged<MenuButtonOption>? onMenuSelected;
 
   @override
@@ -45,7 +52,20 @@ class GabEyeHomeNavbar extends StatelessWidget {
                 children: [
                   Expanded(
                     child: InkWell(
-                      onTap: onBack,
+                      onTap: () {
+                        if (onLogoTap != null) {
+                          onLogoTap!();
+                        } else if (ModalRoute.of(context)?.settings.name !=
+                            AppRoutes.home) {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRoutes.home,
+                            (route) => false,
+                          );
+                        } else if (onBack != null) {
+                          onBack!();
+                        }
+                      },
                       borderRadius: BorderRadius.circular(8),
                       child: SizedBox(
                         height: 64,

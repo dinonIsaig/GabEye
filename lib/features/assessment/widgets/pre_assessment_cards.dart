@@ -126,7 +126,7 @@ class PreAssessmentInfoCard extends StatelessWidget {
                     title,
                     style: const TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
