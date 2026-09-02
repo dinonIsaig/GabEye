@@ -322,15 +322,23 @@ class ResultsPage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Cap ${error.capA} → Cap ${error.capB}',
-                        style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'Cap ${error.capA} → Cap ${error.capB}',
+                          style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
                       ),
-                      Text(
-                        isMajor ? 'Major Crossover (dist: ${error.distance})' : 'Minor Swap (dist: ${error.distance})',
-                        style: TextStyle(
-                          color: colors.onSurfaceVariant.withOpacity(0.75),
-                          fontSize: 12,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          isMajor ? 'Major Crossover (dist: ${error.distance})' : 'Minor Swap (dist: ${error.distance})',
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant.withOpacity(0.75),
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.right,
                         ),
                       ),
                     ],
