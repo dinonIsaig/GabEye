@@ -322,15 +322,23 @@ class ResultsPage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Cap ${error.capA} → Cap ${error.capB}',
-                        style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'Cap ${error.capA} → Cap ${error.capB}',
+                          style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
                       ),
-                      Text(
-                        isMajor ? 'Major Crossover (dist: ${error.distance})' : 'Minor Swap (dist: ${error.distance})',
-                        style: TextStyle(
-                          color: isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError,
-                          fontSize: 16,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          isMajor ? 'Major Crossover (dist: ${error.distance})' : 'Minor Swap (dist: ${error.distance})',
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant.withOpacity(0.75),
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.right,
                         ),
                       ),
                     ],
@@ -368,17 +376,35 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
-  // -------------------- Footer buttons --------------------
+// -------------------- Footer buttons --------------------
   Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
-    return ElevatedButton.icon(
-      onPressed: () => _exportAsPdf(context),
-      iconAlignment: IconAlignment.end,
-      icon: const Icon(Icons.download, size: 20),
-      style: ElevatedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        minimumSize: const Size(double.infinity, 55),
-      ),
-      label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+    return Column(
+      children: [
+        ElevatedButton.icon(
+          onPressed: () => _exportAsPdf(context),
+          iconAlignment: IconAlignment.end,
+          icon: const Icon(Icons.download, size: 20),
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            minimumSize: const Size(double.infinity, 55),
+          ),
+          label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
+        ),
+        const SizedBox(height: 12), 
+        OutlinedButton.icon(
+          onPressed: () => Navigator.pop(context),
+          label: const Text('Back', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
+          iconAlignment: IconAlignment.start,
+          icon: const Icon(Icons.arrow_back, size: 20),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: colors.onSurface,
+            side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            minimumSize: const Size(double.infinity, 50),
+          ),
+        ),
+      ],
     );
   }
 

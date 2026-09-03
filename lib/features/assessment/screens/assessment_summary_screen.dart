@@ -53,7 +53,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             minimumSize: const Size(double.infinity, 55),
                           ),
-                          label: const Text('Next', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          label: const Text('Next', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -101,12 +101,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   result.rangeHeadline,
-                  style: TextStyle(
-                    color: colors.onSurface,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    height: 1.25,
-                  ),
+                  style: TextStyle(color: colors.onSurface, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.bold, height: 2.0),
                 ),
               ),
             ],
@@ -189,7 +184,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               minimumSize: const Size(double.infinity, 55),
             ),
-            label: const Text('View Detailed Result', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            label: const Text('View Detailed Result', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -197,12 +192,13 @@ class AssessmentSummaryScreen extends StatelessWidget {
             iconAlignment: IconAlignment.end,
             icon: const Icon(Icons.download, size: 16),
             style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.transparent,
               foregroundColor: colors.onSurface,
               side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               minimumSize: const Size(double.infinity, 55),
             ),
-            label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
           ),
         ],
       ),
