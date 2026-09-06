@@ -5,7 +5,7 @@ import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/features/assessment/screens/assessment_keyfindings_screen.dart';
-
+import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 
 /// Post-assessment 9: the plain-language summary shown right after the
 /// user finishes arranging the caps, before the technical breakdown on
@@ -17,22 +17,20 @@ class AssessmentSummaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Follows whichever theme is currently active (light or dark), same
-    // as main.dart's ThemeMode.system — no override here.
     final colors = Theme.of(context).colorScheme;
     final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
     final severityStyle = severityStyles[result.severity]!;
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
-    return Scaffold(
-      body: SafeArea(
+    return ProgressBarScaffold(
+      currentStep: 1,
+      totalSteps: 3,
+      child: SafeArea(
+        top: false,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // NOTE: the step progress bar ("Profile 1/4" + "...") is
-              // intentionally not built here — it's provided by your
-              // existing reusable token, meant to sit above this screen.
               const ProfileHeadingBanner(),
               const SizedBox(height: 20),
               Center(
@@ -48,7 +46,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                         _buildDiagnosisCard(context, colors, result, severityStyle, diagnosisStyle),
                         const SizedBox(height: 20),
                         ElevatedButton.icon(
-                          onPressed: ()=> _goToKeyfindings(context),
+                          onPressed: () => _goToKeyfindings(context),
                           iconAlignment: IconAlignment.end,
                           icon: const Icon(Icons.arrow_forward, size: 20),
                           style: ElevatedButton.styleFrom(
@@ -136,8 +134,8 @@ class AssessmentSummaryScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.onSurfaceVariant.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.onSurfaceVariant.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,14 +236,15 @@ class AssessmentSummaryScreen extends StatelessWidget {
   }
 
   // -------------------- Overlapping color circles --------------------
-  Widget _buildOverlappingCircles(DiagnosisStyle style) {
+    Widget _buildOverlappingCircles(DiagnosisStyle style) {
     return SizedBox(
-      width: 32,
+      width: 44,
       height: 20,
       child: Stack(
         children: [
           Positioned(left: 0, child: CircleAvatar(radius: 10, backgroundColor: style.primaryColor)),
           Positioned(left: 12, child: CircleAvatar(radius: 10, backgroundColor: style.secondaryColor)),
+          Positioned(left: 24, child: CircleAvatar(radius: 10, backgroundColor: style.tertiaryColor)),
         ],
       ),
     );

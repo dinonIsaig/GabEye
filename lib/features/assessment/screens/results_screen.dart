@@ -132,14 +132,15 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildOverlappingCircles(DiagnosisStyle style) {
+    Widget _buildOverlappingCircles(DiagnosisStyle style) {
     return SizedBox(
-      width: 32,
+      width: 44,
       height: 20,
       child: Stack(
         children: [
           Positioned(left: 0, child: CircleAvatar(radius: 10, backgroundColor: style.primaryColor)),
           Positioned(left: 12, child: CircleAvatar(radius: 10, backgroundColor: style.secondaryColor)),
+          Positioned(left: 24, child: CircleAvatar(radius: 10, backgroundColor: style.tertiaryColor)),
         ],
       ),
     );
@@ -297,7 +298,7 @@ class ResultsPage extends StatelessWidget {
                 style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
               ),
             )
-          else
+          else ...[
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -309,7 +310,8 @@ class ResultsPage extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: (isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError).withOpacity(0.10),                    borderRadius: BorderRadius.circular(8),
+                    color: (isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError).withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border(
                       left: BorderSide(
                         color: isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError,
@@ -336,6 +338,31 @@ class ResultsPage extends StatelessWidget {
                 );
               },
             ),
+            const SizedBox(height: 16),
+            _buildConfusionLineLegendText(colors),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfusionLineLegendText(ColorScheme colors) {
+    final baseStyle = TextStyle(color: colors.onSurfaceVariant, fontSize: 13, height: 1.5);
+    final boldStyle = TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 13, height: 1.5);
+
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          const TextSpan(text: 'A '),
+          TextSpan(text: '"swap"', style: boldStyle),
+          const TextSpan(
+            text: ' means two neighboring caps were placed close but out of order, usually harmless and common even in typical vision. \n\n A ',
+          ),
+          TextSpan(text: '"crossover"', style: boldStyle),
+          const TextSpan(
+            text: ' means caps far apart on the wheel were confused for each other, which is the stronger signal of a real color vision difference. Higher distance numbers mean a bigger jump.',
+          ),
         ],
       ),
     );
