@@ -724,10 +724,10 @@ class _FeatureContainerState extends State<FeatureContainer> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.15),
-              width: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.35)
+                  : AppColors.primaryNavy.withValues(alpha: 0.45),
+              width: 1.2,
             ),
           ),
           child: Row(

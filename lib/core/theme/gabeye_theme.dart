@@ -142,16 +142,19 @@ class GabEyeTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.lightSurface,
+        foregroundColor: AppColors.lightPrimaryButton,
+        side: const BorderSide(color: AppColors.borderLight, width: 1),
         minimumSize: const Size(double.infinity, 55),
       ),
     ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.lightSurface,
-        foregroundColor: AppColors.lightPrimaryButton,
-      ),
-    ),
     textTheme: _buildTextTheme(AppColors.lightTextPrimary),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.lightSurface,
+      foregroundColor: AppColors.lightTextPrimary,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+    ),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.lightSurface,
     ),
@@ -195,22 +198,24 @@ class GabEyeTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.altDarkSurface,
+        foregroundColor: AppColors.darkTextPrimary,
+        side: const BorderSide(color: AppColors.borderDark, width: 1),
         minimumSize: const Size(double.infinity, 55),
       ),
     ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.darkPrimaryButton,
-        foregroundColor: AppColors.darkSurface,
-      ),
-    ),
     textTheme: _buildTextTheme(AppColors.darkTextPrimary),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.darkSurface,
+      foregroundColor: AppColors.darkTextPrimary,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+    ),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.darkMode,
     ),
   );
-
-
 }
+
 
 

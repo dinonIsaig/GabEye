@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/config/debug_test_profiles.dart';
 
 class DebugTestPanelModal extends StatelessWidget {
@@ -9,6 +10,7 @@ class DebugTestPanelModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -61,13 +63,21 @@ class DebugTestPanelModal extends StatelessWidget {
                           onProfileSelected(profile.arrangedCaps);
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: colors.onSurface,
-                          side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
+                          foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
+                          backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
+                          side: isDark ? BorderSide.none : BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                           alignment: Alignment.centerLeft,
                         ),
-                        child: Text(profile.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        child: Text(
+                          profile.label,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: isDark ? AppColors.darkSurface : colors.onSurface,
+                          ),
+                        ),
                       ),
                     );
                   }).toList(),

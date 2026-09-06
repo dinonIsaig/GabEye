@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/core/widgets/gabeye_app_bar.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
@@ -21,100 +22,199 @@ class DisclaimerScreen extends StatelessWidget {
       ),
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + kToolbarHeight - 50,
+        child: Responsive.constrainWidth(
+          context,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + kToolbarHeight - 50,
+                ),
+                child: const PreAssessmentHeroHeader(),
               ),
-              child: const PreAssessmentHeroHeader(),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Before you continue, here\'s something worth knowing. It\'ll only take a moment to read, and it\'ll help you understand exactly what this assessment is for.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline,
-                          width: 1,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: Responsive.symmetricH(context, base: 20, min: 14, max: 28)
+                      .copyWith(top: 16, bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Before you continue, here\'s something worth knowing. It\'ll only take a moment to read, and it\'ll help you understand exactly what this assessment is for.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                         ),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Container(
-                                width: 17,
-                                color: AppColors.errorRed,
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Important Note',
-                                        style: textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.warning_amber_rounded,
-                                            color: AppColors.errorRed,
-                                            size: 24,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Disclaimer',
-                                            style: textTheme.titleLarge?.copyWith(
-                                              fontFamily: 'Inter',
-                                              fontSize: 24,
-                                              color: AppColors.errorOrange,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 14),
-                                      Text.rich(
-                                        TextSpan(
+                      SizedBox(height: Responsive.space(context, base: 20, min: 14, max: 26)),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                            width: 1,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Container(
+                                  width: Responsive.space(context, base: 17, min: 12, max: 22),
+                                  color: AppColors.errorRed,
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: Responsive.all(context, base: 20, min: 14, max: 26),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Important Note',
                                           style: textTheme.bodyMedium?.copyWith(
-                                            color: Theme.of(context).colorScheme.onSurface,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            fontSize: Responsive.font(context, base: 14, min: 12, max: 16),
                                           ),
-                                          children: const [
-                                            TextSpan(
-                                              text: 'This assessment is for informational and digital optimization purposes only. ',
+                                        ),
+                                        SizedBox(height: Responsive.space(context, base: 6, min: 4, max: 10)),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.warning_amber_rounded,
+                                              color: AppColors.errorRed,
+                                              size: 24,
                                             ),
-                                            TextSpan(
-                                              text: 'It does not constitute a medical diagnosis.',
-                                              style: TextStyle(fontWeight: FontWeight.bold),
-                                            ),
-                                            TextSpan(
-                                              text: ' For official vision certification, please consult a licensed optometrist.',
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Disclaimer',
+                                              style: textTheme.titleLarge?.copyWith(
+                                                fontFamily: 'Inter',
+                                                fontSize: Responsive.font(context, base: 24, min: 18, max: 28),
+                                                color: AppColors.errorOrange,
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                    ],
+                                        SizedBox(height: Responsive.space(context, base: 14, min: 10, max: 20)),
+                                        Text.rich(
+                                          TextSpan(
+                                            style: textTheme.bodyMedium?.copyWith(
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                              fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                                            ),
+                                            children: const [
+                                              TextSpan(
+                                                text: 'This assessment is for informational and digital optimization purposes only. ',
+                                              ),
+                                              TextSpan(
+                                                text: 'It does not constitute a medical diagnosis.',
+                                                style: TextStyle(fontWeight: FontWeight.bold),
+                                              ),
+                                              TextSpan(
+                                                text: ' For official vision certification, please consult a licensed optometrist.',
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: Responsive.only(
+                  context,
+                  left: 20,
+                  right: 20,
+                  top: 8,
+                  bottom: 16,
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: Responsive.space(context, base: 55, min: 48, max: 64),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.outline,
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.assessment);
+                        },
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Next',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_rounded, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: Responsive.space(context, base: 10, min: 6, max: 14)),
+                    SizedBox(
+                      width: double.infinity,
+                      height: Responsive.space(context, base: 55, min: 48, max: 64),
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.outline,
+                            width: 1,
+                          ),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.arrow_back_rounded,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Back',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                             ],
@@ -125,88 +225,8 @@ class DisclaimerScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.outline,
-                          width: 1,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.assessment);
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            'Next',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward_rounded, size: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.outline,
-                          width: 1,
-                        ),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.arrow_back_rounded,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Back',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

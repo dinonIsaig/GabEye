@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 
 class FeatureRowData {
   final IconData icon;
@@ -30,7 +31,7 @@ class FeatureRow extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(17),
+      padding: Responsive.all(context, base: 17, min: 12, max: 22),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -45,8 +46,8 @@ class FeatureRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 36,
-                height: 46,
+                width: Responsive.space(context, base: 36, min: 30, max: 42),
+                height: Responsive.space(context, base: 46, min: 38, max: 52),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isDark
@@ -62,25 +63,27 @@ class FeatureRow extends StatelessWidget {
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: Responsive.space(context, base: 10, min: 6, max: 14)),
               Expanded(
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     data.title,
                     textAlign: TextAlign.left,
-                    style: theme.textTheme.titleMedium ??
-                        const TextStyle(
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                    style: (theme.textTheme.titleMedium ??
+                            const TextStyle(
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.bold,
+                            ))
+                        .copyWith(
+                          fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                         ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: Responsive.space(context, base: 12, min: 8, max: 16)),
           ...data.bullets.map(
             (b) => Padding(
               padding: const EdgeInsets.only(bottom: 2),
@@ -92,19 +95,20 @@ class FeatureRow extends StatelessWidget {
                     style: TextStyle(
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
+                      fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                     ),
                   ),
                   Expanded(
                     child: Text(
                       b,
-                      style: theme.textTheme.bodyLarge?.copyWith(
+                      style: (theme.textTheme.bodyLarge ??
+                              const TextStyle(
+                                fontFamily: 'AtkinsonHyperlegible',
+                              ))
+                          .copyWith(
                             color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.normal,
-                          ) ??
-                          TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
-                            fontSize: 16,
-                            color: colorScheme.onSurfaceVariant,
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                           ),
                     ),
                   ),
@@ -112,18 +116,21 @@ class FeatureRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: Responsive.space(context, base: 12, min: 8, max: 16)),
           SizedBox(
             width: double.infinity,
-            height: 44,
+            height: Responsive.space(context, base: 44, min: 40, max: 52),
             child: FilledButton(
               onPressed: data.onCtaPressed ?? () {},
-              child: Text(
-                data.ctaLabel,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  data.ctaLabel,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                    fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
+                  ),
                 ),
               ),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'menu_bar.dart';
 
 class MenuButtonOption {
@@ -70,13 +71,13 @@ class MenuButton extends StatelessWidget {
   void _handleDefaultSelection(BuildContext context, MenuButtonOption option) {
     switch (option.label) {
       case 'Settings':
-        Navigator.of(context).pushNamed('/settings');
+        Navigator.of(context).pushNamed(AppRoutes.settings);
         return;
       case 'Help & Feedback':
-        Navigator.of(context).pushNamed('/help-feedback');
+        Navigator.of(context).pushNamed(AppRoutes.helpFeedback);
         return;
       case 'About GabEye':
-        Navigator.of(context).pushNamed('/article');
+        Navigator.of(context).pushNamed(AppRoutes.article);
         return;
     }
   }

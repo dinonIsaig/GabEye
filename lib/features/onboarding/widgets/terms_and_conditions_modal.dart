@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 
@@ -65,9 +66,10 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                   thumbVisibility: true,
                   child: SingleChildScrollView(
                     controller: _scrollController,
-                    padding: const EdgeInsets.only(
-                      left: 30.0,
-                      right: 30.0,
+                    padding: Responsive.only(
+                      context,
+                      left: 24.0,
+                      right: 24.0,
                       top: 10.0,
                       bottom: 120.0,
                     ),
@@ -82,10 +84,11 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.only(
-                  left: 60.0,
-                  right: 60.0,
-                  top: 16.0,
+                padding: Responsive.only(
+                  context,
+                  left: 36.0,
+                  right: 36.0,
+                  top: 14.0,
                   bottom: 24.0,
                 ),
                 child: Column(
@@ -128,15 +131,21 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                                 width: 1.5,
                               ),
                             ),
-                            minimumSize: const Size(double.infinity, 55),
+                            minimumSize: Size(
+                              double.infinity,
+                              Responsive.space(context, base: 55, min: 48, max: 64),
+                            ),
                           ),
-                          child: Text(
-                            _hasScrolledToBottom
-                                ? 'I Accept'
-                                : 'Scroll to See More  ↓',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _hasScrolledToBottom
+                                  ? 'I Accept'
+                                  : 'Scroll to See More  ↓',
+                              style: TextStyle(
+                                fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -154,12 +163,12 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
 
   Widget _buildTermsTextContent(BuildContext context) {
     final bodyStyle = GoogleFonts.atkinsonHyperlegibleNext(
-      fontSize: 16,
+      fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
 
     final headingStyle = GoogleFonts.inter(
-      fontSize: 18,
+      fontSize: Responsive.font(context, base: 18, min: 15, max: 22),
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       height: 1.5,
@@ -171,13 +180,13 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         Text(
           'Terms and Conditions',
           style: GoogleFonts.inter(
-            fontSize: 26,
+            fontSize: Responsive.font(context, base: 26, min: 20, max: 32),
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
         Text(
           'Last Update: July 2026',
           style: GoogleFonts.atkinsonHyperlegibleNext(

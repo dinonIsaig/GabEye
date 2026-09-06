@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_cards.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_scaffold.dart';
+import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 
 class PreAssessmentIntroScreen extends StatelessWidget {
   const PreAssessmentIntroScreen({super.key});
@@ -45,7 +46,14 @@ class PreAssessmentIntroScreen extends StatelessWidget {
             title: 'Farnsworth D-15',
             description:
                 'Lorem ipsum dolor sit amet consectetur. Semper adipiscing pellentesque aliquam sed augue arcu.',
-            onReadMore: () {},
+            onReadMore: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FarnsworthD15ArticleScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),

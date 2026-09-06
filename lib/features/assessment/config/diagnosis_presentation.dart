@@ -165,8 +165,9 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     tertiaryColor: AppSemanticColors.lemon,
     axisFamily: null,
     subtitle: 'Normal color vision',
-    highlightPhrase: '',
-    shortSummary: '',
+    highlightPhrase: 'no difficulty distinguishing colors across the spectrum.',
+    shortSummary:
+        'Your results suggest typical color vision with no significant color deficiency detected.',
 
     keyFindingOne:
         'Colors across the spectrum (reds, blues) appear as most people see them.',

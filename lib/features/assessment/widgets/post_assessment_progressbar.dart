@@ -5,12 +5,16 @@ class ProgressBarScaffold extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
   final Widget child;
+  final bool showBackButton;
+  final VoidCallback? onBack;
 
   const ProgressBarScaffold({
     super.key,
     required this.currentStep,
     required this.totalSteps,
     required this.child,
+    this.showBackButton = true,
+    this.onBack,
   });
 
   @override
@@ -18,10 +22,11 @@ class ProgressBarScaffold extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: GabEyeAppBar(
-        showBackButton: false,
+        showBackButton: showBackButton,
         showLogo: false,
         progressValue: currentStep / totalSteps,
         progressText: 'Step $currentStep/$totalSteps',
+        onBackPressed: onBack,
       ),
       body: child,
     );

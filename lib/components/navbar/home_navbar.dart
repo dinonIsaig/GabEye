@@ -21,13 +21,13 @@ class GabEyeHomeNavbar extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
-      color: colorScheme.surfaceContainerHighest,
+      color: colorScheme.surface,
       elevation: 3,
       shadowColor: Colors.black.withValues(alpha: 0.3),
       surfaceTintColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: colorScheme.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.18),
@@ -56,10 +56,10 @@ class GabEyeHomeNavbar extends StatelessWidget {
                         if (onLogoTap != null) {
                           onLogoTap!();
                         } else if (ModalRoute.of(context)?.settings.name !=
-                            AppRoutes.home) {
+                            AppRoutes.getStarted) {
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            AppRoutes.home,
+                            AppRoutes.getStarted,
                             (route) => false,
                           );
                         } else if (onBack != null) {

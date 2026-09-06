@@ -166,7 +166,7 @@ class ScoringService {
     String shortName = "Normal";
     String cones = "All Cones Intact";
     String conesShort = "All Cones";
-    String desc = "";
+    String desc = "Your results suggest typical color vision with no significant color deficiency detected. This means your eyes have no difficulty distinguishing colors across the spectrum.";
     String tip = "Your color perception falls within the typical range for the assessed hues.";
 
     final bool isAbnormal = cIndex > 1.78;
