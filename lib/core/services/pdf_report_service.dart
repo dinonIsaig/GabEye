@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 
@@ -16,14 +17,15 @@ class PdfReportService {
   /// Primary entry point to generate and present the PDF export dialog / print preview.
   static Future<void> generateAndExportPdf(
     BuildContext context, {
-    required D15ScoreResult? scoreResult,
+    D15ScoreResult? scoreResult,
     List<int>? arrangedCaps,
   }) async {
-    final caps = arrangedCaps ?? List.generate(15, (i) => i + 1);
-    final pdfBytes = await buildPdfDocument(scoreResult: scoreResult, arrangedCaps: caps);
+    final caps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
+    final result = scoreResult ?? VisionProfileService.instance.value;
+    final pdfBytes = await buildPdfDocument(scoreResult: result, arrangedCaps: caps);
 
-    final filename = scoreResult != null
-        ? 'GabEye_Vision_Report_${scoreResult.shortName}_${DateTime.now().millisecondsSinceEpoch}.pdf'
+    final filename = result != null
+        ? 'GabEye_Vision_Report_${result.shortName}_${DateTime.now().millisecondsSinceEpoch}.pdf'
         : 'GabEye_Vision_Report_Baseline_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
     await Printing.layoutPdf(
