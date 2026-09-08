@@ -34,40 +34,40 @@ class GetStartedScreen extends StatelessWidget {
               flex: 3,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 50.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome to',
-                      style: GoogleFonts.atkinsonHyperlegibleNext(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome to',
+                        style: GoogleFonts.atkinsonHyperlegibleNext(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'GabEye!',
-                      style: GoogleFonts.inter(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        letterSpacing: -1.0,
-                        height: 1.0,
+                      Text(
+                        'GabEye!',
+                        style: GoogleFonts.inter(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: -1.0,
+                          height: 1.0,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      " We don't just show you how colors look different — we shift them to make things easier to see.",
-                      style: GoogleFonts.atkinsonHyperlegibleNext(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        height: 1.5,
+                      const SizedBox(height: 20),
+                      Text(
+                        " We don't just show you how colors look different — we shift them to make things easier to see.",
+                        style: GoogleFonts.atkinsonHyperlegibleNext(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
             Padding(
               padding: const EdgeInsets.only(

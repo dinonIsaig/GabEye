@@ -21,7 +21,7 @@ class GabEye extends StatelessWidget {
         theme: GabEyeTheme.lightTheme,
         darkTheme: GabEyeTheme.darkTheme,
         themeMode: themeMode,
-        initialRoute: AppRoutes.home,
+        initialRoute: AppRoutes.getStarted,
         routes: AppRoutes.getRoutes(),
       ),
     );
