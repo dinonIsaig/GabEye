@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
-
+import 'package:gabeye/core/theme/app_colors.dart';
 
 class AssessmentIntroModal extends StatelessWidget {
   const AssessmentIntroModal({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
 
     return Dialog(
@@ -19,7 +19,6 @@ class AssessmentIntroModal extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // --- How it works ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24.0),
@@ -36,13 +35,14 @@ class AssessmentIntroModal extends StatelessWidget {
                 children: [
                   Text(
                     'How it works?',
-                    style: TextStyle(fontSize: 16, color: colors.onSurfaceVariant),
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Arrange discs by hues',
-                    style: TextStyle(
-                      fontSize: 24,
+                    style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colors.onSurface,
                     ),
@@ -50,41 +50,47 @@ class AssessmentIntroModal extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Drag and drop the color discs below to arrange them in a continuous sequence, starting from the fixed reference disc on the left.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
+                    style: textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
+                      height: 1.6,
                     ),
                   ),
                   const SizedBox(height: 24),
                   OutlinedButton(
                     onPressed: () {
-                        Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);
+                      Navigator.popAndPushNamed(
+                          context, AppRoutes.preAssessmentHowItWorks);
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.onSurface,
-                      side: BorderSide(
-                        color: colors.onSurfaceVariant.withOpacity(0.4),
-                      ),
+                      foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
+                      backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
+                      side: isDark
+                          ? BorderSide.none
+                          : BorderSide(
+                              color: colors.onSurfaceVariant.withOpacity(0.4),
+                            ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 16,
-                      ),
+                      minimumSize: const Size(double.infinity, 55), // Matched button sizing
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'How it works?',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
                         Icon(
                           Icons.help_outline,
-                          size: 20,
-                          color: colors.onSurfaceVariant,
+                          size: 18,
+                          color: isDark ? AppColors.darkSurface : colors.onSurface,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'How it works?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: isDark ? AppColors.darkSurface : colors.onSurface,
+                          ),
                         ),
                       ],
                     ),
@@ -92,9 +98,9 @@ class AssessmentIntroModal extends StatelessWidget {
                 ],
               ),
             ),
-           
+
             const SizedBox(height: 16),
-           
+
             // --- Ready to Start ---
             Container(
               width: double.infinity,
@@ -112,13 +118,14 @@ class AssessmentIntroModal extends StatelessWidget {
                 children: [
                   Text(
                     'Checking in...',
-                    style: TextStyle(fontSize: 16, color: colors.onSurfaceVariant),
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Ready to Start?',
-                    style: TextStyle(
-                      fontSize: 24,
+                    style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colors.onSurface,
                     ),
@@ -126,10 +133,9 @@ class AssessmentIntroModal extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Drag and drop the color discs below to arrange them in a continuous sequence, starting from the fixed reference disc on the left.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
+                    style: textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
+                      height: 1.6,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -139,32 +145,38 @@ class AssessmentIntroModal extends StatelessWidget {
                       // assessment flow
                     },
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
+                      foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      minimumSize: const Size(double.infinity, 55),
+                      minimumSize: const Size(double.infinity, 55), // Matched button sizing
                     ),
                     child: const Text(
                       'Start Now',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Inter'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.getStarted),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.getStarted),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.onSurface,
-                      side: BorderSide(
-                        color: colors.onSurfaceVariant.withOpacity(0.4),
-                      ),
+                      foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
+                      backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
+                      side: isDark
+                          ? BorderSide.none
+                          : BorderSide(
+                              color: colors.onSurfaceVariant.withOpacity(0.4),
+                            ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      minimumSize: const Size(double.infinity, 55),
+                      minimumSize: const Size(double.infinity, 55), // Matched button sizing
                     ),
                     child: const Text(
                       'Not Ready',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Inter'),
                     ),
                   ),
                 ],
@@ -177,15 +189,13 @@ class AssessmentIntroModal extends StatelessWidget {
   }
 }
 
-
 // Update the function to use showDialog instead of showModalBottomSheet
 void showAssessmentIntroModal(BuildContext context) {
   showDialog(
     context: context,
-    barrierDismissible: false, // Prevents closing when tapping outside, matching the previous logic
+    barrierDismissible: false, // Prevents closing when tapping outside
     builder: (BuildContext context) {
       return const AssessmentIntroModal();
     },
   );
 }
-

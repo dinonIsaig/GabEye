@@ -166,7 +166,7 @@ class ScoringService {
     String shortName = "Normal";
     String cones = "All Cones Intact";
     String conesShort = "All Cones";
-    String desc = "";
+    String desc = "Your results suggest typical color vision with no significant color deficiency detected. This means your eyes have no difficulty distinguishing colors across the spectrum.";
     String tip = "Your color perception falls within the typical range for the assessed hues.";
 
     final bool isAbnormal = cIndex > 1.78;
@@ -239,7 +239,7 @@ class ScoringService {
     if (!isAbnormal) {
       rangeBody = "Your cap arrangement closely matches what's expected for normal color vision, with only minor transpositions if any.";
     } else if (severity == SeverityLevel.moderate) {
-      rangeBody = "A small number of caps were placed slightly out of order, forming a mild pattern rather than a strong one.";
+      rangeBody = "Your caps arrangement shows a measurable deviation from the typical range.";
     } else {
       rangeBody = "Many caps were placed significantly out of sequence, forming a strong, consistent pattern.";
     }

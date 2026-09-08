@@ -59,13 +59,13 @@ class _GabEyeArticleNavbarState extends State<GabEyeArticleNavbar> {
         : colorScheme.onSurfaceVariant;
 
     return Material(
-      color: colorScheme.surfaceContainer,
+      color: colorScheme.surface,
       elevation: 3,
       shadowColor: Colors.black.withValues(alpha: 0.3),
       surfaceTintColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainer,
+          color: colorScheme.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.18),

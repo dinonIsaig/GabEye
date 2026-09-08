@@ -35,6 +35,7 @@ class DiagnosisStyle {
   final String subtitle;
   final String highlightPhrase;
   final String shortSummary;
+  final String imagePath; 
 
   // Key Findings descriptions
   final String keyFindingOne;
@@ -50,6 +51,7 @@ class DiagnosisStyle {
     required this.subtitle,
     required this.highlightPhrase,
     required this.shortSummary,
+    required this.imagePath, 
     required this.keyFindingOne,
     required this.keyFindingTwo,
     required this.keyFindingThree,
@@ -67,7 +69,7 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     highlightPhrase: 'harder time telling red apart from green.',
     shortSummary:
         'Your results suggest a protan-type color vision difference, one of the two forms of red-green color blindness.',
-
+    imagePath: 'assets/images/cl_protan.png', 
     keyFindingOne:
         'Colors across the spectrum may not appear as distinct as they do for most people, especially colors involving red.',
     keyFindingTwo:
@@ -87,7 +89,7 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     highlightPhrase: 'harder time telling green apart from red.',
     shortSummary:
         'Your results suggest a deutan-type color vision difference, one of the two forms of red-green color blindness.',
-
+    imagePath: 'assets/images/ev_deutan.png', 
     keyFindingOne:
         'Colors across the spectrum may not appear as distinct as they do for most people, especially colors involving green.',
     keyFindingTwo:
@@ -107,7 +109,7 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     highlightPhrase: 'harder time telling blue apart from yellow.',
     shortSummary:
         'Your results suggest a tritan-type color vision difference, a form of blue-yellow color blindness.',
-
+    imagePath: 'assets/images/cl_tritan.png', 
     keyFindingOne:
         'Some colors across the spectrum may appear less distinct, particularly colors involving blue and yellow.',
     keyFindingTwo:
@@ -127,7 +129,7 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     highlightPhrase: "pattern that doesn't fit neatly into one category.",
     shortSummary:
         "Your results suggest a color vision difference that doesn't align with a single axis.",
-
+    imagePath: 'assets/images/cl_unclassified.png',
     keyFindingOne:
         'Colors across the spectrum may appear less distinct, but the pattern does not point clearly to one color axis.',
     keyFindingTwo:
@@ -148,7 +150,7 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
         'inconsistent pattern rather than one specific difference.',
     shortSummary:
         'Your results show an inconsistent color-matching pattern rather than one specific type of color vision difference.',
-
+    imagePath: 'assets/images/cl_random.png', 
     keyFindingOne:
         'Your color-matching pattern was inconsistent across the spectrum rather than concentrated around one color group.',
     keyFindingTwo:
@@ -165,8 +167,9 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     tertiaryColor: AppSemanticColors.lemon,
     axisFamily: null,
     subtitle: 'Normal color vision',
-    highlightPhrase: '',
-    shortSummary: '',
+    highlightPhrase: 'no difficulty distinguishing colors across the spectrum.',
+    shortSummary:
+        'Your results suggest typical color vision with no significant color deficiency detected.',
 
     keyFindingOne:
         'Colors across the spectrum (reds, blues) appear as most people see them.',

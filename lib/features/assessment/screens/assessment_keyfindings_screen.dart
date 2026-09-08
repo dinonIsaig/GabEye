@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
-import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/screens/assessment_recommendations_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/home/screens/home_screen.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
@@ -18,8 +18,8 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result =
-        ScoringService.calculateScore(arrangedCaps);
+    final textTheme = Theme.of(context).textTheme;
+    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
     return ProgressBarScaffold(
@@ -42,11 +42,20 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildKeyFindingsCard(
+                          context,
                           colors,
+                          textTheme,
                           diagnosisStyle,
                         ),
                         const SizedBox(height: 20),
                         _buildCloserLookCard(
+                          colors,
+                          textTheme,
+                          diagnosisStyle,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildCloserLookCard(
+                          context,
                           colors,
                           diagnosisStyle,
                         ),
@@ -54,15 +63,14 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
 
                         ElevatedButton.icon(
-                          onPressed: () => _goToHomeScreen(context),
+                          onPressed: () => _goToRecommendations(context),
                           iconAlignment: IconAlignment.end,
                           icon: const Icon(Icons.arrow_forward, size: 20),
                           style: ElevatedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            minimumSize:
-                                const Size(double.infinity, 55),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                           label: const Text(
                             'Next',
@@ -87,15 +95,16 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                           iconAlignment: IconAlignment.start,
                           icon: const Icon(Icons.arrow_back, size: 20),
                           style: OutlinedButton.styleFrom(
+                            backgroundColor: colors.surfaceContainer,
                             foregroundColor: colors.onSurface,
                             side: BorderSide(
-                              color: colors.onSurfaceVariant.withOpacity(0.4),
+                              color: colors.outline,
+                              width: 1,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            minimumSize:
-                                const Size(double.infinity, 55),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                         ),
 
@@ -113,9 +122,10 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   }
 
   // -------------------- Key Findings --------------------
-
   Widget _buildKeyFindingsCard(
+    BuildContext context,
     ColorScheme colors,
+    TextTheme textTheme,
     DiagnosisStyle diagnosisStyle,
   ) {
     return Container(
@@ -133,23 +143,25 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         children: [
           Text(
             'What this means to you?',
-            style: TextStyle(
+            style: textTheme.labelLarge?.copyWith(
               color: colors.onSurfaceVariant,
-              fontSize: 16,
             ),
           ),
-
           const SizedBox(height: 2),
-
           Text(
             'Key Findings',
-            style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
           const SizedBox(height: 20),
 
           _buildKeyFindingsRow(
+            context: context,
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.palette_outlined,
             description: diagnosisStyle.keyFindingOne,
           ),
@@ -157,7 +169,9 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _buildKeyFindingsRow(
+            context: context,
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.visibility_outlined,
             description: diagnosisStyle.keyFindingTwo,
           ),
@@ -165,7 +179,9 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _buildKeyFindingsRow(
+            context: context,
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.warning_amber_rounded,
             description: diagnosisStyle.keyFindingThree,
           ),
@@ -175,7 +191,9 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   }
 
   Widget _buildKeyFindingsRow({
+    required BuildContext context,
     required ColorScheme colors,
+    required TextTheme textTheme,
     required IconData icon,
     required String description,
   }) {
@@ -202,11 +220,17 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         Expanded(
           child: Text(
             description,
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 16,
-              height: 1.4,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.4,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.4,
+                ),
           ),
         ),
       ],
@@ -215,6 +239,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
 
   Widget _buildCloserLookCard(
+    BuildContext context,
     ColorScheme colors,
     DiagnosisStyle diagnosisStyle,
   ) {
@@ -233,10 +258,15 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         children: [
           Text(
             'What this means to you?',
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 12,
-            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
           ),
 
           const SizedBox(height: 2),
@@ -248,11 +278,17 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
           Text(
             diagnosisStyle.closerLook,
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 12,
-              height: 1.4, // Matches the height from _buildKeyFindingsRow
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 14,
+                  height: 1.4,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
           ),
 
           const SizedBox(height: 20),
@@ -263,12 +299,11 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   }
 
   // -------------------- Navigation / actions --------------------
-  // to be changed once recommended Steps has been donw
-  void _goToDetailedResult(BuildContext context) {
+  void _goToRecommendations(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ResultsPage(
+        builder: (context) => AssessmentRecommendationsScreen(
           arrangedCaps: arrangedCaps,
         ),
       ),

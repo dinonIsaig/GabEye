@@ -5,6 +5,7 @@ import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
@@ -22,6 +23,8 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveCaps = arrangedCaps ?? assessmentController.value;
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
@@ -36,7 +39,7 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: ColorVisionProfileLookbackContent(arrangedCaps: arrangedCaps),
+        child: ColorVisionProfileLookbackContent(arrangedCaps: effectiveCaps),
       ),
       bottomNavigationBar: GabEyeBottomNav(
         selectedIndex: 2,
@@ -81,6 +84,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveCaps = arrangedCaps ?? assessmentController.value;
     final colors = Theme.of(context).colorScheme;
     final List<int> effectiveCaps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
     final D15ScoreResult result = (arrangedCaps == null && VisionProfileService.instance.value != null)
@@ -99,7 +103,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -135,7 +139,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: stateColor.withValues(alpha: isDark ? 0.16 : 0.08),
         borderRadius: BorderRadius.circular(16),
@@ -166,7 +170,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
                   result.rangeHeadline,
                   style: TextStyle(
                     color: colors.onSurface,
-                    fontSize: 32,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     height: 1.25,
                   ),
@@ -196,9 +200,11 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
     SeverityStyle severityStyle,
     DiagnosisStyle diagnosisStyle,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -211,7 +217,14 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
         children: [
           Text(
             'Based on your result, you likely have...',
-            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                ) ??
+                const TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  fontSize: 16,
+                ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -231,7 +244,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _buildDescription(colors, result, diagnosisStyle),
+          _buildDescription(context, colors, result, diagnosisStyle),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -263,46 +276,76 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             result.practicalTip,
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 16,
-              height: 1.5,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.5,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.5,
+                ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
+          ElevatedButton(
             onPressed: () => _goToDetailedResult(context),
-            iconAlignment: IconAlignment.end,
-            icon: const Icon(Icons.arrow_forward, size: 16),
             style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
+              foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
               minimumSize: const Size(double.infinity, 55),
             ),
-            label: const Text(
-              'View Detailed Result',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text(
+                    'View Detailed Result',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward, size: 16),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
+          OutlinedButton(
             onPressed: () => _downloadPdf(context, result),
-            iconAlignment: IconAlignment.end,
-            icon: const Icon(Icons.download, size: 16),
             style: OutlinedButton.styleFrom(
               foregroundColor: colors.onSurface,
+              backgroundColor: isDark ? colors.surfaceContainer : Colors.transparent,
               side: BorderSide(
-                color: colors.onSurfaceVariant.withValues(alpha: 0.4),
+                color: isDark ? colors.outline : colors.onSurfaceVariant.withValues(alpha: 0.4),
+                width: 1,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
               minimumSize: const Size(double.infinity, 55),
             ),
-            label: const Text(
-              'Download PDF Copy',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Download PDF Copy',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.download, size: 16, color: colors.onSurface),
+                ],
+              ),
             ),
           ),
         ],
@@ -312,18 +355,42 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
 
   // -------------------- Description --------------------
   Widget _buildDescription(
+    BuildContext context,
     ColorScheme colors,
     D15ScoreResult result,
     DiagnosisStyle style,
   ) {
-    final baseStyle = TextStyle(
+    final textTheme = Theme.of(context).textTheme;
+    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
       color: colors.onSurfaceVariant,
       fontSize: 16,
       height: 1.5,
     );
+    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+      color: colors.onSurface,
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      height: 1.5,
+    );
 
     if (result.diagnosisType == ColorDeficiencyType.normal) {
-      return Text(result.description, style: baseStyle);
+      return RichText(
+        text: TextSpan(
+          style: baseStyle,
+          children: [
+            const TextSpan(
+              text:
+                  'Your results suggest typical color vision with no significant color deficiency detected. This means your eyes have ',
+            ),
+            TextSpan(
+              text: style.highlightPhrase.isNotEmpty
+                  ? style.highlightPhrase
+                  : 'no difficulty distinguishing colors across the spectrum.',
+              style: boldStyle,
+            ),
+          ],
+        ),
+      );
     }
 
     final String prefix = style.axisFamily != null
@@ -337,10 +404,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
           TextSpan(text: prefix),
           TextSpan(
             text: style.highlightPhrase,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: colors.onSurface,
-            ),
+            style: boldStyle,
           ),
         ],
       ),
@@ -380,35 +444,44 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
     required Color backgroundColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.85),
           width: 1,
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

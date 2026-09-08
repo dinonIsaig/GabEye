@@ -10,6 +10,7 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double? progressValue;
   final String? progressText; // e.g., "Step 4/4"
   final VoidCallback? onMenuPressed;
+  final VoidCallback? onBackPressed;
 
   const GabEyeAppBar({
     super.key,
@@ -18,6 +19,7 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.progressValue,
     this.progressText,
     this.onMenuPressed,
+    this.onBackPressed,
   });
 
   @override
@@ -28,13 +30,13 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
         : colorScheme.onSurface;
 
     return Material(
-      color: colorScheme.surfaceContainer,
+      color: colorScheme.surface,
       elevation: 3,
       shadowColor: Colors.black.withValues(alpha: 0.3),
       surfaceTintColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainer,
+          color: colorScheme.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.18),
@@ -59,7 +61,7 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
                   padding: const EdgeInsets.only(left: 12),
                   child: IconButton(
                     icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: onBackPressed ?? () => Navigator.pop(context),
                   ),
                 )
               : null,
@@ -67,10 +69,10 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
               ? InkWell(
                   onTap: () {
                     if (ModalRoute.of(context)?.settings.name !=
-                        AppRoutes.home) {
+                        AppRoutes.getStarted) {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
-                        AppRoutes.home,
+                        AppRoutes.getStarted,
                         (route) => false,
                       );
                     }

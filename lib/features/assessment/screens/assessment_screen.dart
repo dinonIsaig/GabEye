@@ -1,21 +1,20 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
-import 'package:gabeye/core/theme/gabeye_theme.dart';
-import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
-import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
-import 'package:gabeye/features//featured_reads/settings/help_feedback_screen.dart';
-import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
-import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
+import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
+import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
+import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
 
 
 class CapDragData {
@@ -27,11 +26,9 @@ class CapDragData {
 class AssessmentScreen extends StatefulWidget {
   const AssessmentScreen({super.key});
 
-
   @override
   State<AssessmentScreen> createState() => _AssessmentScreenState();
 }
-
 
 class _AssessmentScreenState extends State<AssessmentScreen> {
   late List<int?> _arrangedCaps; // 15 slots: indices 0-14 map to grid slots 1-15
@@ -49,9 +46,9 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   void _resetTest() {
     setState(() {
       _arrangedCaps = List<int?>.filled(15, null);
- 
+
       _poolCaps = List<int>.generate(15, (i) => i + 1);
- 
+
       // Shuffle the pool (Fisher-Yates shuffle)
       final random = math.Random();
       for (int i = _poolCaps.length - 1; i > 0; i--) {
@@ -126,6 +123,7 @@ void _applyDebugProfile(List<int> caps) {
       child: Builder(
         builder: (context) {
           final colors = Theme.of(context).colorScheme;
+          final textTheme = Theme.of(context).textTheme; 
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -143,7 +141,7 @@ void _applyDebugProfile(List<int> caps) {
                   children: [
                     _buildHowItWorksPill(colors),
                     const SizedBox(height: 20),
-                    _buildAssessmentCard(colors),
+                    _buildAssessmentCard(colors, textTheme),
                     const SizedBox(height: 20),
                     _buildFooterButtons(colors),
                     const SizedBox(height: 12),
@@ -235,8 +233,7 @@ void _applyDebugProfile(List<int> caps) {
           child: Center(
             child: Text(
               'Start',
-              style: TextStyle(
-                fontSize: 16,
+              style: textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colors.onSurfaceVariant,
               ),
@@ -252,20 +249,22 @@ void _applyDebugProfile(List<int> caps) {
   }
 
   Widget _buildHowItWorksPill(ColorScheme colors) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return OutlinedButton.icon(
       onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);}, 
       icon: const Icon(Icons.help_outline, size: 16),
-      label: const Text('How it works?'),
+      label: const Text('How it works?', style: TextStyle(fontWeight: FontWeight.bold)),
       style: OutlinedButton.styleFrom(
-        foregroundColor: colors.onSurface,
-        side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
+        foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
+        backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
+        side: isDark ? BorderSide.none : BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         padding: const EdgeInsets.symmetric(vertical: 14),
       ),
     );
   }
 
-  Widget _buildAssessmentCard(ColorScheme colors) {
+  Widget _buildAssessmentCard(ColorScheme colors, TextTheme textTheme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -275,7 +274,7 @@ void _applyDebugProfile(List<int> caps) {
       ),
       child: Column(
         children: [
-          _buildStartHeader(colors),
+          _buildStartHeader(colors, textTheme),
           const SizedBox(height: 16),
           _buildStartGrid(colors),
           const SizedBox(height: 20),
@@ -288,15 +287,15 @@ void _applyDebugProfile(List<int> caps) {
             alignment: Alignment.centerLeft,
             child: Text(
               'Select Next Color',
-              style: TextStyle(
-                fontSize: 16,
+              style: textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                fontFamily: 'Inter',
                 color: colors.onSurfaceVariant,
               ),
             ),
           ),
           const SizedBox(height: 16),
-          _buildPoolGrid(colors),
+          _buildPoolGrid(colors, textTheme),
         ],
       ),
     );
@@ -331,13 +330,17 @@ void _applyDebugProfile(List<int> caps) {
         border: Border.all(color: Colors.white, width: 2),
       ),
       alignment: Alignment.center,
-      child: const Text(
-        'FIXED',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: const FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          'FIXED',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
@@ -394,13 +397,16 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
     );
   }
 
-  Widget _buildPoolGrid(ColorScheme colors) {
+  Widget _buildPoolGrid(ColorScheme colors, TextTheme textTheme) {
     if (_poolCaps.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
         child: Text(
           'All caps placed — ready to finish!',
-          style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
+          style: textTheme.bodyMedium?.copyWith(
+            color: colors.onSurfaceVariant,
+            fontFamily: 'Inter',
+          ),
         ),
       );
     }
@@ -454,43 +460,53 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
   }
 
   Widget _buildFooterButtons(ColorScheme colors) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         ElevatedButton(
           onPressed: _isTestComplete
           ? () {
+              final caps = _arrangedCaps.cast<int>();
+              assessmentController.setArrangedCaps(caps);
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AssessmentSummaryScreen(
-                    arrangedCaps: _arrangedCaps.cast<int>(),
+                    arrangedCaps: caps,
                   ),
                 ),
               );
             }
           : null,
           style: ElevatedButton.styleFrom(
+            backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
+            foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 55),
             elevation: _isTestComplete ? 4 : 0,
           ),
-          child: const Text('Finish Assessment', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text(
+            'Finish Assessment', 
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'),
+          ),
         ),
         const SizedBox(height: 10),
         OutlinedButton(
           onPressed: _resetTest,
           style: OutlinedButton.styleFrom(
-            foregroundColor: colors.onSurface,
-            side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
+            foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
+            backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
+            side: isDark ? BorderSide.none : BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 55),
           ),
-          child: const Text('Start Over', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text(
+            'Start Over', 
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'), 
+          ),
         ),
         
       ],
     );
   }
-
 }
-

@@ -24,39 +24,47 @@ class ConfusionDiagram extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return Column(
-      children: [
-        Container(
-          width: 300,
-          height: 300,
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: colors.onSurfaceVariant.withOpacity(0.15)),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: CustomPaint(
-            size: const Size(268, 268),
-            painter: ConfusionDiagramPainter(
-              arrangedCaps: arrangedCaps,
-              circleColor: colors.onSurfaceVariant.withOpacity(0.2),
-              normalSegmentColor: colors.onSurfaceVariant.withOpacity(0.25),
-              labelColor: colors.onSurface,
-              labelShadowColor: colors.surface,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double availableWidth = constraints.maxWidth;
+        final double boxSize = math.min(availableWidth > 0 ? availableWidth : 300.0, 300.0);
+        final double paintSize = math.max(boxSize - 32, 100.0);
+
+        return Column(
+          children: [
+            Container(
+              width: boxSize,
+              height: boxSize,
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: colors.onSurfaceVariant.withOpacity(0.15)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: CustomPaint(
+                size: Size(paintSize, paintSize),
+                painter: ConfusionDiagramPainter(
+                  arrangedCaps: arrangedCaps,
+                  circleColor: colors.onSurfaceVariant.withOpacity(0.2),
+                  normalSegmentColor: colors.onSurfaceVariant.withOpacity(0.25),
+                  labelColor: colors.onSurface,
+                  labelShadowColor: colors.surface,
+                ),
+              ),
             ),
-          ),
-        ),
-        if (showLegend) ...[
-          const SizedBox(height: 12),
-          _buildLegend(colors),
-        ],
-      ],
+            if (showLegend) ...[
+              const SizedBox(height: 12),
+              _buildLegend(colors),
+            ],
+          ],
+        );
+      },
     );
   }
 
   Widget _buildLegend(ColorScheme colors) {
     return Wrap(
-      spacing: 16,
+      spacing: 12,
       runSpacing: 6,
       alignment: WrapAlignment.center,
       children: [
@@ -73,7 +81,7 @@ class ConfusionDiagram extends StatelessWidget {
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(fontSize: 16, color: colors.onSurfaceVariant)),
+        Text(label, style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
       ],
     );
   }
@@ -112,109 +120,87 @@ class ConfusionDiagramPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
-
-      final dx = math.cos(angleRad) * radius;
-      final dy = math.sin(angleRad) * radius;
-      const int dashCount = 15;
-      final axisCenter = center + shift;
-      final start = axisCenter - Offset(dx, dy);
-      final end = axisCenter + Offset(dx, dy);
-
-      for (int i = 0; i < dashCount; i++) {
-        if (i % 2 == 0) {
-          final tStart = i / dashCount;
-          final tEnd = (i + 1) / dashCount;
-          final pStart = Offset(
-            start.dx + (end.dx - start.dx) * tStart,
-            start.dy + (end.dy - start.dy) * tStart,
-          );
-          final pEnd = Offset(
-            start.dx + (end.dx - start.dx) * tEnd,
-            start.dy + (end.dy - start.dy) * tEnd,
-          );
-          canvas.drawLine(pStart, pEnd, axisPaint);
-        }
-      }
+      final dx = radius * math.cos(angleRad);
+      final dy = radius * math.sin(angleRad);
+      canvas.drawLine(center + shift - Offset(dx, dy), center + shift + Offset(dx, dy), axisPaint);
     }
 
-    drawAxis(
-      -124 * math.pi / 180, Colors.amber.withOpacity(0.3), shift: Offset(-40, 25)); // Deutan
+    drawAxis(math.pi * 0.44, AppSemanticColors.salmon.withOpacity(0.35));
+    drawAxis(math.pi * 0.54, AppSemanticColors.murky.withOpacity(0.35));
+    drawAxis(math.pi * 0.05, AppSemanticColors.tritan.withOpacity(0.35), shift: const Offset(0, 10));
 
-    drawAxis(
-      -146 * math.pi / 180, Colors.red.withOpacity(0.3), shift: Offset(-23, 30)); // Protan
-
-    drawAxis(-62 * math.pi / 180, Colors.blue.withOpacity(0.3), shift: Offset (13, 0)); // Tritan
-
-    // Precompute coordinates for each cap in a circular layout
-    final List<Offset> capCoords = [];
-    final double startAngle = 135 * math.pi / 180;
-    final double angleDelta = 22.5 * math.pi / 180; // 360 / 16
-
+    // Outer caps + labels
     for (int i = 0; i < 16; i++) {
-      final double angle = startAngle + i * angleDelta;
-      capCoords.add(Offset(
-        center.dx + math.cos(angle) * radius,
-        center.dy + math.sin(angle) * radius,
-      ));
-    }
+      final angle = (i / 16.0) * 2 * math.pi - math.pi / 2;
+      final x = center.dx + radius * math.cos(angle);
+      final y = center.dy + radius * math.sin(angle);
 
-    if (fullList.length == 16) {
-      for (int i = 0; i < fullList.length - 1; i++) {
-        final int capA = fullList[i];
-        final int capB = fullList[i + 1];
-        final int diffDistance = (capA - capB).abs();
+      final capPaint = Paint()..color = ColorCap.getVisualColor(i);
+      canvas.drawCircle(Offset(x, y), 8, capPaint);
 
-        final Color segmentColor;
-        if (diffDistance <= 1) {
-          segmentColor = normalSegmentColor;
-        } else if (diffDistance >= 4) {
-          segmentColor = AppSemanticColors.majorError;
-        } else {
-          segmentColor = AppSemanticColors.minorError;
-        }
+      final labelRadius = radius + 11;
+      final lx = center.dx + labelRadius * math.cos(angle);
+      final ly = center.dy + labelRadius * math.sin(angle);
 
-        final linePaint = Paint()
-          ..color = segmentColor
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.0
-          ..strokeCap = StrokeCap.round;
-
-        canvas.drawLine(capCoords[capA], capCoords[capB], linePaint);
-      }
-    }
-
-    // Draw colored cap circles and numbers
-    for (int i = 0; i < 16; i++) {
-      final pos = capCoords[i];
-      final color = ColorCap.getVisualColor(i);
-
-      if (i == 0) {
-        canvas.drawCircle(pos, 10.0, Paint()..color = labelColor);
-      }
-
-      canvas.drawCircle(pos, 8.0, Paint()..color = color);
-
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: i.toString(),
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 7.5,
-            fontWeight: FontWeight.w800,
-            shadows: [
-              Shadow(color: labelShadowColor.withOpacity(0.8), blurRadius: 1.5, offset: const Offset(0.5, 0.5)),
-            ],
-          ),
+      final textSpan = TextSpan(
+        text: '$i',
+        style: TextStyle(
+          color: labelColor,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          shadows: [
+            Shadow(color: labelShadowColor, blurRadius: 2),
+            Shadow(color: labelShadowColor, blurRadius: 4),
+          ],
         ),
-        textDirection: TextDirection.ltr,
       );
+      final textPainter = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
       textPainter.layout();
-      textPainter.paint(canvas, pos - Offset(textPainter.width / 2, textPainter.height / 2));
+      textPainter.paint(canvas, Offset(lx - textPainter.width / 2, ly - textPainter.height / 2));
+    }
+
+    // Arrangement line segments
+    for (int i = 0; i < fullList.length - 1; i++) {
+      final capA = fullList[i];
+      final capB = fullList[i + 1];
+
+      final angleA = (capA / 16.0) * 2 * math.pi - math.pi / 2;
+      final angleB = (capB / 16.0) * 2 * math.pi - math.pi / 2;
+
+      final pA = Offset(center.dx + radius * math.cos(angleA), center.dy + radius * math.sin(angleA));
+      final pB = Offset(center.dx + radius * math.cos(angleB), center.dy + radius * math.sin(angleB));
+
+      final step = (capA - capB).abs();
+      Color segmentColor;
+      double strokeWidth;
+
+      if (step == 1 || step == 15) {
+        segmentColor = normalSegmentColor;
+        strokeWidth = 1.5;
+      } else if (step == 2 || step == 14) {
+        segmentColor = AppSemanticColors.minorError;
+        strokeWidth = 2.0;
+      } else {
+        segmentColor = AppSemanticColors.majorError;
+        strokeWidth = 2.5;
+      }
+
+      final linePaint = Paint()
+        ..color = segmentColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawLine(pA, pB, linePaint);
     }
   }
 
   @override
   bool shouldRepaint(covariant ConfusionDiagramPainter oldDelegate) {
-    return oldDelegate.arrangedCaps != arrangedCaps;
+    return oldDelegate.arrangedCaps != arrangedCaps ||
+        oldDelegate.circleColor != circleColor ||
+        oldDelegate.normalSegmentColor != normalSegmentColor ||
+        oldDelegate.labelColor != labelColor ||
+        oldDelegate.labelShadowColor != labelShadowColor;
   }
 }

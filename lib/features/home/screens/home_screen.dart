@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
+import 'package:gabeye/core/utils/responsive.dart';
+import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
+import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 import 'package:gabeye/features/home/screens/profile_screen.dart';
 import 'package:gabeye/features/home/screens/vision_lens_screen.dart';
@@ -160,11 +163,11 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
           onLogoTap: () {
-            if (_selectedIndex != 0) {
-              setState(() {
-                _selectedIndex = 0;
-              });
-            }
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.getStarted,
+              (route) => false,
+            );
           },
           onMenuSelected: (option) {
             switch (option.label) {
@@ -187,33 +190,36 @@ class _HomeScreenState extends State<HomeScreen> {
           // Tab 0: Home Overview Dashboard
           SafeArea(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: Responsive.symmetricH(context, base: 16, min: 12, max: 24)
+                  .copyWith(top: 20, bottom: 20),
               children: [
                 HeroSection(
                   onKnowMoreTap: () {
                     Navigator.pushNamed(context, AppRoutes.article);
                   },
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: Responsive.space(context, base: 32, min: 20, max: 40)),
                 Text(
                   'Core Features',
-                  style: theme.textTheme.headlineSmall ??
-                      const TextStyle(
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
+                  style: (theme.textTheme.headlineSmall ??
+                          const TextStyle(
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.bold,
+                          ))
+                      .copyWith(
+                        fontSize: Responsive.font(context, base: 24, min: 18, max: 28),
                       ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: Responsive.space(context, base: 16, min: 12, max: 22)),
                 ...features.map(
                   (f) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: FeatureRow(data: f),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: Responsive.space(context, base: 32, min: 20, max: 40)),
                 FeaturedReadsSection(reads: reads),
-                const SizedBox(height: 20),
+                SizedBox(height: Responsive.space(context, base: 20, min: 14, max: 28)),
               ],
             ),
           ),

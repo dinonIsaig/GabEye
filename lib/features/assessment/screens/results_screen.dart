@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/app_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
@@ -52,9 +53,9 @@ class ResultsPage extends StatelessWidget {
                       children: [
                         _buildDiagnosisAndPlotCard(context, colors, result, severityStyle, diagnosisStyle),
                         const SizedBox(height: 20),
-                        _buildTechnicalBreakdownCard(colors, result, diagnosisStyle),
+                        _buildTechnicalBreakdownCard(context, colors, result, diagnosisStyle),
                         const SizedBox(height: 20),
-                        _buildConfusionLineCard(colors, result),
+                        _buildConfusionLineCard(context, colors, result),
                         const SizedBox(height: 32),
                         _buildFooterButtons(context, colors),
                         const SizedBox(height: 12),
@@ -109,7 +110,17 @@ class ResultsPage extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             result.diagnosisType == ColorDeficiencyType.normal ? result.description : diagnosisStyle.shortSummary,
-            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16, height: 1.5),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.5,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.5,
+                ),
           ),
           const SizedBox(height: 20),
           Row(
@@ -149,24 +160,33 @@ class ResultsPage extends StatelessWidget {
 
   Widget _buildMetricBox({required String label, required String value, required Color backgroundColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(color: Colors.white.withOpacity(0.25), width: 1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-            textAlign: TextAlign.center,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),
@@ -174,7 +194,12 @@ class ResultsPage extends StatelessWidget {
   }
 
   // -------------------- Technical Breakdown --------------------
-  Widget _buildTechnicalBreakdownCard(ColorScheme colors, D15ScoreResult result, DiagnosisStyle diagnosisStyle) {
+  Widget _buildTechnicalBreakdownCard(
+    BuildContext context,
+    ColorScheme colors,
+    D15ScoreResult result,
+    DiagnosisStyle diagnosisStyle,
+  ) {
     final String angleDescription = diagnosisStyle.axisFamily != null
         ? "The confusion axis angle on the color wheel — this result lines up with ${result.shortName}."
         : "The confusion axis angle on the color wheel — this result doesn't line up cleanly with a single axis.";
@@ -201,6 +226,7 @@ class ResultsPage extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           _buildTechnicalRow(
+            context: context,
             colors: colors,
             badgeLabel: 'C-Index',
             badgeValue: result.cIndex.toStringAsFixed(2),
@@ -209,6 +235,7 @@ class ResultsPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildTechnicalRow(
+            context: context,
             colors: colors,
             badgeLabel: 'S-Index',
             badgeValue: result.sIndex.toStringAsFixed(2),
@@ -217,6 +244,7 @@ class ResultsPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildTechnicalRow(
+            context: context,
             colors: colors,
             badgeLabel: 'Angle',
             badgeValue: '${result.angle.toStringAsFixed(1)}°',
@@ -229,6 +257,7 @@ class ResultsPage extends StatelessWidget {
   }
 
   Widget _buildTechnicalRow({
+    required BuildContext context,
     required ColorScheme colors,
     required String badgeLabel,
     required String badgeValue,
@@ -244,16 +273,22 @@ class ResultsPage extends StatelessWidget {
           decoration: BoxDecoration(color: colors.primary, borderRadius: BorderRadius.circular(8)),
           child: Column(
             children: [
-              Text(
-                badgeLabel,
-                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 16, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  badgeLabel,
+                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 4),
-              Text(
-                badgeValue,
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  badgeValue,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ),
@@ -265,7 +300,20 @@ class ResultsPage extends StatelessWidget {
             children: [
               Text(title, style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 2),
-              Text(description, style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16, height: 1.4)),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 16,
+                      height: 1.4,
+                    ) ??
+                    TextStyle(
+                      fontFamily: 'AtkinsonHyperlegible',
+                      color: colors.onSurfaceVariant,
+                      fontSize: 16,
+                      height: 1.4,
+                    ),
+              ),
             ],
           ),
         ),
@@ -274,7 +322,7 @@ class ResultsPage extends StatelessWidget {
   }
 
   // -------------------- Confusion Line --------------------
-  Widget _buildConfusionLineCard(ColorScheme colors, D15ScoreResult result) {
+  Widget _buildConfusionLineCard(BuildContext context, ColorScheme colors, D15ScoreResult result) {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
@@ -295,7 +343,15 @@ class ResultsPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
                 'No crossing errors detected. Perfect arrangement!',
-                style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 16,
+                    ) ??
+                    TextStyle(
+                      fontFamily: 'AtkinsonHyperlegible',
+                      color: colors.onSurfaceVariant,
+                      fontSize: 16,
+                    ),
               ),
             )
           else ...[
@@ -306,15 +362,16 @@ class ResultsPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final error = result.crossings[index];
                 final isMajor = error.isMajor;
+                final errorColor = isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: (isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError).withOpacity(0.10),
+                    color: errorColor.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(8),
                     border: Border(
                       left: BorderSide(
-                        color: isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError,
+                        color: errorColor,
                         width: 3,
                       ),
                     ),
@@ -322,15 +379,31 @@ class ResultsPage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Cap ${error.capA} → Cap ${error.capB}',
-                        style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
+                      Flexible(
+                        flex: 5,
+                        child: Text(
+                          'Cap ${error.capA} → Cap ${error.capB}',
+                          style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 14),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      Text(
-                        isMajor ? 'Major Crossover (dist: ${error.distance})' : 'Minor Swap (dist: ${error.distance})',
-                        style: TextStyle(
-                          color: isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError,
-                          fontSize: 16,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        flex: 6,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              isMajor ? 'Major Crossover (dist: ${error.distance})' : 'Minor Swap (dist: ${error.distance})',
+                              style: TextStyle(
+                                color: errorColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -339,16 +412,26 @@ class ResultsPage extends StatelessWidget {
               },
             ),
             const SizedBox(height: 16),
-            _buildConfusionLineLegendText(colors),
+            _buildConfusionLineLegendText(context, colors),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildConfusionLineLegendText(ColorScheme colors) {
-    final baseStyle = TextStyle(color: colors.onSurfaceVariant, fontSize: 13, height: 1.5);
-    final boldStyle = TextStyle(color: colors.onSurface, fontWeight: FontWeight.bold, fontSize: 13, height: 1.5);
+  Widget _buildConfusionLineLegendText(BuildContext context, ColorScheme colors) {
+    final textTheme = Theme.of(context).textTheme;
+    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+      color: colors.onSurfaceVariant,
+      fontSize: 13,
+      height: 1.5,
+    );
+    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+      color: colors.onSurface,
+      fontSize: 13,
+      fontWeight: FontWeight.bold,
+      height: 1.5,
+    );
 
     return RichText(
       text: TextSpan(
@@ -370,15 +453,49 @@ class ResultsPage extends StatelessWidget {
 
   // -------------------- Footer buttons --------------------
   Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ElevatedButton.icon(
       onPressed: () => _exportAsPdf(context),
       iconAlignment: IconAlignment.end,
       icon: const Icon(Icons.download, size: 20),
       style: ElevatedButton.styleFrom(
+        backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
+        foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         minimumSize: const Size(double.infinity, 55),
       ),
-      label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+    );
+  }
+
+// -------------------- Footer buttons --------------------
+  Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
+    return Column(
+      children: [
+        ElevatedButton.icon(
+          onPressed: () => _exportAsPdf(context),
+          iconAlignment: IconAlignment.end,
+          icon: const Icon(Icons.download, size: 20),
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            minimumSize: const Size(double.infinity, 55),
+          ),
+          label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
+        ),
+        const SizedBox(height: 12), 
+        OutlinedButton.icon(
+          onPressed: () => Navigator.pop(context),
+          label: const Text('Back', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
+          iconAlignment: IconAlignment.start,
+          icon: const Icon(Icons.arrow_back, size: 20),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: colors.onSurface,
+            side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            minimumSize: const Size(double.infinity, 50),
+          ),
+        ),
+      ],
     );
   }
 

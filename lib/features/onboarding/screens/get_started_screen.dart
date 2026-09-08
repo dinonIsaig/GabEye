@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/onboarding/widgets/terms_and_conditions_modal.dart';
 
 class GetStartedScreen extends StatelessWidget {
@@ -10,25 +11,30 @@ class GetStartedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 7,
-              child: Stack(
+        child: Responsive.constrainWidth(
+          context,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isShort = constraints.maxHeight < 650;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Positioned(
-                    top: 0,
-                    left: -140,
-                    bottom: 0,
-                    child: SvgPicture.asset(
-                      'assets/images/gabEyeLogo.svg',
-                      fit: BoxFit.contain,
+                  Expanded(
+                    flex: isShort ? 5 : 6,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: 0,
+                          left: Responsive.space(context, base: -140, min: -180, max: -100),
+                          bottom: 0,
+                          child: SvgPicture.asset(
+                            'assets/images/gabEyeLogo.svg',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
 
             Expanded(
               flex: 3,
@@ -85,15 +91,10 @@ class GetStartedScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  minimumSize: const Size(double.infinity, 55),
-                ),
-                child: const Text(
-                  'Get Started',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
