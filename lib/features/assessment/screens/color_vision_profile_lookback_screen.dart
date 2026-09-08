@@ -84,7 +84,6 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveCaps = arrangedCaps ?? assessmentController.value;
     final colors = Theme.of(context).colorScheme;
     final List<int> effectiveCaps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
     final D15ScoreResult result = (arrangedCaps == null && VisionProfileService.instance.value != null)

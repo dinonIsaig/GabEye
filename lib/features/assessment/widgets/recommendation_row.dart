@@ -16,7 +16,6 @@ class RecommendationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme; 
-    final colors = Theme.of(context).colorScheme; 
     
     final imagePath = isDark 
         ? 'assets/images/reco_dark.png' 

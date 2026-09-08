@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
-import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
@@ -15,7 +15,6 @@ import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
 import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
-
 
 class CapDragData {
   final int capNum;
@@ -161,70 +160,7 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildTopBar(ColorScheme colors) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () => Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.getStarted,
-            (route) => false,
-          ),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.transparent,
-            child: SvgPicture.asset('assets/images/gabEyeLogo.svg', fit: BoxFit.contain),
-          ),
-        ),
-        PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: colors.onSurface),
-          color: colors.surface, 
-          onSelected: (String value) {
-            if (value == 'Settings') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const GabEyeSettingsScreen(),
-                ),
-              );
-            } else if (value == 'Help & Feedback') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HelpFeedbackScreen(),
-                ),
-              );
-            } else if (value == 'About GabEye') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const GabEyeArticleScreen(),
-                ),
-              );
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'Settings',
-              child: Text('Settings'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'Help & Feedback',
-              child: Text('Help & Feedback'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'About GabEye',
-              child: Text('About GabEye'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStartHeader(ColorScheme colors) {
+  Widget _buildStartHeader(ColorScheme colors, TextTheme textTheme) {
     return Row(
       children: [
         const Spacer(),

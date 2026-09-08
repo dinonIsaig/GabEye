@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
-import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/theme/app_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
@@ -453,22 +453,6 @@ class ResultsPage extends StatelessWidget {
 
   // -------------------- Footer buttons --------------------
   Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ElevatedButton.icon(
-      onPressed: () => _exportAsPdf(context),
-      iconAlignment: IconAlignment.end,
-      icon: const Icon(Icons.download, size: 20),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
-        foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        minimumSize: const Size(double.infinity, 55),
-      ),
-    );
-  }
-
-// -------------------- Footer buttons --------------------
-  Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
     return Column(
       children: [
         ElevatedButton.icon(
@@ -500,10 +484,9 @@ class ResultsPage extends StatelessWidget {
   }
 
   void _exportAsPdf(BuildContext context) {
-    // TODO: wire up real PDF export (e.g. the `pdf` + `printing` packages) —
-    // same stub as AssessmentSummaryScreen's Export button.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('PDF export coming soon')),
+    PdfReportService.generateAndExportPdf(
+      context,
+      arrangedCaps: arrangedCaps,
     );
   }
 }

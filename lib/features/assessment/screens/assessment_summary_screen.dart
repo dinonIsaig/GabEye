@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
@@ -247,7 +248,6 @@ class AssessmentSummaryScreen extends StatelessWidget {
           OutlinedButton(
             onPressed: () => _exportAsPdf(context),
             style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.transparent,
               foregroundColor: colors.onSurface,
               backgroundColor: isDark ? colors.surfaceContainer : Colors.transparent,
               side: BorderSide(
@@ -401,9 +401,9 @@ class AssessmentSummaryScreen extends StatelessWidget {
   }
 
   void _exportAsPdf(BuildContext context) {
-    // TODO: wire up real PDF export (e.g. the `pdf` + `printing` packages).
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('PDF export coming soon')),
+    PdfReportService.generateAndExportPdf(
+      context,
+      arrangedCaps: arrangedCaps,
     );
   }
 }

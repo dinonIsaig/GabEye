@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/assessment_recommendations_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
-import 'package:gabeye/features/home/screens/home_screen.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 
@@ -43,12 +42,6 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                       children: [
                         _buildKeyFindingsCard(
                           context,
-                          colors,
-                          textTheme,
-                          diagnosisStyle,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildCloserLookCard(
                           colors,
                           textTheme,
                           diagnosisStyle,
@@ -310,14 +303,3 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
     );
   }
 }
-
-// temporary function to go to home screen, will be removed once recommended steps has been done
-void _goToHomeScreen(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const HomeScreen(),
-      ),
-      (route) => false,
-    );
-  }

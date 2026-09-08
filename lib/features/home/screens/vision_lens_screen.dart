@@ -124,25 +124,24 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         final XFile photo = await _cameraController!.takePicture();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Captured & saved live Daltonized photo (${photo.name}) with filter applied!'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Captured & saved live Daltonized photo (${photo.name}) with filter applied!'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       } catch (_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Captured & saved live Daltonized photo with filter applied!'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Captured & saved live Daltonized photo with filter applied!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } else {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Captured & saved live Daltonized photo with filter applied!'),
