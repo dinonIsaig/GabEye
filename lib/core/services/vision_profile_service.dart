@@ -52,17 +52,35 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
 
   /// The static recommended intensity calculated strictly from D-15 assessment severity.
   double get recommendedIntensity {
-    if (value == null) return 0.65; // Unassessed default baseline
+    if (value == null) return 0.50; // Unassessed default baseline (50%)
     if (value!.diagnosisType == ColorDeficiencyType.normal) return 0.0;
 
     switch (value!.severity) {
       case SeverityLevel.none:
         return 0.0;
       case SeverityLevel.moderate:
-        final double rawRatio = (value!.cIndex - 1.5) / 1.5;
-        return rawRatio.clamp(0.50, 0.65);
+        // Range for Moderate: 40% to 65% (0.40 to 0.65)
+        final double rawRatio = (value!.cIndex - 1.0) / 1.5;
+        return rawRatio.clamp(0.40, 0.65);
       case SeverityLevel.strong:
-        return 1.0;
+        // Range for Severe / Strong: 70% to 100% (0.70 to 1.00)
+        final double rawRatio = 0.70 + ((value!.cIndex - 2.5) / 1.5) * 0.30;
+        return rawRatio.clamp(0.70, 1.00);
+    }
+  }
+
+  /// Recommended intensity range label for display (40%–65% for Moderate, 70%–100% for Severe).
+  String get recommendedRangeLabel {
+    if (value == null) return '40%–65%';
+    if (value!.diagnosisType == ColorDeficiencyType.normal) return '0%';
+
+    switch (value!.severity) {
+      case SeverityLevel.none:
+        return '0%';
+      case SeverityLevel.moderate:
+        return '40%–65%';
+      case SeverityLevel.strong:
+        return '70%–100%';
     }
   }
 

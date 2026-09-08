@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:gabeye/core/services/gallery_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
 import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
@@ -83,6 +84,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.save_alt_rounded, color: colors.primary),
             const SizedBox(width: 8),
@@ -91,29 +93,64 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         ),
         content: const Text(
           'Would you like to save this color-enhanced Daltonized photo to your device gallery?',
+          textAlign: TextAlign.center,
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: TextStyle(color: colors.onSurfaceVariant)),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Saved color-enhanced photo to device Gallery.'),
-                  duration: Duration(seconds: 2),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  bool success = false;
+                  if (_uploadedImageBytes != null) {
+                    success = await GalleryService.saveImageToGallery(
+                      _uploadedImageBytes!,
+                      filename: _uploadedFileName,
+                    );
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Saved color-enhanced photo to device Gallery.'
+                              : 'Saved photo to application storage.',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text(
+                  'Save to Gallery',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-              );
-            },
-            icon: const Icon(Icons.check, size: 18),
-            label: const Text('Save to Gallery'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  foregroundColor: colors.onSurfaceVariant,
+                  side: BorderSide(color: colors.outline.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -653,37 +690,54 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
           Positioned(
             left: 20,
             right: 20,
-            bottom: 114,
+            bottom: 140,
             child: _buildCalibrationSliderOverlay(context),
           ),
 
-        // Standalone Transparent Floating Open-Triangle Button (outline sides with NO base)
+        // Standalone Floating Open-Triangle Button (Sitting between bottom action bar and calibration container)
         if (_selectedPreset == PresetMode.customized)
           Positioned(
             left: 0,
             right: 0,
-            bottom: _showCalibrationSlider ? 90 : 80,
+            bottom: 82,
             child: Center(
-              child: GestureDetector(
+              child: InkWell(
                 onTap: () {
                   setState(() {
                     _showCalibrationSlider = !_showCalibrationSlider;
                   });
                 },
+                borderRadius: BorderRadius.circular(24),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  color: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black.withValues(alpha: 0.65)
+                        : Colors.white.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.45),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: AnimatedRotation(
                     turns: _showCalibrationSlider ? 0.5 : 0.0,
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOut,
                     child: SizedBox(
-                      width: 32,
-                      height: 18,
+                      width: 36,
+                      height: 20,
                       child: CustomPaint(
                         painter: OpenTrianglePainter(
-                          color: colors.onSurfaceVariant,
-                          strokeWidth: 3.0,
+                          color: colors.primary,
+                          strokeWidth: 3.5,
                         ),
                       ),
                     ),
@@ -889,7 +943,6 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         : Colors.white.withValues(alpha: 0.90);
 
     final double recIntensity = VisionProfileService.instance.recommendedIntensity;
-    final int recPercent = (recIntensity * 100).round();
     final int currentPercent = (VisionProfileService.instance.customIntensityOverride * 100).round();
 
     return ClipRRect(
@@ -948,7 +1001,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                               border: Border.all(color: colors.onSurfaceVariant.withValues(alpha: 0.4), width: 1),
                             ),
                             child: Text(
-                              'Rec: $recPercent%',
+                              'Rec: ${VisionProfileService.instance.recommendedRangeLabel}',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
