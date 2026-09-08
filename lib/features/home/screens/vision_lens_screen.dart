@@ -123,8 +123,20 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                   Navigator.of(ctx).pop();
                   bool success = false;
                   if (_uploadedImageBytes != null) {
-                    success = await GalleryService.saveImageToGallery(
+                    final type = _getEffectiveShaderType();
+                    final intensity = _getEffectiveShaderIntensity();
+                    final fallbackMatrix = _buildCameraColorMatrix(type, intensity);
+
+                    // Apply offscreen Daltonization filter so the saved image matches what the user sees on screen
+                    final filteredBytes = await GalleryService.applyDaltonizationShaderToImageBytes(
                       _uploadedImageBytes!,
+                      shaderType: type,
+                      intensity: intensity,
+                      fallbackMatrix: fallbackMatrix,
+                    );
+
+                    success = await GalleryService.saveImageToGallery(
+                      filteredBytes,
                       filename: _uploadedFileName,
                     );
                   }
@@ -133,8 +145,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                       SnackBar(
                         content: Text(
                           success
-                              ? 'Saved color-enhanced photo to device Gallery.'
-                              : 'Saved photo to application storage.',
+                              ? 'Saved color-enhanced Daltonized photo to device Gallery.'
+                              : 'Failed to save photo to Gallery.',
                         ),
                         duration: const Duration(seconds: 2),
                       ),
@@ -178,19 +190,42 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         final XFile photo = await _cameraController!.takePicture();
+        final rawBytes = await photo.readAsBytes();
+
+        final type = _getEffectiveShaderType();
+        final intensity = _getEffectiveShaderIntensity();
+        final matrix = _buildCameraColorMatrix(type, intensity);
+
+        // Apply Daltonization filter to captured camera frame bytes before saving to device gallery
+        final filteredBytes = await GalleryService.applyDaltonizationShaderToImageBytes(
+          rawBytes,
+          shaderType: type,
+          intensity: intensity,
+          fallbackMatrix: matrix,
+        );
+
+        final success = await GalleryService.saveImageToGallery(
+          filteredBytes,
+          filename: photo.name,
+        );
+
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Captured & saved live Daltonized photo (${photo.name}) with filter applied!'),
+            content: Text(
+              success
+                  ? 'Captured & saved Daltonized photo with filter applied!'
+                  : 'Failed to save captured photo to Gallery.',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
-      } catch (_) {
+      } catch (e) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Captured & saved live Daltonized photo with filter applied!'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('Error saving photo to gallery: $e'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -198,7 +233,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Captured & saved live Daltonized photo with filter applied!'),
+          content: Text('Camera is not initialized.'),
           duration: Duration(seconds: 2),
         ),
       );
