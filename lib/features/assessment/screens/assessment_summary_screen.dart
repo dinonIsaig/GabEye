@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
@@ -21,6 +22,12 @@ class AssessmentSummaryScreen extends StatelessWidget {
     final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
     final severityStyle = severityStyles[result.severity]!;
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (VisionProfileService.instance.value != result) {
+        VisionProfileService.instance.updateAssessmentResult(result, arrangedCaps: arrangedCaps);
+      }
+    });
 
     return ProgressBarScaffold(
       currentStep: 1,

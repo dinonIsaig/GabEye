@@ -66,15 +66,15 @@ void main() {
     float errChannel;
 
     if (uType < 0.5) {
-        // Protanopia (L-cone): Shift lost red into Green (0.7x) & Blue (0.5x)
+        // Protanopia (L-cone): Shift lost red into Green & Blue
         simMatrix = MACHADO_PROTAN;
         shiftWeights = vec3(0.0, 0.7, 1.0);
     } else if (uType < 1.5) {
-        // Deuteranopia (M-cone): Shift lost green into Red (0.7x) & Blue (0.5x)
+        // Deuteranopia (M-cone): Shift lost green into Red& Blue
         simMatrix = MACHADO_DEUTAN;
         shiftWeights = vec3(0.2, 0.0, 1.7);
     } else {
-        // Tritanopia (S-cone): Shift lost blue into Red (0.8x) & Green (0.5x)
+        // Tritanopia (S-cone): Shift lost blue into Red & Green 
         simMatrix = MACHADO_TRITAN;
         shiftWeights = vec3(0.8, 0.7, 0.0);
     }

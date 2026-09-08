@@ -130,7 +130,7 @@ class CameraPermissionModal extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.primary,
-                foregroundColor: colors.onPrimary,
+                foregroundColor: colors.surface,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
