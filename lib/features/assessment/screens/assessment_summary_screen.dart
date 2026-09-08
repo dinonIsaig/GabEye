@@ -240,6 +240,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
           OutlinedButton(
             onPressed: () => _exportAsPdf(context),
             style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.transparent,
               foregroundColor: colors.onSurface,
               backgroundColor: isDark ? colors.surfaceContainer : Colors.transparent,
               side: BorderSide(

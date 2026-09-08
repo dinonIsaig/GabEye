@@ -17,8 +17,8 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result =
-        ScoringService.calculateScore(arrangedCaps);
+    final textTheme = Theme.of(context).textTheme;
+    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
     return ProgressBarScaffold(
@@ -43,6 +43,13 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                         _buildKeyFindingsCard(
                           context,
                           colors,
+                          textTheme,
+                          diagnosisStyle,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildCloserLookCard(
+                          colors,
+                          textTheme,
                           diagnosisStyle,
                         ),
                         const SizedBox(height: 20),
@@ -62,8 +69,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            minimumSize:
-                                const Size(double.infinity, 55),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                           label: const Text(
                             'Next',
@@ -97,8 +103,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            minimumSize:
-                                const Size(double.infinity, 55),
+                            minimumSize: const Size(double.infinity, 55),
                           ),
                         ),
 
@@ -116,10 +121,10 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   }
 
   // -------------------- Key Findings --------------------
-
   Widget _buildKeyFindingsCard(
     BuildContext context,
     ColorScheme colors,
+    TextTheme textTheme,
     DiagnosisStyle diagnosisStyle,
   ) {
     return Container(
@@ -137,17 +142,17 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         children: [
           Text(
             'What this means to you?',
-            style: TextStyle(
+            style: textTheme.labelLarge?.copyWith(
               color: colors.onSurfaceVariant,
-              fontSize: 16,
             ),
           ),
-
           const SizedBox(height: 2),
-
           Text(
             'Key Findings',
-            style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
           const SizedBox(height: 20),
@@ -155,6 +160,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           _buildKeyFindingsRow(
             context: context,
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.palette_outlined,
             description: diagnosisStyle.keyFindingOne,
           ),
@@ -164,6 +170,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           _buildKeyFindingsRow(
             context: context,
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.visibility_outlined,
             description: diagnosisStyle.keyFindingTwo,
           ),
@@ -173,6 +180,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           _buildKeyFindingsRow(
             context: context,
             colors: colors,
+            textTheme: textTheme,
             icon: Icons.warning_amber_rounded,
             description: diagnosisStyle.keyFindingThree,
           ),
@@ -184,6 +192,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   Widget _buildKeyFindingsRow({
     required BuildContext context,
     required ColorScheme colors,
+    required TextTheme textTheme,
     required IconData icon,
     required String description,
   }) {

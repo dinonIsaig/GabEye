@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
@@ -26,11 +26,9 @@ class CapDragData {
 class AssessmentScreen extends StatefulWidget {
   const AssessmentScreen({super.key});
 
-
   @override
   State<AssessmentScreen> createState() => _AssessmentScreenState();
 }
-
 
 class _AssessmentScreenState extends State<AssessmentScreen> {
   late List<int?> _arrangedCaps; // 15 slots: indices 0-14 map to grid slots 1-15
@@ -48,9 +46,9 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   void _resetTest() {
     setState(() {
       _arrangedCaps = List<int?>.filled(15, null);
- 
+
       _poolCaps = List<int>.generate(15, (i) => i + 1);
- 
+
       // Shuffle the pool (Fisher-Yates shuffle)
       final random = math.Random();
       for (int i = _poolCaps.length - 1; i > 0; i--) {
@@ -125,6 +123,7 @@ void _applyDebugProfile(List<int> caps) {
       child: Builder(
         builder: (context) {
           final colors = Theme.of(context).colorScheme;
+          final textTheme = Theme.of(context).textTheme; 
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -142,7 +141,7 @@ void _applyDebugProfile(List<int> caps) {
                   children: [
                     _buildHowItWorksPill(colors),
                     const SizedBox(height: 20),
-                    _buildAssessmentCard(colors),
+                    _buildAssessmentCard(colors, textTheme),
                     const SizedBox(height: 20),
                     _buildFooterButtons(colors),
                     const SizedBox(height: 12),
@@ -234,8 +233,7 @@ void _applyDebugProfile(List<int> caps) {
           child: Center(
             child: Text(
               'Start',
-              style: TextStyle(
-                fontSize: 16,
+              style: textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colors.onSurfaceVariant,
               ),
@@ -266,7 +264,7 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildAssessmentCard(ColorScheme colors) {
+  Widget _buildAssessmentCard(ColorScheme colors, TextTheme textTheme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -276,7 +274,7 @@ void _applyDebugProfile(List<int> caps) {
       ),
       child: Column(
         children: [
-          _buildStartHeader(colors),
+          _buildStartHeader(colors, textTheme),
           const SizedBox(height: 16),
           _buildStartGrid(colors),
           const SizedBox(height: 20),
@@ -289,15 +287,15 @@ void _applyDebugProfile(List<int> caps) {
             alignment: Alignment.centerLeft,
             child: Text(
               'Select Next Color',
-              style: TextStyle(
-                fontSize: 16,
+              style: textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                fontFamily: 'Inter',
                 color: colors.onSurfaceVariant,
               ),
             ),
           ),
           const SizedBox(height: 16),
-          _buildPoolGrid(colors),
+          _buildPoolGrid(colors, textTheme),
         ],
       ),
     );
@@ -399,13 +397,16 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
     );
   }
 
-  Widget _buildPoolGrid(ColorScheme colors) {
+  Widget _buildPoolGrid(ColorScheme colors, TextTheme textTheme) {
     if (_poolCaps.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
         child: Text(
           'All caps placed — ready to finish!',
-          style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16),
+          style: textTheme.bodyMedium?.copyWith(
+            color: colors.onSurfaceVariant,
+            fontFamily: 'Inter',
+          ),
         ),
       );
     }
@@ -484,7 +485,10 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
             minimumSize: const Size(double.infinity, 55),
             elevation: _isTestComplete ? 4 : 0,
           ),
-          child: const Text('Finish Assessment', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text(
+            'Finish Assessment', 
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'),
+          ),
         ),
         const SizedBox(height: 10),
         OutlinedButton(
@@ -496,12 +500,13 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 55),
           ),
-          child: const Text('Start Over', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text(
+            'Start Over', 
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'), 
+          ),
         ),
         
       ],
     );
   }
-
 }
-
