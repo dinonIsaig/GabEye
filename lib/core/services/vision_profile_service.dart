@@ -9,15 +9,26 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
   static final VisionProfileService instance = VisionProfileService._();
 
   List<int> _arrangedCaps = List.generate(15, (i) => i + 1);
+  double? _customIntensityOverride;
 
   /// Get arranged cap sequence from latest assessment
   List<int> get arrangedCaps => _arrangedCaps;
+
+  /// Custom intensity slider value or calibrated shader intensity
+  double get customIntensityOverride => _customIntensityOverride ?? shaderIntensity;
+
+  /// Update manual shift intensity override from Profile slider
+  void setCustomIntensityOverride(double val) {
+    _customIntensityOverride = val;
+    notifyListeners();
+  }
 
   /// Save the D-15 assessment result to calibrate Daltonization shaders
   void updateAssessmentResult(D15ScoreResult result, {List<int>? arrangedCaps}) {
     if (arrangedCaps != null) {
       _arrangedCaps = List<int>.from(arrangedCaps);
     }
+    _customIntensityOverride = null; // reset override to use new assessment calibration
     value = result;
   }
 
@@ -39,25 +50,25 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
     }
   }
 
-  /// Get calibrated Daltonization shift intensity based on D-15 assessment severity.
-  /// - Moderate severity: proportional shift (~0.50 - 0.65 intensity)
-  /// - Strong / Severe: maximum shift (1.0 intensity)
-  /// - Normal vision: 0.0 shift
-  double get shaderIntensity {
-    if (value == null) return 0.70; // Unassessed default
+  /// The static recommended intensity calculated strictly from D-15 assessment severity.
+  double get recommendedIntensity {
+    if (value == null) return 0.65; // Unassessed default baseline
     if (value!.diagnosisType == ColorDeficiencyType.normal) return 0.0;
 
     switch (value!.severity) {
       case SeverityLevel.none:
         return 0.0;
       case SeverityLevel.moderate:
-        // Proportional calibration based on cIndex: moderate range ~ 0.50 - 0.65
         final double rawRatio = (value!.cIndex - 1.5) / 1.5;
         return rawRatio.clamp(0.50, 0.65);
       case SeverityLevel.strong:
-        // Max calibration for severe deficiency
         return 1.0;
     }
+  }
+
+  /// Get calibrated Daltonization shift intensity based on D-15 assessment severity or manual override.
+  double get shaderIntensity {
+    return _customIntensityOverride ?? recommendedIntensity;
   }
 
   /// Human-readable profile label with severity

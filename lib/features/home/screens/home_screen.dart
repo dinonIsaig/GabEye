@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
-import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
+import 'package:gabeye/features/home/screens/profile_screen.dart';
+import 'package:gabeye/features/home/screens/vision_lens_screen.dart';
 import 'package:gabeye/features/home/widgets/feature_row.dart';
 import 'package:gabeye/features/home/widgets/featured_reads_section.dart';
 import 'package:gabeye/features/home/widgets/gabeye_bottom_nav.dart';
@@ -31,11 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         ctaLabel: 'Try Using Camera',
         onCtaPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Live Camera Visual Processing coming soon!'),
-            ),
-          );
+          _onBottomNavTapped(1);
         },
       ),
       FeatureRowData(
@@ -138,15 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onBottomNavTapped(int index) {
-    if (index == 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Camera feature coming soon!'),
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _selectedIndex = index;
     });
@@ -178,11 +166,25 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             }
           },
+          onMenuSelected: (option) {
+            switch (option.label) {
+              case 'Settings':
+                Navigator.pushNamed(context, AppRoutes.settings);
+                break;
+              case 'Help & Feedback':
+                Navigator.pushNamed(context, AppRoutes.helpFeedback);
+                break;
+              case 'About GabEye':
+                Navigator.pushNamed(context, AppRoutes.article);
+                break;
+            }
+          },
         ),
       ),
       body: IndexedStack(
         index: _selectedIndex,
         children: [
+          // Tab 0: Home Overview Dashboard
           SafeArea(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -215,10 +217,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          const SizedBox.shrink(),
-          const SafeArea(
-            child: ColorVisionProfileLookbackContent(),
-          ),
+          // Tab 1: Vision Lens (Live Camera / Daltonization Processing)
+          const VisionLensScreen(),
+          // Tab 2: Vision Profile & Assessment Summary
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: GabEyeBottomNav(

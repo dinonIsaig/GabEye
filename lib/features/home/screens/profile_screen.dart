@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
+import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/services/scoring_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,150 +15,230 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  double _customIntensity = 1.0;
+  static Color getResultStateColor(D15ScoreResult result) {
+    if (result.diagnosisType == ColorDeficiencyType.random ||
+        result.diagnosisType == ColorDeficiencyType.unclassified) {
+      return AppColors.resultUnidentifiedColor;
+    }
+    switch (result.severity) {
+      case SeverityLevel.none:
+        return AppColors.resultNormalColor;
+      case SeverityLevel.moderate:
+        return AppColors.resultModerateColor;
+      case SeverityLevel.strong:
+        return AppColors.resultAboveTypicalColor;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20.0),
-      child: ValueListenableBuilder(
-        valueListenable: VisionProfileService.instance,
-        builder: (context, result, _) {
-          final hasAssessment = VisionProfileService.instance.hasCompletedAssessment;
-          final profileLabel = VisionProfileService.instance.activeProfileLabel;
-          final scoreResult = VisionProfileService.instance.value;
+    return ValueListenableBuilder(
+      valueListenable: VisionProfileService.instance,
+      builder: (context, profileResult, _) {
+        final List<int> effectiveCaps = VisionProfileService.instance.arrangedCaps;
+        final D15ScoreResult result = VisionProfileService.instance.value ??
+            ScoringService.calculateScore(effectiveCaps);
+        final severityStyle = severityStyles[result.severity]!;
+        final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
+        final stateColor = getResultStateColor(result);
 
-          return Column(
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // User Avatar & Name Header
-              Center(
+              // Lookback Card Banner (Range Headline + Severity Status)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: stateColor.withValues(alpha: isDark ? 0.16 : 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: stateColor.withValues(alpha: isDark ? 0.6 : 0.4),
+                    width: 2,
+                  ),
+                ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: colors.primary, width: 3),
-                      ),
-                      child: CircleAvatar(
-                        radius: 44,
-                        backgroundColor: colors.primaryContainer,
-                        child: Icon(
-                          Icons.person_rounded,
-                          size: 48,
-                          color: colors.onPrimaryContainer,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: stateColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(severityStyle.icon, size: 22, color: Colors.white),
                         ),
-                      ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            result.rangeHeadline,
+                            style: TextStyle(
+                              color: colors.onSurface,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Vision Profile',
+                      result.rangeBody,
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        profileLabel,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: colors.primary,
-                        ),
+                        color: colors.onSurfaceVariant,
+                        fontSize: 14,
+                        height: 1.45,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Farnsworth D-15 Assessment Results Card
-              Text(
-                'D-15 Assessment Summary',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: colors.onSurface,
-                ),
-              ),
-              const SizedBox(height: 10),
-
+              // Main Diagnosis Lookback Card (styled with VisionProfileCard design tokens)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: colors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(20),
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: colors.outlineVariant.withValues(alpha: 0.4),
+                    color: AppColors.cardBorder.withValues(alpha: isDark ? 0.4 : 0.6),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildMetricRow(
-                      context,
-                      label: 'Diagnosis Type',
-                      value: scoreResult?.shortName ?? 'Unassessed',
-                      icon: Icons.remove_red_eye,
+                    Text(
+                      'Based on your Farnsworth D-15 assessment...',
+                      style: TextStyle(color: colors.onSurfaceVariant, fontSize: 14),
                     ),
-                    const Divider(height: 20),
-                    _buildMetricRow(
-                      context,
-                      label: 'Deficiency Severity',
-                      value: scoreResult?.severityLabel ?? 'Moderate (Default)',
-                      icon: Icons.speed,
-                    ),
-                    const Divider(height: 20),
-                    _buildMetricRow(
-                      context,
-                      label: 'Confusion Index (C-Index)',
-                      value: scoreResult != null
-                          ? scoreResult.cIndex.toStringAsFixed(2)
-                          : '1.50 (Standard)',
-                      icon: Icons.analytics_outlined,
-                    ),
-                    if (scoreResult != null) ...[
-                      const Divider(height: 20),
-                      _buildMetricRow(
-                        context,
-                        label: 'Major Error Angle',
-                        value: '${scoreResult.angle.toStringAsFixed(1)}°',
-                        icon: Icons.explore_outlined,
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, AppRoutes.preAssessmentIntro);
-                        },
-                        icon: const Icon(Icons.refresh_rounded, size: 18),
-                        label: Text(
-                          hasAssessment ? 'Retake Farnsworth D-15 Test' : 'Take D-15 Assessment',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          foregroundColor: colors.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildOverlappingCircles(diagnosisStyle),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            result.shortName,
+                            style: TextStyle(
+                              color: colors.onSurface,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    _buildDescription(colors, result, diagnosisStyle),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricBox(
+                            label: 'Severity',
+                            value: result.severityLabel,
+                            backgroundColor: severityStyle.color,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildMetricBox(
+                            label: 'Type',
+                            value: result.shortName,
+                            backgroundColor: colors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildMetricBox(
+                            label: 'Affected',
+                            value: result.conesShortLabel,
+                            backgroundColor: colors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      result.practicalTip,
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 14,
+                        height: 1.45,
                       ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final caps = VisionProfileService.instance.arrangedCaps;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ResultsPage(arrangedCaps: caps),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.analytics_outlined, size: 16),
+                            label: const Text(
+                              'Detailed Result',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(context, AppRoutes.preAssessmentIntro);
+                            },
+                            icon: const Icon(Icons.refresh_rounded, size: 16),
+                            label: const Text(
+                              'Retake D-15',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colors.primary,
+                              side: BorderSide(color: colors.primary.withValues(alpha: 0.6)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     SizedBox(
@@ -163,14 +247,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onPressed: () {
                           PdfReportService.generateAndExportPdf(
                             context,
-                            scoreResult: scoreResult,
+                            scoreResult: result,
                             arrangedCaps: VisionProfileService.instance.arrangedCaps,
                           );
                         },
                         icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
                         label: const Text(
                           'Export PDF Report for Professionals',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: colors.onSurface,
@@ -187,87 +271,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
-              // Daltonization Calibration & Preview
+              // Account & References Section
               Text(
-                'LMS Daltonization Shift Calibration',
+                'Account & References',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: colors.onSurface,
                 ),
               ),
-              const SizedBox(height: 10),
-
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: colors.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Enhancement Intensity',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: colors.onSurface,
-                          ),
-                        ),
-                        Text(
-                          '${(_customIntensity * 100).toInt()}%',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: _customIntensity,
-                      min: 0.0,
-                      max: 1.0,
-                      divisions: 10,
-                      activeColor: colors.primary,
-                      onChanged: (val) {
-                        setState(() {
-                          _customIntensity = val;
-                        });
-                      },
-                    ),
-                    Text(
-                      'Adjusts visible error channel projection to maximize color contrast for Protan, Deutan, and Tritan views.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.onSurfaceVariant,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Settings & Quick Options List
-              Text(
-                'Account & Preferences',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: colors.onSurface,
-                ),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               _buildOptionTile(
                 context,
@@ -276,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.settings_rounded,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _buildOptionTile(
                 context,
                 title: 'Help & Feedback',
@@ -284,52 +299,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.help_outline_rounded,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.helpFeedback),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _buildOptionTile(
                 context,
-                title: 'About GabEye',
-                subtitle: 'Version info, research & documentation',
-                icon: Icons.info_outline_rounded,
+                title: 'About GabEye & References',
+                subtitle: 'Version info, research documentation & citations',
+                icon: Icons.auto_stories_rounded,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.article),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDescription(
+    ColorScheme colors,
+    D15ScoreResult result,
+    DiagnosisStyle style,
+  ) {
+    final baseStyle = TextStyle(
+      color: colors.onSurfaceVariant,
+      fontSize: 14,
+      height: 1.45,
+    );
+
+    if (result.diagnosisType == ColorDeficiencyType.normal) {
+      return Text(result.description, style: baseStyle);
+    }
+
+    final String prefix = style.axisFamily != null
+        ? "Your results suggest a ${result.shortName.toLowerCase()}-type color vision difference, one of the forms of ${style.axisFamily} color blindness. This means your eyes have a "
+        : "Your results suggest a color vision difference that doesn't align with a single axis. This means you may have a ";
+
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          TextSpan(text: prefix),
+          TextSpan(
+            text: style.highlightPhrase,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: colors.onSurface,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMetricRow(
-    BuildContext context, {
+  Widget _buildOverlappingCircles(DiagnosisStyle style) {
+    return SizedBox(
+      width: 32,
+      height: 20,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            child: CircleAvatar(
+              radius: 10,
+              backgroundColor: style.primaryColor,
+            ),
+          ),
+          Positioned(
+            left: 12,
+            child: CircleAvatar(
+              radius: 10,
+              backgroundColor: style.secondaryColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricBox({
     required String label,
     required String value,
-    required IconData icon,
+    required Color backgroundColor,
   }) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: colors.primary),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: colors.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface,
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -341,14 +421,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required VoidCallback onTap,
   }) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Using Container with InkWell for custom border radius
     return Container(
       decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.3),
+          color: AppColors.cardBorder.withValues(alpha: isDark ? 0.4 : 0.6),
         ),
       ),
       child: InkWell(
@@ -359,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: colors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
