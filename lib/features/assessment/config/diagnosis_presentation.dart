@@ -61,8 +61,8 @@ class DiagnosisStyle {
 
 const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
   ColorDeficiencyType.protan: DiagnosisStyle(
-    primaryColor: AppSemanticColors.murky,
-    secondaryColor: AppSemanticColors.red,
+    primaryColor: AppSemanticColors.red,
+    secondaryColor: AppSemanticColors.murky,
     tertiaryColor: AppSemanticColors.beige,
     axisFamily: 'red-green',
     subtitle: 'Red-green color vision difference',
@@ -81,8 +81,8 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
   ),
 
   ColorDeficiencyType.deutan: DiagnosisStyle(
-    primaryColor: AppSemanticColors.murky,
-    secondaryColor: AppSemanticColors.lemon,
+    primaryColor: AppSemanticColors.lemon,
+    secondaryColor: AppSemanticColors.murky,
     tertiaryColor: AppSemanticColors.beige,
     axisFamily: 'red-green',
     subtitle: 'Red-green color vision difference',
@@ -121,8 +121,8 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
   ),
 
   ColorDeficiencyType.unclassified: DiagnosisStyle(
-    primaryColor: AppSemanticColors.gray,
-    secondaryColor: AppSemanticColors.lightgray,
+    primaryColor: AppSemanticColors.lightgray,
+    secondaryColor: AppSemanticColors.gray,
     tertiaryColor: AppSemanticColors.darkgray,
     axisFamily: null,
     subtitle: 'Mixed color vision difference',
@@ -141,7 +141,7 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
   ),
 
   ColorDeficiencyType.random: DiagnosisStyle(
-    primaryColor: AppSemanticColors.gray,
+    primaryColor: AppSemanticColors.beige,
     secondaryColor: AppSemanticColors.royal,
     tertiaryColor: AppSemanticColors.lemon,
     axisFamily: null,
@@ -167,9 +167,10 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     tertiaryColor: AppSemanticColors.lemon,
     axisFamily: null,
     subtitle: 'Normal color vision',
-    highlightPhrase: '',
-    shortSummary: '',
-    imagePath: 'assets/images/cvd_cover.png',
+    highlightPhrase: 'no difficulty distinguishing colors across the spectrum.',
+    shortSummary:
+        'Your results suggest typical color vision with no significant color deficiency detected.',
+
     keyFindingOne:
         'Colors across the spectrum (reds, blues) appear as most people see them.',
     keyFindingTwo:

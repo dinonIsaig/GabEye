@@ -50,8 +50,8 @@ class PreAssessmentStepCard extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 25,
-                    vertical: 14,
+                    horizontal: 16,
+                    vertical: 12,
                   ),
                   child: Text.rich(
                     TextSpan(

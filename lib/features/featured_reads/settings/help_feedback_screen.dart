@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/constants/app_spacing.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
@@ -95,7 +96,17 @@ class HelpFeedbackScreen extends StatelessWidget {
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: GabEyeArticleNavbar(
           title: 'Help & Feedback',
-          onBack: () => Navigator.maybePop(context),
+          onBack: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.home,
+                (route) => false,
+              );
+            }
+          },
           onMenuSelected: (option) {
             if (option.label == 'Help & Feedback') {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -208,6 +219,7 @@ class _QuickHelpTile extends StatelessWidget {
     final arrowColor = Theme.of(context).brightness == Brightness.dark
         ? Colors.white
         : AppColors.primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
       button: true,
       label: '${item.title}. ${item.text}',
@@ -215,7 +227,12 @@ class _QuickHelpTile extends StatelessWidget {
         color: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: colors.primary.withValues(alpha: .15)),
+          side: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.35)
+                : AppColors.primaryNavy.withValues(alpha: 0.45),
+            width: 1.2,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -336,6 +353,8 @@ class _TroubleshootingTile extends StatelessWidget {
         ? Colors.white
         : AppColors.primaryColor;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Semantics(
       button: true,
       label: item.title,
@@ -343,7 +362,12 @@ class _TroubleshootingTile extends StatelessWidget {
         color: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: colors.primary.withValues(alpha: .15)),
+          side: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.35)
+                : AppColors.primaryNavy.withValues(alpha: 0.45),
+            width: 1.2,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -440,56 +464,92 @@ class _TroubleshootingTile extends StatelessWidget {
                           ],
                         ),
                       ],
-                      if (item.actionLabel != null) ...[
-                        const SizedBox(height: 16),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(dialogContext);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Open Settings, then allow Camera access for GabEye.',
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.settings_outlined),
-                            label: Text(
-                              item.actionLabel!,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
                 actions: [
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark
-                          ? AppColors.darkPrimaryButton
-                          : AppColors.lightPrimaryButton,
-                      foregroundColor:
-                          isDark ? AppColors.darkSurface : Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (item.actionLabel != null) ...[
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Open Settings, then allow Camera access for GabEye.',
+                                ),
+                              ),
+                            );
+                          },
+                          icon: Icon(
+                            Icons.settings_outlined,
+                            size: 18,
+                            color: isDark
+                                ? AppColors.darkSurface
+                                : AppColors.lightPrimaryButton,
+                          ),
+                          label: Text(
+                            item.actionLabel!,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppColors.darkSurface
+                                  : AppColors.lightPrimaryButton,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDark
+                                ? AppColors.darkSurface
+                                : AppColors.lightPrimaryButton,
+                            backgroundColor: isDark
+                                ? AppColors.darkPrimaryButton
+                                : Colors.transparent,
+                            side: isDark
+                                ? BorderSide.none
+                                : const BorderSide(
+                                    color: AppColors.lightPrimaryButton,
+                                    width: 1.5,
+                                  ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark
+                              ? AppColors.darkPrimaryButton
+                              : AppColors.lightPrimaryButton,
+                          foregroundColor:
+                              isDark ? AppColors.darkSurface : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: const Text(
-                      'Done',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               );

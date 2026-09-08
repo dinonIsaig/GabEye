@@ -43,11 +43,7 @@ const List<DebugTestProfile> debugTestProfiles = [
     arrangedCaps: [8, 3, 9, 2, 10, 4, 13, 11, 5, 12, 1, 14, 6, 15, 7],
   ),
   DebugTestProfile(
-    label: 'Unclassified — Moderate',
-    arrangedCaps: [4, 2, 1, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 3, 15],
-  ),
-  DebugTestProfile(
-    label: 'Unclassified — Strong',
-    arrangedCaps: [7, 5, 3, 1, 2, 4, 6, 11, 9, 10, 13, 12, 15, 8, 14],
+    label: 'Unclassified',
+    arrangedCaps: [3, 1, 2, 5, 4, 6, 7, 8, 9, 13, 10, 12, 14, 11, 15],
   ),
 ];

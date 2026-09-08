@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 // Import all your feature screens here
+import 'package:gabeye/features/assessment/screens/assessment_recommendations_screen.dart';
 import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 import 'package:gabeye/features/home/screens/home_screen.dart';
@@ -25,6 +26,7 @@ class AppRoutes {
   static const String preAssessmentWhatToMind = '/pre-assessment/what-to-mind';
   static const String preAssessmentDisclaimer = '/pre-assessment/disclaimer';
   static const String d15Assessment = '/assessment/d15';
+  static const String assessmentRecommendations = '/assessment/recommendations';
   static const String settings = '/settings';
   static const String helpFeedback = '/help-feedback';
   static const String howToUseGabEye = '/settings/how-to-use';
@@ -44,6 +46,8 @@ class AppRoutes {
       preAssessmentHowItWorks: (context) => const HowItWorksScreen(),
       preAssessmentWhatToMind: (context) => const WhatToMindScreen(),
       preAssessmentDisclaimer: (context) => const DisclaimerScreen(),
+      assessmentRecommendations: (context) =>
+          const AssessmentRecommendationsScreen(),
       settings: (context) => const GabEyeSettingsScreen(),
       helpFeedback: (context) => const HelpFeedbackScreen(),
       howToUseGabEye: (context) => const HowToUseGabEyeScreen(),

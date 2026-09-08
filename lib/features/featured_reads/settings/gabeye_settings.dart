@@ -222,20 +222,22 @@ class _SettingContainerState extends State<SettingContainer> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.15),
-              width: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.35)
+                  : AppColors.primaryNavy.withValues(alpha: 0.45),
+              width: 1.2,
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                widget.item.title,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  widget.item.title,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               Icon(

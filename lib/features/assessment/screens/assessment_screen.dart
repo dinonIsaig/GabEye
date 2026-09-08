@@ -1,13 +1,21 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
+import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
+import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
+import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
+import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
+
 
 class CapDragData {
   final int capNum;
@@ -52,6 +60,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
     });
   }
 
+// Debugging/Testing. Wired to the floating testing-panel button below.
 void _applyDebugProfile(List<int> caps) {
   setState(() {
     _arrangedCaps = List<int?>.from(caps);
@@ -152,7 +161,70 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildStartHeader(ColorScheme colors, TextTheme textTheme) {
+  Widget _buildTopBar(ColorScheme colors) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.getStarted,
+            (route) => false,
+          ),
+          child: CircleAvatar(
+            radius: 20,
+            backgroundColor: Colors.transparent,
+            child: SvgPicture.asset('assets/images/gabEyeLogo.svg', fit: BoxFit.contain),
+          ),
+        ),
+        PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, color: colors.onSurface),
+          color: colors.surface, 
+          onSelected: (String value) {
+            if (value == 'Settings') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GabEyeSettingsScreen(),
+                ),
+              );
+            } else if (value == 'Help & Feedback') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpFeedbackScreen(),
+                ),
+              );
+            } else if (value == 'About GabEye') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GabEyeArticleScreen(),
+                ),
+              );
+            }
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'Settings',
+              child: Text('Settings'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'Help & Feedback',
+              child: Text('Help & Feedback'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'About GabEye',
+              child: Text('About GabEye'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStartHeader(ColorScheme colors) {
     return Row(
       children: [
         const Spacer(),
@@ -177,17 +249,15 @@ void _applyDebugProfile(List<int> caps) {
   }
 
   Widget _buildHowItWorksPill(ColorScheme colors) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return OutlinedButton.icon(
       onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);}, 
       icon: const Icon(Icons.help_outline, size: 16),
-      label: const Text(
-        'How it works?',
-        style: TextStyle(fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600), // Adjusted size slightly for the pill
-      ),
+      label: const Text('How it works?', style: TextStyle(fontWeight: FontWeight.bold)),
       style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.transparent, 
-        foregroundColor: colors.onSurface,
-        side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
+        foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
+        backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
+        side: isDark ? BorderSide.none : BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         padding: const EdgeInsets.symmetric(vertical: 14),
       ),
@@ -260,13 +330,17 @@ void _applyDebugProfile(List<int> caps) {
         border: Border.all(color: Colors.white, width: 2),
       ),
       alignment: Alignment.center,
-      child: const Text(
-        'FIXED',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 10, 
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: const FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          'FIXED',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
@@ -386,22 +460,27 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
   }
 
   Widget _buildFooterButtons(ColorScheme colors) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         ElevatedButton(
           onPressed: _isTestComplete
           ? () {
+              final caps = _arrangedCaps.cast<int>();
+              assessmentController.setArrangedCaps(caps);
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AssessmentSummaryScreen(
-                    arrangedCaps: _arrangedCaps.cast<int>(),
+                    arrangedCaps: caps,
                   ),
                 ),
               );
             }
           : null,
           style: ElevatedButton.styleFrom(
+            backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
+            foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 55),
             elevation: _isTestComplete ? 4 : 0,
@@ -415,9 +494,9 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
         OutlinedButton(
           onPressed: _resetTest,
           style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.transparent, 
-            foregroundColor: colors.onSurface,
-            side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
+            foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
+            backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
+            side: isDark ? BorderSide.none : BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 55),
           ),

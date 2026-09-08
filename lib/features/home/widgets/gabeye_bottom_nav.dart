@@ -34,51 +34,56 @@ class GabEyeBottomNav extends StatelessWidget {
           ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       child: SafeArea(
         top: false,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: List.generate(_items.length, (index) {
             final isSelected = index == selectedIndex;
             final item = _items[index];
-            return GestureDetector(
-              onTap: () => onItemSelected(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 9),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (isDark
-                          ? AppColors.darkPrimaryButton
-                          : AppColors.primaryNavy)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      item.icon,
-                      size: 18,
-                      color: isSelected
-                          ? (isDark ? AppColors.darkSurface : Colors.white)
-                          : colorScheme.onSurface,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => onItemSelected(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isDark
+                            ? AppColors.darkPrimaryButton
+                            : AppColors.primaryNavy)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        item.icon,
+                        size: 18,
                         color: isSelected
                             ? (isDark ? AppColors.darkSurface : Colors.white)
                             : colorScheme.onSurface,
-                        fontWeight:
-                            isSelected ? FontWeight.w500 : FontWeight.w600,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          item.label,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: isSelected
+                                ? (isDark ? AppColors.darkSurface : Colors.white)
+                                : colorScheme.onSurface,
+                            fontWeight:
+                                isSelected ? FontWeight.w500 : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );

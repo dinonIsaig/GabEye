@@ -5,6 +5,7 @@ import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 
+
 class AssessmentKeyfindingsScreen extends StatelessWidget {
   final List<int> arrangedCaps;
 
@@ -40,6 +41,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildKeyFindingsCard(
+                          context,
                           colors,
                           textTheme,
                           diagnosisStyle,
@@ -51,6 +53,13 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                           diagnosisStyle,
                         ),
                         const SizedBox(height: 20),
+                        _buildCloserLookCard(
+                          context,
+                          colors,
+                          diagnosisStyle,
+                        ),
+                        const SizedBox(height: 20),
+
 
                         ElevatedButton.icon(
                           onPressed: () => _goToRecommendations(context),
@@ -85,10 +94,11 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                           iconAlignment: IconAlignment.start,
                           icon: const Icon(Icons.arrow_back, size: 20),
                           style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
+                            backgroundColor: colors.surfaceContainer,
                             foregroundColor: colors.onSurface,
                             side: BorderSide(
-                              color: colors.onSurfaceVariant.withOpacity(0.4),
+                              color: colors.outline,
+                              width: 1,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -112,6 +122,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
 
   // -------------------- Key Findings --------------------
   Widget _buildKeyFindingsCard(
+    BuildContext context,
     ColorScheme colors,
     TextTheme textTheme,
     DiagnosisStyle diagnosisStyle,
@@ -147,6 +158,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           _buildKeyFindingsRow(
+            context: context,
             colors: colors,
             textTheme: textTheme,
             icon: Icons.palette_outlined,
@@ -156,6 +168,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _buildKeyFindingsRow(
+            context: context,
             colors: colors,
             textTheme: textTheme,
             icon: Icons.visibility_outlined,
@@ -165,6 +178,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _buildKeyFindingsRow(
+            context: context,
             colors: colors,
             textTheme: textTheme,
             icon: Icons.warning_amber_rounded,
@@ -176,6 +190,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   }
 
   Widget _buildKeyFindingsRow({
+    required BuildContext context,
     required ColorScheme colors,
     required TextTheme textTheme,
     required IconData icon,
@@ -204,19 +219,27 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         Expanded(
           child: Text(
             description,
-            style: textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-              height: 1.5,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.4,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 16,
+                  height: 1.4,
+                ),
           ),
         ),
       ],
     );
   }
 
+
   Widget _buildCloserLookCard(
+    BuildContext context,
     ColorScheme colors,
-    TextTheme textTheme,
     DiagnosisStyle diagnosisStyle,
   ) {
     return Container(
@@ -234,60 +257,52 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
         children: [
           Text(
             'What this means to you?',
-            style: textTheme.labelLarge?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
           ),
 
           const SizedBox(height: 2),
 
           Text(
-            'A closer look...', 
-            style: textTheme.titleLarge?.copyWith(
-              color: colors.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
+            'A closer look...',
+            style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
           ),
-
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              diagnosisStyle.imagePath,
-              width: double.infinity,
-              height: 140,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: double.infinity,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: colors.onSurfaceVariant.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.image_outlined, color: colors.onSurfaceVariant),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
 
           Text(
             diagnosisStyle.closerLook,
-            style: textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-              height: 1.5,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 14,
+                  height: 1.4,
+                ) ??
+                TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  color: colors.onSurfaceVariant,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
           ),
+
+          const SizedBox(height: 20),
+
         ],
       ),
     );
   }
 
+  // -------------------- Navigation / actions --------------------
   void _goToRecommendations(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AssessmentRecommendationScreen(
+        builder: (context) => AssessmentRecommendationsScreen(
           arrangedCaps: arrangedCaps,
         ),
       ),
