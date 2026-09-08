@@ -37,6 +37,9 @@ dependencies:
   image_picker: ^1.2.3
   pdf: ^3.13.0
   printing: ^5.15.0
+  gal: ^2.3.0
+  flutter_tts: ^4.2.2
+  google_mlkit_object_detection: ^0.13.0
 
 
 dev_dependencies:
@@ -76,6 +79,7 @@ flutter:
       - assets/images/gabEyeLogo.svg
       - assets/icons/gabEyeIcon.svg
       - assets/icons/
+      - assets/data/
 
   shaders:
       - assets/shaders/daltonization.frag

@@ -4,12 +4,19 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:gabeye/core/services/auditory_feedback_service.dart';
+import 'package:gabeye/core/services/camera_frame_ingestion_service.dart';
 import 'package:gabeye/core/services/gallery_service.dart';
+import 'package:gabeye/core/services/object_detection_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
+import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
 import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
+import 'package:gabeye/features/knn/models/iscc_nbs_color_dataset.dart';
+import 'package:gabeye/features/knn/services/knn_isolate_worker.dart';
 
 enum PresetMode { customized, protan, deutan, tritan, off }
+enum CameraRealtimeMode { daltonization, knn }
 
 class VisionLensScreen extends StatefulWidget {
   const VisionLensScreen({super.key});
@@ -37,6 +44,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   final double _maxZoom = 5.0;
   bool _showZoomSlider = false;
   bool _isSplitScreenView = false;
+
+  // Camera Realtime Mode (Daltonization vs. KNN Color Identification)
+  CameraRealtimeMode _activeCameraMode = CameraRealtimeMode.daltonization;
+  bool _isUploadedIdentifyMode = false;
+
+  // KNN & ML Kit Object Classification State
+  List<IsccNbsColorEntry> _isccDataset = [];
+  String _currentIdentifiedColor = 'Vivid Red';
+  String? _currentIdentifiedObject;
+  bool _isKnnStreamActive = false;
 
   // Uploaded photo state, decoded ui.Image, & notification timer
   Uint8List? _uploadedImageBytes;
@@ -146,7 +163,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: const Text(
-                  'Cancel',
+                  'Just View Result',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ),
@@ -191,14 +208,64 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-check available cameras if permission was previously granted
+    _initKnnServices();
+  }
+
+  Future<void> _initKnnServices() async {
+    final dataset = await IsccNbsColorDataset.loadDataset();
+    await AuditoryFeedbackService.instance.initialize();
+    ObjectDetectionService.instance.initialize();
+    if (mounted) {
+      setState(() {
+        _isccDataset = dataset;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _stopKnnFrameStream();
+    ObjectDetectionService.instance.dispose();
+    AuditoryFeedbackService.instance.stop();
     _cameraController?.dispose();
     _uploadedNotificationTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _startKnnFrameStream() async {
+    if (_cameraController != null && _cameraController!.value.isInitialized && !_isKnnStreamActive) {
+      try {
+        _isKnnStreamActive = true;
+        await _cameraController!.startImageStream((CameraImage image) async {
+          if (_activeCameraMode == CameraRealtimeMode.knn && mounted) {
+            final result = await CameraFrameIngestionService.instance.processCameraFrame(
+              image: image,
+              dataset: _isccDataset,
+            );
+            if (result != null && mounted) {
+              final objectLabel = await ObjectDetectionService.instance.detectObjectInFrame(image);
+              setState(() {
+                _currentIdentifiedColor = result.colorName;
+                _currentIdentifiedObject = objectLabel;
+              });
+            }
+          }
+        });
+      } catch (_) {
+        _isKnnStreamActive = false;
+      }
+    }
+  }
+
+  Future<void> _stopKnnFrameStream() async {
+    if (_cameraController != null && _cameraController!.value.isInitialized && _isKnnStreamActive) {
+      try {
+        await _cameraController!.stopImageStream();
+        _isKnnStreamActive = false;
+      } catch (_) {
+        _isKnnStreamActive = false;
+      }
+    }
   }
 
   Future<void> _requestCameraPermission() async {
@@ -241,44 +308,66 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: ImageSource.gallery);
-      if (picked != null) {
+      if (picked != null && mounted) {
+        final mode = await showAssistanceModeModal(context);
+        if (mode == null || !mounted) return;
+
         final bytes = await picked.readAsBytes();
-        if (mounted) {
-          _uploadedNotificationTimer?.cancel();
-          setState(() {
-            _uploadedImageBytes = bytes;
-            _uploadedUiImage = null; // will be set after decode
-            _uploadedFileName = picked.name;
-            _isDisplayingUploadedImage = true;
-            _showUploadedNotification = true;
-            _isRemapActive = true;
-          });
-          await _decodeUploadedImage(bytes);
-          _uploadedNotificationTimer = Timer(const Duration(seconds: 3), () {
-            if (mounted) {
-              setState(() {
-                _showUploadedNotification = false;
-              });
-            }
-          });
-        }
-      }
-    } catch (e) {
-      // Fallback sample image if running in test environment or gallery picking is unavailable
-      if (mounted) {
         _uploadedNotificationTimer?.cancel();
         setState(() {
+          _uploadedImageBytes = bytes;
+          _uploadedUiImage = null; // will be set after decode
+          _uploadedFileName = picked.name;
           _isDisplayingUploadedImage = true;
           _showUploadedNotification = true;
-          _isRemapActive = true;
+          if (mode == AssistanceMode.remapColor) {
+            _isRemapActive = true;
+            _isUploadedIdentifyMode = false;
+          } else {
+            _isRemapActive = false;
+            _isUploadedIdentifyMode = true;
+          }
         });
-        _uploadedNotificationTimer = Timer(const Duration(seconds: 3), () {
+        await _decodeUploadedImage(bytes);
+        _uploadedNotificationTimer = Timer(const Duration(seconds: 4), () {
           if (mounted) {
             setState(() {
               _showUploadedNotification = false;
             });
           }
         });
+
+        if (mode == AssistanceMode.remapColor && mounted) {
+          await _handleUploadedPhotoSavePrompt(context);
+        }
+      }
+    } catch (e) {
+      // Fallback sample image if running in test environment or gallery picking is unavailable
+      if (mounted) {
+        final mode = await showAssistanceModeModal(context);
+        if (mode == null || !mounted) return;
+        _uploadedNotificationTimer?.cancel();
+        setState(() {
+          _isDisplayingUploadedImage = true;
+          _showUploadedNotification = true;
+          if (mode == AssistanceMode.remapColor) {
+            _isRemapActive = true;
+            _isUploadedIdentifyMode = false;
+          } else {
+            _isRemapActive = false;
+            _isUploadedIdentifyMode = true;
+          }
+        });
+        _uploadedNotificationTimer = Timer(const Duration(seconds: 4), () {
+          if (mounted) {
+            setState(() {
+              _showUploadedNotification = false;
+            });
+          }
+        });
+        if (mode == AssistanceMode.remapColor && mounted) {
+          await _handleUploadedPhotoSavePrompt(context);
+        }
       }
     }
   }
@@ -290,18 +379,37 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       setState(() {
         _uploadedUiImage = frame.image;
       });
+      if (_isUploadedIdentifyMode && _isccDataset.isNotEmpty) {
+        final rawDatasetJson = _isccDataset.map((e) => e.toJson()).toList();
+        final request = KnnIsolateRequest(
+          pixelBuffer: bytes,
+          width: frame.image.width,
+          height: frame.image.height,
+          rawDatasetJson: rawDatasetJson,
+        );
+        final result = await KnnIsolateWorker.processRoiInIsolate(request);
+        if (mounted) {
+          setState(() {
+            _currentIdentifiedColor = result.colorName;
+            _currentIdentifiedObject = 'Uploaded Image';
+          });
+        }
+      }
     }
   }
 
   void _switchToRealtimeCameraRemapping() {
     _uploadedNotificationTimer?.cancel();
+    _stopKnnFrameStream();
     setState(() {
       _uploadedImageBytes = null;
       _uploadedUiImage = null;
       _uploadedFileName = null;
       _isDisplayingUploadedImage = false;
       _showUploadedNotification = false;
+      _isUploadedIdentifyMode = false;
       _isRemapActive = true;
+      _activeCameraMode = CameraRealtimeMode.daltonization;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -551,17 +659,18 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                   )
                 : const Center(child: CircularProgressIndicator()))
             : (_isCameraPermissionGranted
-                // Live camera: shader can't sample a CameraPreview as a static
-                // ui.Image, so apply a CPU-side ColorFiltered pass instead.
-                ? ColorFiltered(
-                    colorFilter: ColorFilter.matrix(
-                      _buildCameraColorMatrix(
-                        _getEffectiveShaderType(),
-                        _getEffectiveShaderIntensity(),
-                      ),
-                    ),
-                    child: _buildCameraPreviewWidget(colors),
-                  )
+                // In KNN mode, display natural un-filtered camera preview. Otherwise apply ColorFiltered Daltonization pass.
+                ? (_activeCameraMode == CameraRealtimeMode.knn
+                    ? _buildCameraPreviewWidget(colors)
+                    : ColorFiltered(
+                        colorFilter: ColorFilter.matrix(
+                          _buildCameraColorMatrix(
+                            _getEffectiveShaderType(),
+                            _getEffectiveShaderIntensity(),
+                          ),
+                        ),
+                        child: _buildCameraPreviewWidget(colors),
+                      ))
                 : InkWell(
                     onTap: _requestCameraPermission,
                     child: Container(
@@ -645,10 +754,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.image, size: 14, color: colors.primary),
+                    Icon(
+                      _isUploadedIdentifyMode ? Icons.palette_outlined : Icons.image,
+                      size: 14,
+                      color: colors.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
-                      'Uploaded Photo (${_uploadedFileName ?? "Selected Image"})',
+                      _isUploadedIdentifyMode
+                          ? 'Identify Color Mode (${_uploadedFileName ?? "Selected Image"})'
+                          : 'Remap Color Mode (${_uploadedFileName ?? "Selected Image"})',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -656,6 +771,132 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+          ),
+
+        // Indicator Chip when Live Camera is in KNN Color Identification Mode
+        if (!_isDisplayingUploadedImage && _activeCameraMode == CameraRealtimeMode.knn && !_isSplitScreenView)
+          Positioned(
+            top: 16,
+            left: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: colors.primary, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.palette_outlined, size: 14, color: colors.primary),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'KNN Color Identification (Active)',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Precision Pinpoint Dot ROI Target Overlay when in KNN / Identify Mode (Only if permission granted or displaying uploaded image)
+        if ((_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode) &&
+            !_isSplitScreenView &&
+            (_isDisplayingUploadedImage || _isCameraPermissionGranted))
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Center(
+                child: SizedBox(
+                  width: 160,
+                  height: 120,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      // Center Pinpoint Target Ring & Dot
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.primary.withValues(alpha: 0.2),
+                          border: Border.all(color: colors.primary, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Crosshair Tick Lines
+                      Positioned(
+                        top: 28,
+                        child: Container(width: 1.5, height: 10, color: colors.primary),
+                      ),
+                      Positioned(
+                        bottom: 48,
+                        child: Container(width: 1.5, height: 10, color: colors.primary),
+                      ),
+                      Positioned(
+                        left: 48,
+                        child: Container(width: 10, height: 1.5, color: colors.primary),
+                      ),
+                      Positioned(
+                        right: 48,
+                        child: Container(width: 10, height: 1.5, color: colors.primary),
+                      ),
+                      // Identified Color & Object Badge below pinpoint target
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: colors.primary.withValues(alpha: 0.6)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              _currentIdentifiedObject != null && _currentIdentifiedObject!.isNotEmpty
+                                  ? '$_currentIdentifiedColor ($_currentIdentifiedObject)'
+                                  : _currentIdentifiedColor,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -860,7 +1101,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
               GestureDetector(
                 onTap: () {
                   if (_isDisplayingUploadedImage) {
-                    _handleUploadedPhotoSavePrompt(context);
+                    _switchToRealtimeCameraRemapping();
                   } else if (!_isCameraPermissionGranted) {
                     _requestCameraPermission();
                   } else {
@@ -888,15 +1129,38 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                 ),
               ),
 
-              // Remap Button
+              // Remap / Realtime Mode Switcher Button
               InkWell(
                 onTap: () {
                   if (_isDisplayingUploadedImage) {
                     _switchToRealtimeCameraRemapping();
                   } else {
+                    final nextMode = _activeCameraMode == CameraRealtimeMode.daltonization
+                        ? CameraRealtimeMode.knn
+                        : CameraRealtimeMode.daltonization;
                     setState(() {
-                      _isRemapActive = !_isRemapActive;
+                      _activeCameraMode = nextMode;
+                      if (nextMode == CameraRealtimeMode.knn) {
+                        _isSplitScreenView = false;
+                        VisionLensScreen.isFullScreenNotifier.value = false;
+                      }
                     });
+                    if (nextMode == CameraRealtimeMode.knn) {
+                      _startKnnFrameStream();
+                    } else {
+                      _stopKnnFrameStream();
+                    }
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          _activeCameraMode == CameraRealtimeMode.knn
+                              ? 'Switched to KNN Color Identification Mode'
+                              : 'Switched to LMS Daltonization Mode',
+                        ),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
                   }
                 },
                 splashColor: colors.primary.withValues(alpha: 0.15),
@@ -910,13 +1174,17 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                       Icon(
                         _isDisplayingUploadedImage
                             ? Icons.videocam
-                            : (_isRemapActive ? Icons.auto_awesome : Icons.opacity_outlined),
+                            : (_activeCameraMode == CameraRealtimeMode.daltonization
+                                ? Icons.auto_awesome
+                                : Icons.palette_outlined),
                         color: colors.primary,
                         size: 24,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _isDisplayingUploadedImage ? 'Live Camera' : 'Remap',
+                        _isDisplayingUploadedImage
+                            ? 'Remap'
+                            : (_activeCameraMode == CameraRealtimeMode.daltonization ? 'Remap' : 'Identify'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -1061,6 +1329,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     final bgColor = isDark ? Colors.black.withValues(alpha: 0.55) : Colors.white.withValues(alpha: 0.85);
     final iconColor = isDark ? Colors.white : Colors.black87;
 
+    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1089,33 +1359,64 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
           iconColor: _isTorchOn ? Colors.white : iconColor,
           tooltip: 'Flashlight',
         ),
-        const SizedBox(height: 12),
-        // Split Screen View Comparison Toggle Button
-        _buildFloatingCircleButton(
-          icon: _isSplitScreenView ? Icons.compare_rounded : Icons.splitscreen_rounded,
-          isActive: _isSplitScreenView,
-          onTap: () {
-            setState(() {
-              _isSplitScreenView = !_isSplitScreenView;
-            });
-            VisionLensScreen.isFullScreenNotifier.value = _isSplitScreenView;
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  _isSplitScreenView
-                      ? 'Split Screen View & Full Screen enabled (Original vs Daltonized)'
-                      : 'Standard View restored',
+        // Split Screen View Comparison Toggle Button (Hidden in KNN Mode)
+        if (!isKnnMode) ...[
+          const SizedBox(height: 12),
+          _buildFloatingCircleButton(
+            icon: _isSplitScreenView ? Icons.compare_rounded : Icons.splitscreen_rounded,
+            isActive: _isSplitScreenView,
+            onTap: () {
+              setState(() {
+                _isSplitScreenView = !_isSplitScreenView;
+              });
+              VisionLensScreen.isFullScreenNotifier.value = _isSplitScreenView;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _isSplitScreenView
+                        ? 'Split Screen View & Full Screen enabled (Original vs Daltonized)'
+                        : 'Standard View restored',
+                  ),
+                  duration: const Duration(seconds: 1),
                 ),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-          bgColor: bgColor,
-          activeBgColor: colors.primary,
-          iconColor: _isSplitScreenView ? Colors.white : iconColor,
-          tooltip: 'Split Screen Comparison',
-        ),
+              );
+            },
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: _isSplitScreenView ? Colors.white : iconColor,
+            tooltip: 'Split Screen Comparison',
+          ),
+        ],
+        // On-Demand Audio Narration Speak Button (Hidden in Daltonization Mode)
+        if (isKnnMode) ...[
+          const SizedBox(height: 12),
+          _buildFloatingCircleButton(
+            icon: Icons.volume_up_rounded,
+            isActive: false,
+            onTap: () {
+              AuditoryFeedbackService.instance.speakIdentification(
+                colorName: _currentIdentifiedColor,
+                objectLabel: _currentIdentifiedObject,
+              );
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _currentIdentifiedObject != null && _currentIdentifiedObject!.isNotEmpty
+                        ? 'Speaking: $_currentIdentifiedColor $_currentIdentifiedObject'
+                        : 'Speaking: $_currentIdentifiedColor',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: iconColor,
+            tooltip: 'Speak Color & Object',
+          ),
+        ],
       ],
     );
   }
