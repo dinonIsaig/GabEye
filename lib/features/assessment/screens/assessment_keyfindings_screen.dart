@@ -48,12 +48,6 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         _buildCloserLookCard(
-                          colors,
-                          textTheme,
-                          diagnosisStyle,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildCloserLookCard(
                           context,
                           colors,
                           diagnosisStyle,

@@ -257,7 +257,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                           Text(
                             'Read More',
                             style: TextStyle(
-                              fontFamily: 'Inter',
+                              fontFamily: 'AtkinsonHyperlegible',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),

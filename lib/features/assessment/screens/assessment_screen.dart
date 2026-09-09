@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
-import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
@@ -224,7 +224,7 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildStartHeader(ColorScheme colors) {
+  Widget _buildStartHeader(ColorScheme colors, TextTheme textTheme) {
     return Row(
       children: [
         const Spacer(),
