@@ -33,6 +33,13 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.3.0
   google_fonts: ^8.2.0
+  camera: ^0.12.0+2
+  image_picker: ^1.2.3
+  pdf: ^3.13.0
+  printing: ^5.15.0
+  gal: ^2.3.0
+  flutter_tts: ^4.2.2
+  google_mlkit_object_detection: ^0.13.0
 
 
 dev_dependencies:
@@ -72,6 +79,10 @@ flutter:
       - assets/images/gabEyeLogo.svg
       - assets/icons/gabEyeIcon.svg
       - assets/icons/
+      - assets/data/
+
+  shaders:
+      - assets/shaders/daltonization.frag
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

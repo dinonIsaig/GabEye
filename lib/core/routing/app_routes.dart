@@ -13,7 +13,7 @@ import 'package:gabeye/features/assessment/screens/pre_assessment/disclaimer_scr
 import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
 import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
 import 'package:gabeye/features/featured_reads/settings/how_to_use_gabeye.dart';
-import 'package:gabeye/features/featured_reads/settings/real-time_mode_safety.dart';
+import 'package:gabeye/features/featured_reads/settings/real_time_mode_safety.dart';
 
 class AppRoutes {
   // Define strict string constants for route names

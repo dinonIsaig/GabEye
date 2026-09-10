@@ -16,7 +16,6 @@ import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
 import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
 
-
 class CapDragData {
   final int capNum;
   final int? sourceSlotIdx; // null if coming from the pool

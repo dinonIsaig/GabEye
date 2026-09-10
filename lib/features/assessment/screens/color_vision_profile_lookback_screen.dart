@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
+import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
+import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/features/home/widgets/gabeye_bottom_nav.dart';
 
 /// Screen for users to look back at their Color Vision Profile anytime
@@ -42,18 +44,12 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
       bottomNavigationBar: GabEyeBottomNav(
         selectedIndex: 2,
         onItemSelected: (index) {
-          if (index == 0) {
+          if (index == 0 || index == 1) {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
               Navigator.pushReplacementNamed(context, AppRoutes.home);
             }
-          } else if (index == 1) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Camera feature coming soon!'),
-              ),
-            );
           }
         },
       ),
@@ -88,9 +84,11 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveCaps = arrangedCaps ?? assessmentController.value;
     final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result = ScoringService.calculateScore(effectiveCaps);
+    final List<int> effectiveCaps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
+    final D15ScoreResult result = (arrangedCaps == null && VisionProfileService.instance.value != null)
+        ? VisionProfileService.instance.value!
+        : ScoringService.calculateScore(effectiveCaps);
     final severityStyle = severityStyles[result.severity]!;
     final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
 
@@ -491,32 +489,21 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
 
   // -------------------- Actions --------------------
   void _goToDetailedResult(BuildContext context) {
-    final effectiveCaps = arrangedCaps ?? assessmentController.value;
+    final caps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ResultsPage(arrangedCaps: effectiveCaps),
+        builder: (context) => ResultsPage(arrangedCaps: caps),
       ),
     );
   }
 
   void _downloadPdf(BuildContext context, D15ScoreResult result) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Downloading Color Vision Profile (${result.shortName}) PDF...',
-              ),
-            ),
-          ],
-        ),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
+    final caps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
+    PdfReportService.generateAndExportPdf(
+      context,
+      scoreResult: result,
+      arrangedCaps: caps,
     );
   }
 }

@@ -431,16 +431,15 @@ class _TipsCard extends StatelessWidget {
 }
 
 class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.title, required this.text, this.isRed = false});
+  const _NoteCard({required this.title, required this.text});
 
   final String title;
   final String text;
-  final bool isRed;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final useRed = isRed || title.toLowerCase() == 'remember';
+    final useRed = title.toLowerCase() == 'remember';
     final accent = useRed
         ? (isDark ? const Color(0xFFFFB4AB) : AppColors.errorRed)
         : (isDark ? AppColors.darkPrimaryButton : AppColors.primaryColor);
