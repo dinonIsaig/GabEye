@@ -160,6 +160,69 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
+  Widget _buildTopBar(ColorScheme colors) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.getStarted,
+            (route) => false,
+          ),
+          child: CircleAvatar(
+            radius: 20,
+            backgroundColor: Colors.transparent,
+            child: SvgPicture.asset('assets/images/gabEyeLogo.svg', fit: BoxFit.contain),
+          ),
+        ),
+        PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, color: colors.onSurface),
+          color: colors.surface, 
+          onSelected: (String value) {
+            if (value == 'Settings') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GabEyeSettingsScreen(),
+                ),
+              );
+            } else if (value == 'Help & Feedback') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpFeedbackScreen(),
+                ),
+              );
+            } else if (value == 'About GabEye') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GabEyeArticleScreen(),
+                ),
+              );
+            }
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'Settings',
+              child: Text('Settings'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'Help & Feedback',
+              child: Text('Help & Feedback'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'About GabEye',
+              child: Text('About GabEye'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildStartHeader(ColorScheme colors, TextTheme textTheme) {
     return Row(
       children: [

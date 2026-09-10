@@ -170,8 +170,7 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
     highlightPhrase: 'no difficulty distinguishing colors across the spectrum.',
     shortSummary:
         'Your results suggest typical color vision with no significant color deficiency detected.',
-    imagePath: 'assets/images/cvd_cover.png',
-
+    imagePath: 'assets/images/gabeye_cover.png',
     keyFindingOne:
         'Colors across the spectrum (reds, blues) appear as most people see them.',
     keyFindingTwo:
