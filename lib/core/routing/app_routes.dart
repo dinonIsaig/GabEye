@@ -1,19 +1,67 @@
 import 'package:flutter/material.dart';
 // Import all your feature screens here
+import 'package:gabeye/features/assessment/screens/assessment_recommendations_screen.dart';
+import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
+import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
+import 'package:gabeye/features/home/screens/home_screen.dart';
 import 'package:gabeye/features/onboarding/screens/get_started_screen.dart';
+import 'package:gabeye/features/assessment/screens/assessment_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/intro_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/how_it_works_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/what_to_mind_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/disclaimer_screen.dart';
+import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
+import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
+import 'package:gabeye/features/featured_reads/settings/how_to_use_gabeye.dart';
+import 'package:gabeye/features/featured_reads/settings/real_time_mode_safety.dart';
 
 class AppRoutes {
   // Define strict string constants for route names
   static const String getStarted = '/';
-
+  static const String home = '/home';
+  static const String assessment = '/assessment';
+  static const String article = '/article';
+  static const String preAssessmentIntro = '/pre-assessment/intro';
+  static const String preAssessmentHowItWorks = '/pre-assessment/how-it-works';
+  static const String preAssessmentWhatToMind = '/pre-assessment/what-to-mind';
+  static const String preAssessmentDisclaimer = '/pre-assessment/disclaimer';
+  static const String d15Assessment = '/assessment/d15';
+  static const String assessmentRecommendations = '/assessment/recommendations';
+  static const String settings = '/settings';
+  static const String helpFeedback = '/help-feedback';
+  static const String howToUseGabEye = '/settings/how-to-use';
+  static const String realTimeModeSafety = '/settings/real-time-safety';
+  static const String colorVisionProfileLookback = '/color-vision-profile-lookback';
+  // use '/' in ur route soo it will be the landing
+  // static const String practice = '/practice'; // <-- this is an example of defining
 
   // Map the routes to their respective screens
   static Map<String, WidgetBuilder> getRoutes() {
     return {
       getStarted: (context) => const GetStartedScreen(),
+      home: (context) => const HomeScreen(),
+      assessment: (context) => const AssessmentScreen(),
+      article: (context) => const GabEyeArticleScreen(),
+      preAssessmentIntro: (context) => const PreAssessmentIntroScreen(),
+      preAssessmentHowItWorks: (context) => const HowItWorksScreen(),
+      preAssessmentWhatToMind: (context) => const WhatToMindScreen(),
+      preAssessmentDisclaimer: (context) => const DisclaimerScreen(),
+      assessmentRecommendations: (context) =>
+          const AssessmentRecommendationsScreen(),
+      settings: (context) => const GabEyeSettingsScreen(),
+      helpFeedback: (context) => const HelpFeedbackScreen(),
+      howToUseGabEye: (context) => const HowToUseGabEyeScreen(),
+      realTimeModeSafety: (context) => const RealTimeModeSafetyScreen(),
+      colorVisionProfileLookback: (context) =>
+          const ColorVisionProfileLookbackScreen(),
+
+      d15Assessment: (context) =>
+          const Scaffold(body: Center(child: Text('D-15 Assessment Screen'))),
+
+      // practice: (context) => const PracticeScreen(),
       // assessment: (context) => const AssessmentScreen(),
       // liveCamera: (context) => const LiveCameraScreen(),
-      // Add more routes here as your team creates new pages
+      // Add more routes here
     };
   }
 }
