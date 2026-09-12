@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
-import 'package:gabeye/core/theme/app_semantic_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/confusion_diagram.dart';
@@ -21,8 +21,8 @@ class ResultsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
-    final severityStyle = severityStyles[result.severity]!;
-    final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
+    final severityStyle = severityStyleFor(context, result.severity);
+    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
     return Scaffold(
       appBar: PreferredSize(
@@ -362,7 +362,7 @@ class ResultsPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final error = result.crossings[index];
                 final isMajor = error.isMajor;
-                final errorColor = isMajor ? AppSemanticColors.majorError : AppSemanticColors.minorError;
+                final errorColor = isMajor ? context.semanticColors.error : context.semanticColors.success;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

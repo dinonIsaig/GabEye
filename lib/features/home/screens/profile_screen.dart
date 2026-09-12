@@ -3,6 +3,7 @@ import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
@@ -15,18 +16,19 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static Color getResultStateColor(D15ScoreResult result) {
+  static Color getResultStateColor(BuildContext context, D15ScoreResult result) {
+    final c = context.semanticColors;
     if (result.diagnosisType == ColorDeficiencyType.random ||
         result.diagnosisType == ColorDeficiencyType.unclassified) {
-      return AppColors.resultUnidentifiedColor;
+      return c.unidentified;
     }
     switch (result.severity) {
       case SeverityLevel.none:
-        return AppColors.resultNormalColor;
+        return c.success;
       case SeverityLevel.moderate:
-        return AppColors.resultModerateColor;
+        return c.warning;
       case SeverityLevel.strong:
-        return AppColors.resultAboveTypicalColor;
+        return c.error;
     }
   }
 
@@ -41,9 +43,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final List<int> effectiveCaps = VisionProfileService.instance.arrangedCaps;
         final D15ScoreResult result = VisionProfileService.instance.value ??
             ScoringService.calculateScore(effectiveCaps);
-        final severityStyle = severityStyles[result.severity]!;
-        final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
-        final stateColor = getResultStateColor(result);
+        final severityStyle = severityStyleFor(context, result.severity);
+        final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
+        final stateColor = getResultStateColor(context, result);
 
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),

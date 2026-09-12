@@ -19,7 +19,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
-    final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
+    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
     return ProgressBarScaffold(
       currentStep: 2,

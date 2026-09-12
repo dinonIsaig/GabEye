@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_semantic_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 
 class SeverityStyle {
@@ -12,20 +13,17 @@ class SeverityStyle {
   });
 }
 
-const Map<SeverityLevel, SeverityStyle> severityStyles = {
-  SeverityLevel.none: SeverityStyle(
-    color: AppSemanticColors.severityNormal,
-    icon: Icons.check,
-  ),
-  SeverityLevel.moderate: SeverityStyle(
-    color: AppSemanticColors.severityModerate,
-    icon: Icons.info_outline,
-  ),
-  SeverityLevel.strong: SeverityStyle(
-    color: AppSemanticColors.severityStrong,
-    icon: Icons.priority_high,
-  ),
-};
+SeverityStyle severityStyleFor(BuildContext context, SeverityLevel level) {
+  final c = context.semanticColors;
+  switch (level) {
+    case SeverityLevel.none:
+      return SeverityStyle(color: c.success, icon: Icons.check);
+    case SeverityLevel.moderate:
+      return SeverityStyle(color: c.warning, icon: Icons.info_outline);
+    case SeverityLevel.strong:
+      return SeverityStyle(color: c.error, icon: Icons.priority_high);
+  }
+}
 
 class DiagnosisStyle {
   final Color primaryColor;
@@ -59,7 +57,32 @@ class DiagnosisStyle {
   });
 }
 
-const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
+DiagnosisStyle diagnosisStyleFor(BuildContext context, ColorDeficiencyType type) {
+  if (type == ColorDeficiencyType.normal) {
+    return DiagnosisStyle(
+      primaryColor: context.semanticColors.success,
+      secondaryColor: AppSemanticColors.orange,
+      tertiaryColor: AppSemanticColors.lemon,
+      axisFamily: null,
+      subtitle: 'Normal color vision',
+      highlightPhrase: 'no difficulty distinguishing colors across the spectrum.',
+      shortSummary:
+          'Your results suggest typical color vision with no significant color deficiency detected.',
+      imagePath: 'assets/images/gabeye_cover.png',
+      keyFindingOne:
+          'Colors across the spectrum (reds, blues) appear as most people see them.',
+      keyFindingTwo:
+          'No consistent difficulty telling similar hues apart, even close ones like violet and dark blue.',
+      keyFindingThree:
+          'Your results fall within the typical range for color vision.',
+      closerLook:
+          'You likely experience no difficulty distinguishing colors in everyday life.',
+    );
+  }
+  return _diagnosisStyles[type]!;
+}
+
+const Map<ColorDeficiencyType, DiagnosisStyle> _diagnosisStyles = {
   ColorDeficiencyType.protan: DiagnosisStyle(
     primaryColor: AppSemanticColors.red,
     secondaryColor: AppSemanticColors.murky,
@@ -159,25 +182,5 @@ const Map<ColorDeficiencyType, DiagnosisStyle> diagnosisStyles = {
         'Your results show an inconsistent color-matching pattern, so they do not point to one specific color vision difference.',
     closerLook:
         'Your results indicate an inconsistent pattern of color discrimination during this test.',
-  ),
-
-  ColorDeficiencyType.normal: DiagnosisStyle(
-    primaryColor: AppSemanticColors.severityNormal,
-    secondaryColor: AppSemanticColors.orange,
-    tertiaryColor: AppSemanticColors.lemon,
-    axisFamily: null,
-    subtitle: 'Normal color vision',
-    highlightPhrase: 'no difficulty distinguishing colors across the spectrum.',
-    shortSummary:
-        'Your results suggest typical color vision with no significant color deficiency detected.',
-    imagePath: 'assets/images/gabeye_cover.png',
-    keyFindingOne:
-        'Colors across the spectrum (reds, blues) appear as most people see them.',
-    keyFindingTwo:
-        'No consistent difficulty telling similar hues apart, even close ones like violet and dark blue.',
-    keyFindingThree:
-        'Your results fall within the typical range for color vision.',
-    closerLook:
-        'You likely experience no difficulty distinguishing colors in everyday life.' ,
   ),
 };

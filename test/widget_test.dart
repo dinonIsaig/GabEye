@@ -21,10 +21,11 @@ void main() {
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(const GabEye());
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    // Verify that our home screen loads with Core Features and Featured Reads.
-    expect(find.text('Core Features'), findsOneWidget);
-    expect(find.text('Featured Reads'), findsOneWidget);
+    // Verify that the initial GetStartedScreen loads with Welcome text and button.
+    expect(find.text('Welcome to'), findsOneWidget);
+    expect(find.text('GabEye!'), findsOneWidget);
+    expect(find.text('Get Started'), findsOneWidget);
   });
 }

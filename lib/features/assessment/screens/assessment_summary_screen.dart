@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
-import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/color_vision_profile_lookback_screen.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
@@ -29,8 +29,8 @@ class AssessmentSummaryScreen extends StatelessWidget {
 
     final colors = Theme.of(context).colorScheme;
     final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
-    final severityStyle = severityStyles[result.severity]!;
-    final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
+    final severityStyle = severityStyleFor(context, result.severity);
+    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (VisionProfileService.instance.value != result) {
@@ -94,7 +94,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
 
   // -------------------- "Above/within typical range" banner --------------------
   Widget _buildRangeBanner(BuildContext context, ColorScheme colors, D15ScoreResult result, SeverityStyle severityStyle) {
-    final stateColor = ColorVisionProfileLookbackContent.getResultStateColor(result);
+    final stateColor = ColorVisionProfileLookbackContent.getResultStateColor(context, result);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -227,8 +227,8 @@ class AssessmentSummaryScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () => _goToDetailedResult(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
-              foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
+              backgroundColor: context.semanticColors.primaryButton,
+              foregroundColor: isDark ? colors.surface : Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               minimumSize: const Size(double.infinity, 55),
             ),

@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
-import 'package:gabeye/features/home/screens/home_screen.dart';
 import 'package:gabeye/features/home/widgets/feature_row.dart';
 import 'package:gabeye/features/home/widgets/featured_reads_section.dart';
 import 'package:gabeye/features/home/widgets/gabeye_bottom_nav.dart';
@@ -113,7 +112,7 @@ void main() {
     expect(find.text('What you do'), findsOneWidget);
   });
 
-  testWidgets('Tapping Profile bottom nav item navigates to ColorVisionProfileLookbackScreen without Next button',
+  testWidgets('Tapping Profile bottom nav item navigates to ProfileScreen with D-15 assessment details',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -123,40 +122,40 @@ void main() {
     });
 
     await tester.pumpWidget(createTestWidget());
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     // Tap Profile tab
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
 
-    // Verify Color Vision Profile heading and content
-    expect(find.text('Color Vision Profile'), findsWidgets);
-    expect(find.text('Download PDF Copy'), findsOneWidget);
-    // Ensure Next and Retake buttons do NOT exist
-    expect(find.text('Next'), findsNothing);
-    expect(find.text('Retake D-15 Assessment'), findsNothing);
+    // Verify Profile screen content
+    expect(find.text('Based on your Farnsworth D-15 assessment...'), findsOneWidget);
+    expect(find.text('Detailed Result'), findsOneWidget);
+    expect(find.text('Retake D-15'), findsOneWidget);
+    expect(find.text('Export PDF Report for Professionals'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Help & Feedback'), findsOneWidget);
 
-    // Tap 'View Detailed Result'
-    await tester.tap(find.text('View Detailed Result'));
+    // Tap 'Detailed Result'
+    await tester.tap(find.text('Detailed Result'));
     await tester.pumpAndSettle();
 
     // Verify ResultsPage is shown with Confusion Diagram and filled Export as PDF button
     expect(find.text('Export as PDF'), findsOneWidget);
-    expect(find.text('Exit'), findsNothing);
 
     // Tap the back arrow on top navbar
     await tester.tap(find.byIcon(Icons.arrow_back).first);
     await tester.pumpAndSettle();
 
-    // Verify returned to lookback screen and has bottom navigation bar
-    expect(find.text('Download PDF Copy'), findsOneWidget);
+    // Verify returned to profile screen and has bottom navigation bar
+    expect(find.text('Detailed Result'), findsOneWidget);
     expect(find.byType(GabEyeBottomNav), findsOneWidget);
 
-    // Tap 'Home' on the bottom nav to return to HomeScreen
+    // Tap 'Home' on the bottom nav to return to HomeScreen Overview
     await tester.tap(find.text('Home').first);
     await tester.pumpAndSettle();
 
-    // Verify back on HomeScreen
+    // Verify back on HomeScreen overview
     expect(find.text('Core Features'), findsOneWidget);
   });
 
@@ -259,9 +258,9 @@ void main() {
     // Verify on Step 3/3: Recommendations
     expect(find.text('Step 3/3'), findsOneWidget);
     expect(find.text('Recommendations'), findsOneWidget);
-    expect(find.text('Personalized Recommendations'), findsOneWidget);
+    expect(find.text('Recommended Steps'), findsOneWidget);
     expect(find.text('Back'), findsOneWidget);
-    expect(find.text('Next'), findsOneWidget);
+    expect(find.text('Go to Home'), findsOneWidget);
 
     // Tap 'Back' on Recommendations -> returns to Step 2/3
     await tester.tap(find.text('Back'));
@@ -274,8 +273,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Step 3/3'), findsOneWidget);
 
-    // Tap 'Next' on Recommendations -> directs to Home
-    await tester.tap(find.text('Next'));
+    // Tap 'Go to Home' on Recommendations -> directs to Home
+    await tester.tap(find.text('Go to Home'));
     await tester.pumpAndSettle();
 
     // Verify now on Home screen

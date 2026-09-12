@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
-import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/assessment_controller.dart';
@@ -67,18 +67,19 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
     this.arrangedCaps,
   });
 
-  static Color getResultStateColor(D15ScoreResult result) {
+  static Color getResultStateColor(BuildContext context, D15ScoreResult result) {
+    final c = context.semanticColors;
     if (result.diagnosisType == ColorDeficiencyType.random ||
         result.diagnosisType == ColorDeficiencyType.unclassified) {
-      return AppColors.resultUnidentifiedColor;
+      return c.unidentified;
     }
     switch (result.severity) {
       case SeverityLevel.none:
-        return AppColors.resultNormalColor;
+        return c.success;
       case SeverityLevel.moderate:
-        return AppColors.resultModerateColor;
+        return c.warning;
       case SeverityLevel.strong:
-        return AppColors.resultAboveTypicalColor;
+        return c.error;
     }
   }
 
@@ -89,8 +90,8 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
     final D15ScoreResult result = (arrangedCaps == null && VisionProfileService.instance.value != null)
         ? VisionProfileService.instance.value!
         : ScoringService.calculateScore(effectiveCaps);
-    final severityStyle = severityStyles[result.severity]!;
-    final diagnosisStyle = diagnosisStyles[result.diagnosisType]!;
+    final severityStyle = severityStyleFor(context, result.severity);
+    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
     return SingleChildScrollView(
       child: Column(
@@ -133,7 +134,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
     D15ScoreResult result,
     SeverityStyle severityStyle,
   ) {
-    final stateColor = getResultStateColor(result);
+    final stateColor = getResultStateColor(context, result);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -291,8 +292,8 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
           ElevatedButton(
             onPressed: () => _goToDetailedResult(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
-              foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
+              backgroundColor: context.semanticColors.primaryButton,
+              foregroundColor: isDark ? colors.surface : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 
 class GabEyeBottomNav extends StatelessWidget {
   final int selectedIndex;
@@ -29,7 +30,7 @@ class GabEyeBottomNav extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.borderDark : const Color(0xFF31363D),
+            color: context.semanticColors.border,
             width: 2,
           ),
         ),

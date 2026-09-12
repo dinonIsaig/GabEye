@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
-import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_cards.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_scaffold.dart';
 
@@ -27,18 +27,18 @@ class WhatToMindScreen extends StatelessWidget {
             boldText: 'you are ready',
             normalTextAfter: ' to take the assessment that will only take 1-3 minutes.',
           ),
-          const PreAssessmentInfoCard(
+          PreAssessmentInfoCard(
             title: 'Screen Brightness',
-            headerColor: AppColors.warning,
-            iconWidget: Icon(Icons.wb_sunny, color: Colors.white, size: 20),
+            headerColor: context.semanticColors.warning,
+            iconWidget: const Icon(Icons.wb_sunny, color: Colors.white, size: 20),
             normalTextBefore: 'Set your screen brightness to 100%. ',
             boldText: 'Disable \'Night Shift\', \'Eye protection\'',
             normalTextAfter: ', and other similar filters before starting.',
           ),
-          const PreAssessmentInfoCard(
+          PreAssessmentInfoCard(
             title: 'Precautions',
-            headerColor: AppColors.errorOrange,
-            iconWidget: Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+            headerColor: context.semanticColors.error,
+            iconWidget: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
             normalTextBefore: 'Take the assessment in ',
             boldText: 'comfortable and safe place',
             normalTextAfter: '. We do not recommend the taking of assessment while moving.',
