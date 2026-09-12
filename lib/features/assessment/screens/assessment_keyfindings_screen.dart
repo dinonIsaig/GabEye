@@ -269,6 +269,28 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
             style: TextStyle(color: colors.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
           ),
 
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              diagnosisStyle.imagePath,
+              width: double.infinity,
+              height: 140,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: double.infinity,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: colors.onSurfaceVariant.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.image_outlined, color: colors.onSurfaceVariant),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
           Text(
             diagnosisStyle.closerLook,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -284,8 +306,24 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                 ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
 
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => _goToRecommendations(context), 
+              child: Text(
+                'Learn more...',
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 20),
         ],
       ),
     );

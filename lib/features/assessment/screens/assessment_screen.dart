@@ -250,7 +250,7 @@ void _applyDebugProfile(List<int> caps) {
   Widget _buildHowItWorksPill(ColorScheme colors) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return OutlinedButton.icon(
-      onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.preAssessmentHowItWorks);}, 
+      onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);}, 
       icon: const Icon(Icons.help_outline, size: 16),
       label: const Text('How it works?', style: TextStyle(fontWeight: FontWeight.bold)),
       style: OutlinedButton.styleFrom(
