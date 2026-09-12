@@ -6,17 +6,11 @@ class AppColors {
   // Brand
   static const Color primaryColor = Color(0xFF2C4670);
 
-  // Semantic
-  static const Color errorRed = Color(0xFF961320);
-  static const Color errorOrange = Color(0xFFA33612);
-  static const Color warning = Color(0xFFD39201);
-  static const Color successGreen = Color(0xFF16A34A);
-
-  // Result state colors (UX audit 2.1)
-  static const Color resultAboveTypicalColor = Color(0xFFDC2626); // Red
-  static const Color resultModerateColor = Color(0xFFEA580C);     // Orange
-  static const Color resultNormalColor = Color(0xFF16A34A);       // Green
-  static const Color resultUnidentifiedColor = Color(0xFF64748B); // Gray
+  // Neutral gray used when no CVD-cue color applies (unclassified/random
+  // results). Constant across every personalization profile — the
+  // success/warning/error/info/border/primaryButton cue colors instead
+  // live in CvdColorTokens / GabEyeSemanticColors.
+  static const Color resultUnidentifiedColor = Color(0xFF64748B);
 
   // Light mode tokens
   static const Color lightSurface = Color(0xFFF7F9FB);
@@ -24,17 +18,15 @@ class AppColors {
   static const Color lightTextPrimary = Color(0xFF12161C);
   static const Color lightTextSecondary = Color(0xFF2B343F);
   static const Color lightPrimaryButton = Color(0xFF14395F);
-  static const Color borderLight = Color(0xFF31363D);
-  
+
   // Dark mode tokens
   static const Color darkSurface = Color(0xFF1B222B);
   static const Color darkMode = Color(0xFF12161C);
   static const Color darkTextPrimary = Color(0xFFF4F6F8);
   static const Color darkTextSecondary = Color(0xFFCAD3DE);
-  
+
   // UI Elements
   static const Color darkPrimaryButton = Color(0xFFB0C6D9);
-  static const Color borderDark = Color(0xFF8A8BA2);
 
   // Shared UI state tokens
   static const Color disabledButton = Color(0xFFE5E7EB);
@@ -43,10 +35,6 @@ class AppColors {
   // Alt Surfaces
   static const Color altLightSurface   = Color(0xFFF2F6FA);
   static const Color altDarkSurface   = Color(0xFF232B36);
-
-  // Info Cards & Accents
-  static const Color lightInfo = Color(0xFF1D4E82);
-  static const Color darkInfo = Color(0xFF6E93B8);
 
   // Homepage / Design Tokens
   static const Color primaryNavy = Color(0xFF14395F);
