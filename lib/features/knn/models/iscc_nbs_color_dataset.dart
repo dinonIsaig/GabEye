@@ -9,6 +9,9 @@ class IsccNbsColorEntry {
   final double saturation; // 0.0 to 1.0
   final double value; // 0.0 to 1.0
   final String hex;
+  final int? r;
+  final int? g;
+  final int? b;
 
   const IsccNbsColorEntry({
     required this.id,
@@ -17,6 +20,9 @@ class IsccNbsColorEntry {
     required this.saturation,
     required this.value,
     required this.hex,
+    this.r,
+    this.g,
+    this.b,
   });
 
   factory IsccNbsColorEntry.fromJson(Map<String, dynamic> json) {
@@ -27,6 +33,9 @@ class IsccNbsColorEntry {
       saturation: (json['s'] as num).toDouble(),
       value: (json['v'] as num).toDouble(),
       hex: json['hex'] as String,
+      r: json['r'] as int?,
+      g: json['g'] as int?,
+      b: json['b'] as int?,
     );
   }
 
@@ -38,6 +47,9 @@ class IsccNbsColorEntry {
       's': saturation,
       'v': value,
       'hex': hex,
+      if (r != null) 'r': r,
+      if (g != null) 'g': g,
+      if (b != null) 'b': b,
     };
   }
 }
@@ -62,15 +74,15 @@ class IsccNbsColorDataset {
 
   static List<IsccNbsColorEntry> _fallbackDataset() {
     return const [
-      IsccNbsColorEntry(id: 11, name: 'Vivid Red', hue: 0, saturation: 0.95, value: 0.90, hex: '#E60000'),
-      IsccNbsColorEntry(id: 27, name: 'Vivid Orange', hue: 25, saturation: 0.95, value: 0.95, hex: '#FF6600'),
-      IsccNbsColorEntry(id: 48, name: 'Vivid Yellow', hue: 52, saturation: 0.95, value: 0.98, hex: '#FFE600'),
-      IsccNbsColorEntry(id: 77, name: 'Vivid Green', hue: 130, saturation: 0.95, value: 0.80, hex: '#00CC44'),
-      IsccNbsColorEntry(id: 100, name: 'Vivid Blue', hue: 210, saturation: 0.95, value: 0.90, hex: '#0077FF'),
-      IsccNbsColorEntry(id: 121, name: 'Vivid Purple', hue: 285, saturation: 0.95, value: 0.85, hex: '#D400FF'),
-      IsccNbsColorEntry(id: 134, name: 'White', hue: 0, saturation: 0.0, value: 0.98, hex: '#FFFFFF'),
-      IsccNbsColorEntry(id: 136, name: 'Medium Gray', hue: 0, saturation: 0.0, value: 0.50, hex: '#808080'),
-      IsccNbsColorEntry(id: 138, name: 'Black', hue: 0, saturation: 0.0, value: 0.05, hex: '#101010'),
+      IsccNbsColorEntry(id: 11, name: 'Vivid Red', r: 213, g: 28, b: 60, hue: 350, saturation: 0.87, value: 0.84, hex: '#D51C3C'),
+      IsccNbsColorEntry(id: 48, name: 'Vivid Orange', r: 247, g: 118, b: 11, hue: 27, saturation: 0.96, value: 0.97, hex: '#F7760B'),
+      IsccNbsColorEntry(id: 82, name: 'Vivid Yellow', r: 241, g: 191, b: 21, hue: 46, saturation: 0.91, value: 0.95, hex: '#F1BF15'),
+      IsccNbsColorEntry(id: 139, name: 'Vivid Green', r: 35, g: 234, b: 165, hue: 159, saturation: 0.85, value: 0.92, hex: '#23EAA5'),
+      IsccNbsColorEntry(id: 176, name: 'Vivid Blue', r: 27, g: 92, b: 215, hue: 219, saturation: 0.87, value: 0.84, hex: '#1B5CD7'),
+      IsccNbsColorEntry(id: 216, name: 'Vivid Purple', r: 185, g: 53, b: 213, hue: 290, saturation: 0.75, value: 0.84, hex: '#B935D5'),
+      IsccNbsColorEntry(id: 263, name: 'White', r: 231, g: 225, b: 233, hue: 285, saturation: 0.03, value: 0.91, hex: '#E7E1E9'),
+      IsccNbsColorEntry(id: 265, name: 'Medium Gray', r: 138, g: 132, b: 137, hue: 310, saturation: 0.04, value: 0.54, hex: '#8A8489'),
+      IsccNbsColorEntry(id: 267, name: 'Black', r: 43, g: 41, b: 43, hue: 300, saturation: 0.05, value: 0.17, hex: '#2B292B'),
     ];
   }
 }

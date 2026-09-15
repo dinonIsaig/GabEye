@@ -66,7 +66,7 @@ class CapturePixelSamplerService {
     final double v = hsv[2]; // [0, 1]
 
     // Run synchronous KNN classification (no isolate needed for single pixel).
-    final classifier = KnnColorClassifier(dataset: dataset, k: 3);
+    final classifier = KnnColorClassifier(dataset: dataset, k: 1);
     final matched = classifier.classify(h, s, v);
 
     return KnnIsolateResult(

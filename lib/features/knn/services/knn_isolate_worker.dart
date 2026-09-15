@@ -75,7 +75,7 @@ class KnnIsolateWorker {
         .map((j) => IsccNbsColorEntry.fromJson(j))
         .toList();
 
-    final classifier = KnnColorClassifier(dataset: dataset, k: 3);
+    final classifier = KnnColorClassifier(dataset: dataset, k: 1);
     final matched = classifier.classify(h, s, v);
 
     return KnnIsolateResult(
