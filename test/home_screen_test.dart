@@ -35,9 +35,9 @@ void main() {
     expect(find.text('Tritan'), findsOneWidget);
     expect(find.text('Off'), findsOneWidget);
 
-    // Verify floating controls bar buttons (Upload, Remap)
+    // Verify floating controls bar buttons (Upload, Identify)
     expect(find.text('Upload'), findsOneWidget);
-    expect(find.text('Remap'), findsOneWidget);
+    expect(find.text('Identify'), findsOneWidget);
   });
 
   testWidgets('HomeScreen logo header click redirects to Home overview dashboard',

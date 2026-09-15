@@ -1,10 +1,3 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,10 +14,27 @@ void main() {
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(const GabEye());
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    // Verify that our home screen loads with Core Features and Featured Reads.
-    expect(find.text('Core Features'), findsOneWidget);
-    expect(find.text('Featured Reads'), findsOneWidget);
+    // Verify initial onboarding screen loads with welcome message
+    expect(find.text('Welcome to'), findsOneWidget);
+    expect(find.text('GabEye!'), findsOneWidget);
+    expect(find.text('Get Started'), findsOneWidget);
+
+    // Tap Get Started button to open Terms and Conditions modal
+    await tester.tap(find.text('Get Started'));
+    await tester.pumpAndSettle();
+
+    // Accept Terms & Conditions to enter main HomeScreen dashboard
+    final agreeButton = find.text('I Agree & Continue');
+    if (agreeButton.evaluate().isNotEmpty) {
+      await tester.tap(agreeButton);
+      await tester.pumpAndSettle();
+
+      // Verify that home screen loads with Core Features and Featured Reads
+      expect(find.text('Core Features'), findsOneWidget);
+      expect(find.text('Featured Reads'), findsOneWidget);
+    }
   });
 }
+

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gabeye/core/services/auditory_feedback_service.dart';
 import 'package:gabeye/core/services/camera_frame_ingestion_service.dart';
@@ -11,8 +12,10 @@ import 'package:gabeye/core/services/gallery_service.dart';
 import 'package:gabeye/core/services/object_detection_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
+import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
 import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
+import 'package:gabeye/features/home/widgets/delay_page_overlay.dart';
 import 'package:gabeye/features/knn/models/iscc_nbs_color_dataset.dart';
 import 'package:gabeye/features/knn/services/knn_isolate_worker.dart';
 
@@ -25,15 +28,33 @@ class VisionLensScreen extends StatefulWidget {
   /// Global notifier to tell HomeScreen to expand viewport & hide headers/footers in full/split-screen mode
   static final ValueNotifier<bool> isFullScreenNotifier = ValueNotifier<bool>(false);
 
+  /// Global notifier to show Delay Page overlay
+  static final ValueNotifier<bool> isDelayingNotifier = ValueNotifier<bool>(false);
+
+  /// Global notifier for smooth animated delay progress bar (0.0 to 1.0)
+  static final ValueNotifier<double> delayProgressNotifier = ValueNotifier<double>(0.0);
+
   @override
   State<VisionLensScreen> createState() => _VisionLensScreenState();
 }
 
-class _VisionLensScreenState extends State<VisionLensScreen> {
+class _VisionLensScreenState extends State<VisionLensScreen> with TickerProviderStateMixin {
   PresetMode _selectedPreset = PresetMode.customized;
   bool _isRemapActive = true;
   bool _isCameraPermissionGranted = false;
   bool _showCalibrationSlider = false;
+
+  // Independent calibration values for CVD simulation modes in Identify Split Screen
+  double _protanCalibration = 1.0;
+  double _deutanCalibration = 1.0;
+  double _tritanCalibration = 1.0;
+
+  // ---------------------------------------------------------------------------
+  // Delay Page Overlay State
+  // ---------------------------------------------------------------------------
+  bool _isDelaying = false;
+  AnimationController? _delayAnimationController;
+  double _delayProgress = 0.0;
 
   CameraController? _cameraController;
   bool _isCameraInitializing = false;
@@ -280,13 +301,35 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     }
   }
 
+  Future<void> _startDelayPage({Duration duration = const Duration(milliseconds: 2500)}) async {
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 250),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return DelayScreen(duration: duration);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _delayAnimationController?.dispose();
     _stopKnnFrameStream();
     ObjectDetectionService.instance.dispose();
     AuditoryFeedbackService.instance.stop();
     _cameraController?.dispose();
     _uploadedNotificationTimer?.cancel();
+    if (_capturedUiImage != null && _capturedUiImage != _uploadedUiImage) {
+      _capturedUiImage?.dispose();
+    }
+    _uploadedUiImage?.dispose();
     super.dispose();
   }
 
@@ -316,7 +359,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   }
 
   Future<void> _stopKnnFrameStream() async {
-    if (_cameraController != null && _cameraController!.value.isInitialized && _isKnnStreamActive) {
+    if (_cameraController != null && _cameraController!.value.isInitialized && !_isKnnStreamActive) {
       try {
         await _cameraController!.stopImageStream();
         _isKnnStreamActive = false;
@@ -366,6 +409,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         // Reset crosshair to image centre on every new capture.
         _crosshairNorm = const Offset(0.5, 0.5);
         _isFreezeFrameActive = true;
+        _isSplitScreenView = false;
+        VisionLensScreen.isFullScreenNotifier.value = false;
       });
 
       // Step 5: Sample the centre pixel strictly for visual UI overlay (no automatic TTS).
@@ -381,12 +426,32 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     }
   }
 
-  /// Discards the frozen frame and resumes the live KNN camera scan.
+  /// Activates interactive freeze-frame color inspection for an uploaded photo.
+  Future<void> _captureUploadedPhotoFreezeFrame() async {
+    if (_uploadedImageBytes == null || _uploadedUiImage == null) return;
+    setState(() {
+      _capturedFrameBytes = _uploadedImageBytes;
+      _capturedUiImage = _uploadedUiImage;
+      _capturedImageSize = Size(
+        _uploadedUiImage!.width.toDouble(),
+        _uploadedUiImage!.height.toDouble(),
+      );
+      _crosshairNorm = const Offset(0.5, 0.5);
+      _isFreezeFrameActive = true;
+      _isSplitScreenView = false;
+      VisionLensScreen.isFullScreenNotifier.value = false;
+    });
+    await _sampleCrosshairPixel();
+  }
+
+  /// Discards the frozen frame and resumes live camera scan or resets uploaded inspection.
   ///
   /// Safe to call even if [_isFreezeFrameActive] is already false.
   Future<void> _resumeLiveKnnScan() async {
-    // Free the decoded ui.Image (unmanaged native memory — must be disposed).
-    _capturedUiImage?.dispose();
+    // Free the decoded ui.Image if it was created dynamically for live camera capture.
+    if (_capturedUiImage != null && _capturedUiImage != _uploadedUiImage) {
+      _capturedUiImage?.dispose();
+    }
 
     setState(() {
       _isFreezeFrameActive = false;
@@ -397,8 +462,9 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       _isSamplingPixel = false;
     });
 
-    // Restart the live KNN image stream.
-    await _startKnnFrameStream();
+    if (!_isDisplayingUploadedImage) {
+      await _startKnnFrameStream();
+    }
   }
 
   /// Called on every tap or drag update inside the freeze-frame viewport.
@@ -517,6 +583,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       setState(() {
         _isCameraPermissionGranted = true;
       });
+      await _startDelayPage();
       await _initializeCameraDevice();
     }
   }
@@ -557,12 +624,19 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
 
         final bytes = await picked.readAsBytes();
         _uploadedNotificationTimer?.cancel();
+
+        await _startDelayPage();
+        if (!mounted) return;
+
         setState(() {
           _uploadedImageBytes = bytes;
           _uploadedUiImage = null; // will be set after decode
           _uploadedFileName = picked.name;
           _isDisplayingUploadedImage = true;
           _showUploadedNotification = true;
+          _showZoomSlider = false;
+          _isSplitScreenView = false;
+          VisionLensScreen.isFullScreenNotifier.value = false;
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
             _isUploadedIdentifyMode = false;
@@ -590,9 +664,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         final mode = await showAssistanceModeModal(context);
         if (mode == null || !mounted) return;
         _uploadedNotificationTimer?.cancel();
+
+        await _startDelayPage();
+        if (!mounted) return;
+
         setState(() {
           _isDisplayingUploadedImage = true;
           _showUploadedNotification = true;
+          _showZoomSlider = false;
+          _isSplitScreenView = false;
+          VisionLensScreen.isFullScreenNotifier.value = false;
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
             _isUploadedIdentifyMode = false;
@@ -623,20 +704,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         _uploadedUiImage = frame.image;
       });
       if (_isUploadedIdentifyMode && _isccDataset.isNotEmpty) {
-        final rawDatasetJson = _isccDataset.map((e) => e.toJson()).toList();
-        final request = KnnIsolateRequest(
-          pixelBuffer: bytes,
-          width: frame.image.width,
-          height: frame.image.height,
-          rawDatasetJson: rawDatasetJson,
-        );
-        final result = await KnnIsolateWorker.processRoiInIsolate(request);
-        if (mounted) {
-          setState(() {
-            _currentIdentifiedColor = result.colorName;
-            _currentIdentifiedObject = 'Uploaded Image';
-          });
-        }
+        await _captureUploadedPhotoFreezeFrame();
       }
     }
   }
@@ -644,6 +712,11 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   void _switchToRealtimeCameraRemapping() {
     _uploadedNotificationTimer?.cancel();
     _stopKnnFrameStream();
+    if (_capturedUiImage != null && _capturedUiImage != _uploadedUiImage) {
+      _capturedUiImage?.dispose();
+    }
+    _uploadedUiImage?.dispose();
+
     setState(() {
       _uploadedImageBytes = null;
       _uploadedUiImage = null;
@@ -651,8 +724,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       _isDisplayingUploadedImage = false;
       _showUploadedNotification = false;
       _isUploadedIdentifyMode = false;
+      _isFreezeFrameActive = false;
+      _capturedFrameBytes = null;
+      _capturedUiImage = null;
+      _capturedImageSize = Size.zero;
+      _freezeFrameColorResult = null;
       _isRemapActive = true;
       _activeCameraMode = CameraRealtimeMode.daltonization;
+      _isSplitScreenView = false;
+      _showCalibrationSlider = false;
+      VisionLensScreen.isFullScreenNotifier.value = false;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -682,16 +763,18 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   }
 
   double _getEffectiveShaderIntensity() {
-    if (!_isRemapActive || _selectedPreset == PresetMode.off) {
-      return 0.0;
+    if (!_isRemapActive && !_isSplitScreenView) {
+      if (_selectedPreset == PresetMode.off) return 0.0;
     }
     switch (_selectedPreset) {
       case PresetMode.customized:
         return VisionProfileService.instance.shaderIntensity;
       case PresetMode.protan:
+        return _protanCalibration;
       case PresetMode.deutan:
+        return _deutanCalibration;
       case PresetMode.tritan:
-        return 1.0;
+        return _tritanCalibration;
       case PresetMode.off:
         return 0.0;
     }
@@ -746,6 +829,55 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     });
   }
 
+  /// Builds the 4×5 ColorFilter matrix for CVD vision simulation (Protan, Deutan, Tritan).
+  /// Uses Machado (2009) dichromacy projection targets,
+  /// interpolated by [intensity] toward the identity matrix.
+  List<double> _buildCvdSimulationMatrix(double shaderType, double intensity) {
+    // Identity matrix (pass-through)
+    const identity = <double>[
+      1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 0.0,
+    ];
+
+    if (shaderType >= 2.5 || intensity <= 0.01) return identity;
+
+    final double k = intensity.clamp(0.0, 1.0);
+    List<double> target;
+
+    if (shaderType < 0.5) {
+      // Protanopia Simulation Matrix
+      target = [
+        0.152286,  1.052583, -0.204868, 0.0, 0.0,
+        0.114503,  0.786281,  0.099216, 0.0, 0.0,
+       -0.003882, -0.004616,  1.008498, 0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    } else if (shaderType < 1.5) {
+      // Deuteranopia Simulation Matrix
+      target = [
+        0.366474,  0.747833, -0.114307, 0.0, 0.0,
+        0.282279,  0.677767,  0.039954, 0.0, 0.0,
+       -0.013580,  0.016335,  0.997245, 0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    } else {
+      // Tritanopia Simulation Matrix
+      target = [
+        1.255528, -0.076749, -0.178779, 0.0, 0.0,
+       -0.078411,  0.930809,  0.147602, 0.0, 0.0,
+        0.004733,  0.691367,  0.303900, 0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    }
+
+    return List.generate(20, (i) {
+      final identityVal = (i % 6 == 0) ? 1.0 : 0.0;
+      return identityVal * (1.0 - k) + target[i] * k;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
@@ -767,8 +899,109 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   }
 
   Widget _buildTopPresetSelectorBar(BuildContext context) {
-    if (_isSplitScreenView) return const SizedBox.shrink();
+    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+
+    // Hide top preset bar if displaying uploaded image in Identify mode when NOT in split screen
+    if (_isDisplayingUploadedImage && _isUploadedIdentifyMode && !_isSplitScreenView) {
+      return const SizedBox.shrink();
+    }
+
+    // In Identify mode: show top preset bar ONLY when Split Screen is active.
+    // In Daltonization mode: show top preset bar always (unless Split Screen is active).
+    if (isKnnMode) {
+      if (!_isSplitScreenView) return const SizedBox.shrink();
+    } else {
+      if (_isSplitScreenView) return const SizedBox.shrink();
+    }
+
     final colors = Theme.of(context).colorScheme;
+
+    // In Identify Split Screen, display ONLY the three CVD types: Protan, Deutan, Tritan + Calibration button
+    if (isKnnMode && _isSplitScreenView) {
+      if (_selectedPreset != PresetMode.protan &&
+          _selectedPreset != PresetMode.deutan &&
+          _selectedPreset != PresetMode.tritan) {
+        _selectedPreset = PresetMode.protan;
+      }
+
+      return Container(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.95),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildPresetChip(
+                  mode: PresetMode.protan,
+                  label: 'Protan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.deutan,
+                  label: 'Deutan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.tritan,
+                  label: 'Tritan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 12),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _showCalibrationSlider = !_showCalibrationSlider;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _showCalibrationSlider
+                          ? colors.primary
+                          : colors.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _showCalibrationSlider
+                            ? colors.primary
+                            : colors.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 16,
+                          color: _showCalibrationSlider ? Colors.white : colors.onSurface,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Calibrate',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _showCalibrationSlider ? Colors.white : colors.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_showCalibrationSlider) ...[
+              const SizedBox(height: 8),
+              _buildCvdCalibrationSlider(context, colors),
+            ],
+          ],
+        ),
+      );
+    }
 
     return Container(
       color: colors.surfaceContainerHighest.withValues(alpha: 0.9),
@@ -816,6 +1049,71 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCvdCalibrationSlider(BuildContext context, ColorScheme colors) {
+    double currentVal;
+    ValueChanged<double> onChanged;
+    String modeName;
+
+    switch (_selectedPreset) {
+      case PresetMode.protan:
+        currentVal = _protanCalibration;
+        onChanged = (val) => setState(() => _protanCalibration = val);
+        modeName = 'Protan';
+        break;
+      case PresetMode.deutan:
+        currentVal = _deutanCalibration;
+        onChanged = (val) => setState(() => _deutanCalibration = val);
+        modeName = 'Deutan';
+        break;
+      case PresetMode.tritan:
+      default:
+        currentVal = _tritanCalibration;
+        onChanged = (val) => setState(() => _tritanCalibration = val);
+        modeName = 'Tritan';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '$modeName Calibration:',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: colors.onSurface,
+            ),
+          ),
+          Expanded(
+            child: Slider(
+              value: currentVal.clamp(0.1, 1.0),
+              min: 0.1,
+              max: 1.0,
+              divisions: 9,
+              activeColor: colors.primary,
+              label: '${(currentVal * 100).round()}%',
+              onChanged: onChanged,
+            ),
+          ),
+          Text(
+            '${(currentVal * 100).round()}%',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: colors.primary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -887,7 +1185,108 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     );
   }
 
+  /// Displays the Delay Page matching light & dark theme specifications
+  /// when accessing KNN, Daltonize, or Uploaded photo mode.
+  Widget _buildDelayPage(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    const backgroundColor = Color(0xFF0F4C81);
+    final cardBackgroundColor = isDark ? const Color(0xFF161E2E) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
+
+    final progressTrackColor = isDark ? const Color(0xFF2C384C) : const Color(0xFFE5E7EB);
+    final progressFillColor = isDark ? const Color(0xFF3B82F6) : const Color(0xFF1D4E82);
+
+    return Container(
+      color: backgroundColor,
+      width: double.infinity,
+      height: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Decorative bottom asset overlay
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SvgPicture.asset(
+              'assets/images/delay_assets.svg',
+              width: MediaQuery.of(context).size.width,
+              fit: BoxFit.cover,
+            ),
+          ),
+          // Centered floating card
+          Center(
+            child: Container(
+              width: 290,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              decoration: BoxDecoration(
+                color: cardBackgroundColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // GabEye Logo emblem
+                  SvgPicture.asset(
+                    'assets/images/gabEyeLogo.svg',
+                    width: 90,
+                    height: 90,
+                  ),
+                  const SizedBox(height: 20),
+                  // Subtitle text
+                  Text(
+                    'Getting your view ready. Please wait.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  // Smooth animated linear progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 8,
+                      width: double.infinity,
+                      color: progressTrackColor,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: _delayProgress.clamp(0.0, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: progressFillColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCameraViewport(BuildContext context) {
+    if (_isDelaying) {
+      return _buildDelayPage(context);
+    }
     final colors = Theme.of(context).colorScheme;
 
     Widget viewportContent = _isFreezeFrameActive && _capturedFrameBytes != null
@@ -1179,17 +1578,19 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
             ),
           ),
 
-        // Floating Calibration Slider Overlay (only when Customized preset and toggled)
-        if (_selectedPreset == PresetMode.customized && _showCalibrationSlider)
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 140,
-            child: _buildCalibrationSliderOverlay(context),
-          ),
+        // Floating Calibration Slider Overlay & Triangle Button visibility check
+        if (_selectedPreset == PresetMode.customized &&
+            (!(_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode) || _isSplitScreenView) &&
+            !(_isDisplayingUploadedImage && _isUploadedIdentifyMode)) ...[
+          if (_showCalibrationSlider)
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 140,
+              child: _buildCalibrationSliderOverlay(context),
+            ),
 
-        // Standalone Floating Open-Triangle Button (Sitting between bottom action bar and calibration container)
-        if (_selectedPreset == PresetMode.customized)
+          // Standalone Floating Open-Triangle Button (Sitting between bottom action bar and calibration container)
           Positioned(
             left: 0,
             right: 0,
@@ -1240,6 +1641,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
               ),
             ),
           ),
+        ],
 
         // Transparent Floating Action Card (Upload, Center Shutter Ring, Remap/Live Camera)
         Positioned(
@@ -1340,12 +1742,18 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.camera_outlined, size: 15, color: Colors.white),
-                    SizedBox(width: 7),
+                  children: [
+                    Icon(
+                      _isDisplayingUploadedImage ? Icons.image_outlined : Icons.camera_outlined,
+                      size: 15,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 7),
                     Text(
-                      'Freeze-Frame • Tap or drag to inspect',
-                      style: TextStyle(
+                      _isDisplayingUploadedImage
+                          ? 'Uploaded Photo • Tap or drag to inspect'
+                          : 'Freeze-Frame • Tap or drag to inspect',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1461,16 +1869,26 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
               // Center Circular Shutter Ring
               GestureDetector(
                 onTap: () {
-                  if (_isDisplayingUploadedImage) {
-                    // When viewing an uploaded image: clear it and return to realtime.
-                    _switchToRealtimeCameraRemapping();
+                  if (_isFreezeFrameActive) {
+                    // Already in freeze-frame inspection: tapping shutter again
+                    // exits inspection mode or returns to live scanning / clears photo.
+                    if (_isDisplayingUploadedImage) {
+                      _switchToRealtimeCameraRemapping();
+                    } else {
+                      _resumeLiveKnnScan();
+                    }
+                  } else if (_isDisplayingUploadedImage) {
+                    // Viewing an uploaded image (not in freeze frame yet):
+                    if (_isUploadedIdentifyMode || _activeCameraMode == CameraRealtimeMode.knn) {
+                      // Apply shutter function of color identifier into upload mode
+                      _captureUploadedPhotoFreezeFrame();
+                    } else {
+                      // Daltonization mode: save uploaded photo prompt.
+                      _handleUploadedPhotoSavePrompt(context);
+                    }
                   } else if (!_isCameraPermissionGranted) {
                     // Request permission if not yet granted.
                     _requestCameraPermission();
-                  } else if (_isFreezeFrameActive) {
-                    // Already in freeze-frame inspection: tapping shutter again
-                    // resumes the live KNN scan (retake behaviour).
-                    _resumeLiveKnnScan();
                   } else if (_activeCameraMode == CameraRealtimeMode.knn) {
                     // KNN live scan mode: freeze the current frame for inspection.
                     _captureKnnFreezeFrame(context);
@@ -1513,29 +1931,34 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                 ),
               ),
 
-              // Remap / Realtime Mode Switcher Button
+              // Remap / Identify / Live Camera Switcher Button
               InkWell(
-                onTap: () {
+                onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   if (_isDisplayingUploadedImage) {
+                    await _startDelayPage();
                     _switchToRealtimeCameraRemapping();
                   } else {
                     final nextMode = _activeCameraMode == CameraRealtimeMode.daltonization
                         ? CameraRealtimeMode.knn
                         : CameraRealtimeMode.daltonization;
+                    if (_isCameraPermissionGranted) {
+                      await _startDelayPage();
+                    }
+                    if (!mounted) return;
                     setState(() {
                       _activeCameraMode = nextMode;
-                      if (nextMode == CameraRealtimeMode.knn) {
-                        _isSplitScreenView = false;
-                        VisionLensScreen.isFullScreenNotifier.value = false;
-                      }
+                      _isSplitScreenView = false;
+                      _showCalibrationSlider = false;
+                      VisionLensScreen.isFullScreenNotifier.value = false;
                     });
                     if (nextMode == CameraRealtimeMode.knn) {
                       _startKnnFrameStream();
                     } else {
                       _stopKnnFrameStream();
                     }
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.hideCurrentSnackBar();
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text(
                           _activeCameraMode == CameraRealtimeMode.knn
@@ -1559,16 +1982,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                         _isDisplayingUploadedImage
                             ? Icons.videocam
                             : (_activeCameraMode == CameraRealtimeMode.daltonization
-                                ? Icons.auto_awesome
-                                : Icons.palette_outlined),
+                                ? Icons.palette_outlined
+                                : Icons.auto_awesome),
                         color: colors.primary,
                         size: 24,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _isDisplayingUploadedImage
-                            ? 'Remap'
-                            : (_activeCameraMode == CameraRealtimeMode.daltonization ? 'Remap' : 'Identify'),
+                            ? 'Live Camera'
+                            : (_activeCameraMode == CameraRealtimeMode.daltonization ? 'Identify' : 'Remap'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -1715,38 +2138,46 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
 
     final bool isKnnMode =
         _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode || _isFreezeFrameActive;
+    final bool isLiveCamera = !_isDisplayingUploadedImage && !_isFreezeFrameActive;
+    final bool isLiveDaltonization = isLiveCamera && _activeCameraMode == CameraRealtimeMode.daltonization;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Zoom Toggle Button
-        _buildFloatingCircleButton(
-          icon: Icons.zoom_in_rounded,
-          isActive: _showZoomSlider,
-          onTap: () {
-            setState(() {
-              _showZoomSlider = !_showZoomSlider;
-            });
-          },
-          bgColor: bgColor,
-          activeBgColor: colors.primary,
-          iconColor: _showZoomSlider ? Colors.white : iconColor,
-          tooltip: 'Zoom Control',
-        ),
-        const SizedBox(height: 12),
-        // Flashlight Torch Toggle Button
-        _buildFloatingCircleButton(
-          icon: _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-          isActive: _isTorchOn,
-          onTap: _toggleTorch,
-          bgColor: bgColor,
-          activeBgColor: Colors.amber.shade700,
-          iconColor: _isTorchOn ? Colors.white : iconColor,
-          tooltip: 'Flashlight',
-        ),
-        // Split Screen View Comparison Toggle Button (Hidden in KNN Mode)
-        if (!isKnnMode) ...[
+        // Zoom Toggle Button (Live camera feed only; hidden when viewing an uploaded photo)
+        if (!_isDisplayingUploadedImage) ...[
+          _buildFloatingCircleButton(
+            icon: Icons.zoom_in_rounded,
+            isActive: _showZoomSlider,
+            onTap: () {
+              setState(() {
+                _showZoomSlider = !_showZoomSlider;
+              });
+            },
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: _showZoomSlider ? Colors.white : iconColor,
+            tooltip: 'Zoom Control',
+          ),
           const SizedBox(height: 12),
+        ],
+
+        // Flashlight Torch Toggle Button (Live Daltonization mode only; hidden in Identify mode, Freeze-Frame & Uploads)
+        if (isLiveDaltonization) ...[
+          _buildFloatingCircleButton(
+            icon: _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+            isActive: _isTorchOn,
+            onTap: _toggleTorch,
+            bgColor: bgColor,
+            activeBgColor: Colors.amber.shade700,
+            iconColor: _isTorchOn ? Colors.white : iconColor,
+            tooltip: 'Flashlight',
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Split Screen View Comparison Toggle Button (Live camera feeds only — both Daltonization & Identify mode; hidden in Freeze-Frame & Uploads)
+        if (isLiveCamera) ...[
           _buildFloatingCircleButton(
             icon: _isSplitScreenView ? Icons.compare_rounded : Icons.splitscreen_rounded,
             isActive: _isSplitScreenView,
@@ -1772,10 +2203,11 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
             iconColor: _isSplitScreenView ? Colors.white : iconColor,
             tooltip: 'Split Screen Comparison',
           ),
-        ],
-        // On-Demand Audio Narration Speak Button (Hidden in Daltonization Mode)
-        if (isKnnMode) ...[
           const SizedBox(height: 12),
+        ],
+
+        // On-Demand Audio Narration Speak Button (Available in Identify / KNN mode & Freeze-Frame)
+        if (isKnnMode) ...[
           _buildFloatingCircleButton(
             icon: Icons.volume_up_rounded,
             isActive: false,
@@ -1945,24 +2377,27 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   }
 
   Widget _buildSplitScreenViewport(BuildContext context, ColorScheme colors) {
+    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    final double shaderType = _getEffectiveShaderType();
+    final double intensity = _getEffectiveShaderIntensity();
+
     Widget leftOriginal;
     Widget rightFiltered;
 
     if (_isDisplayingUploadedImage && _uploadedUiImage != null) {
       leftOriginal = RawImage(image: _uploadedUiImage, fit: BoxFit.cover);
       rightFiltered = DaltonizationShaderWidget(
-        customType: _getEffectiveShaderType(),
-        intensity: _getEffectiveShaderIntensity(),
+        customType: shaderType,
+        intensity: intensity,
         image: _uploadedUiImage!,
       );
     } else if (_isCameraPermissionGranted) {
       leftOriginal = _buildCameraPreviewWidget(colors);
       rightFiltered = ColorFiltered(
         colorFilter: ColorFilter.matrix(
-          _buildCameraColorMatrix(
-            _getEffectiveShaderType(),
-            _getEffectiveShaderIntensity(),
-          ),
+          isKnnMode
+              ? _buildCvdSimulationMatrix(shaderType, intensity)
+              : _buildCameraColorMatrix(shaderType, intensity),
         ),
         child: _buildCameraPreviewWidget(colors),
       );
@@ -1979,6 +2414,227 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       rightFiltered = leftOriginal;
     }
 
+    if (isKnnMode) {
+      // ── Identify Mode: Horizontal Split Screen View (Top = Color ID, Bottom = CVD Sim) ──
+      return Stack(
+        children: [
+          Column(
+            children: [
+              // Upper Half: Original View with Live Color Identification Capability & Centered ROI Target
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRect(
+                      child: SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: 1000,
+                            height: 1000,
+                            child: leftOriginal,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Centered Pinpoint Target & Color Identifier Badge inside Upper View
+                    Center(
+                      child: SizedBox(
+                        width: 160,
+                        height: 120,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: colors.primary.withValues(alpha: 0.2),
+                                border: Border.all(color: colors.primary, width: 2.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 28,
+                              child: Container(width: 1.5, height: 10, color: colors.primary),
+                            ),
+                            Positioned(
+                              bottom: 48,
+                              child: Container(width: 1.5, height: 10, color: colors.primary),
+                            ),
+                            Positioned(
+                              left: 48,
+                              child: Container(width: 10, height: 1.5, color: colors.primary),
+                            ),
+                            Positioned(
+                              right: 48,
+                              child: Container(width: 10, height: 1.5, color: colors.primary),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.85),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: colors.primary.withValues(alpha: 0.6)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.25),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    _currentIdentifiedObject != null && _currentIdentifiedObject!.isNotEmpty
+                                        ? '$_currentIdentifiedColor ($_currentIdentifiedObject)'
+                                        : _currentIdentifiedColor,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Upper View Label Badge
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white30, width: 1),
+                        ),
+                        child: const Text(
+                          'Color Identification (Original)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Lower Half: CVD Simulation View
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRect(
+                      child: SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: 1000,
+                            height: 1000,
+                            child: rightFiltered,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Lower View Label Badge
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white38, width: 1),
+                        ),
+                        child: Text(
+                          'CVD Simulation (${_selectedPreset.name.toUpperCase()})',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Center Horizontal Split Line
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                height: 3.0,
+                color: colors.primary.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
+          // Center Compare Handle Icon
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.unfold_more_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // ── Daltonization Mode: Vertical Split Screen View ──
     return Stack(
       children: [
         Row(

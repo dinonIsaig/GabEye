@@ -72,7 +72,7 @@ void main() {
     } else if (uType < 1.5) {
         // Deuteranopia (M-cone): Shift lost green into Red& Blue
         simMatrix = MACHADO_DEUTAN;
-        shiftWeights = vec3(0.2, 0.0, 1.7);
+        shiftWeights = vec3(2.5, 0.0, 4.0);
     } else {
         // Tritanopia (S-cone): Shift lost blue into Red & Green 
         simMatrix = MACHADO_TRITAN;
