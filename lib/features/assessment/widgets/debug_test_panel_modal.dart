@@ -89,7 +89,7 @@ class DebugTestPanelModal extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: const Text('Close', style: TextStyle(color: Colors.white),),
               ),
             ),
           ],

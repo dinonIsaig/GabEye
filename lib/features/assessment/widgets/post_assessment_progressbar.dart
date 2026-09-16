@@ -20,7 +20,7 @@ class ProgressBarScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: GabEyeAppBar(
         showBackButton: showBackButton,
         showLogo: false,

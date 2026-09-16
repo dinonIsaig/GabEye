@@ -62,13 +62,13 @@ class AssessmentIntroModal extends StatelessWidget {
                           context, AppRoutes.preAssessmentIntro);
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
-                      backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
-                      side: isDark
-                          ? BorderSide.none
-                          : BorderSide(
-                              color: colors.onSurfaceVariant.withOpacity(0.4),
-                            ),
+                      foregroundColor: isDark ? Colors.white : colors.onSurface,
+                      backgroundColor: Colors.transparent,
+                      side: BorderSide(
+                        color: isDark 
+                            ? Colors.white 
+                            : colors.onSurfaceVariant.withOpacity(0.4), 
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -81,7 +81,7 @@ class AssessmentIntroModal extends StatelessWidget {
                         Icon(
                           Icons.help_outline,
                           size: 18,
-                          color: isDark ? AppColors.darkSurface : colors.onSurface,
+                          color: isDark ? Colors.white : colors.onSurface,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -89,7 +89,7 @@ class AssessmentIntroModal extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: isDark ? AppColors.darkSurface : colors.onSurface,
+                            color: isDark ? Colors.white : colors.onSurface,
                           ),
                         ),
                       ],
@@ -162,13 +162,13 @@ class AssessmentIntroModal extends StatelessWidget {
                     onPressed: () =>
                         Navigator.pushNamed(context, AppRoutes.preAssessmentIntro),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
-                      backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
-                      side: isDark
-                          ? BorderSide.none
-                          : BorderSide(
-                              color: colors.onSurfaceVariant.withOpacity(0.4),
-                            ),
+                      foregroundColor: isDark ? Colors.white : colors.onSurface,
+                      backgroundColor: Colors.transparent,
+                      side: BorderSide(
+                        color: isDark 
+                            ? Colors.white 
+                            : colors.onSurfaceVariant.withOpacity(0.4), 
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

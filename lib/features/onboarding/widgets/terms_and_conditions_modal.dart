@@ -101,7 +101,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                         child: ElevatedButton(
                           onPressed: _hasScrolledToBottom
                               ? () {
-                                  Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);
+                                  Navigator.popAndPushNamed(context, AppRoutes.preAssessmenLearnMoreScreen);
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(

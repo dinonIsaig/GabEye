@@ -26,15 +26,16 @@ class PreAssessmentScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final appBar = GabEyeAppBar(
+      showBackButton: true,
+      showLogo: false,
+      progressValue: currentStep / totalSteps,
+      progressText: 'Step $currentStep/$totalSteps',
+    );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GabEyeAppBar(
-        showBackButton: true,
-        showLogo: false,
-        progressValue: currentStep / totalSteps,
-        progressText: 'Step $currentStep/$totalSteps',
-      ),
+      appBar: appBar,
       body: SafeArea(
         top: false,
         child: Responsive.constrainWidth(
@@ -43,7 +44,7 @@ class PreAssessmentScaffold extends StatelessWidget {
             children: [
               Padding(
                 padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + kToolbarHeight - 50,
+                  top: MediaQuery.of(context).padding.top + appBar.preferredSize.height,
                 ),
                 child: const PreAssessmentHeroHeader(),
               ),

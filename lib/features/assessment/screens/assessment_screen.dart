@@ -1,20 +1,15 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
-import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
-import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
-import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
-import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
 
 class CapDragData {
   final int capNum;
@@ -160,69 +155,6 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildTopBar(ColorScheme colors) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () => Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.getStarted,
-            (route) => false,
-          ),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.transparent,
-            child: SvgPicture.asset('assets/images/gabEyeLogo.svg', fit: BoxFit.contain),
-          ),
-        ),
-        PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: colors.onSurface),
-          color: colors.surface, 
-          onSelected: (String value) {
-            if (value == 'Settings') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const GabEyeSettingsScreen(),
-                ),
-              );
-            } else if (value == 'Help & Feedback') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HelpFeedbackScreen(),
-                ),
-              );
-            } else if (value == 'About GabEye') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const GabEyeArticleScreen(),
-                ),
-              );
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'Settings',
-              child: Text('Settings'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'Help & Feedback',
-              child: Text('Help & Feedback'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'About GabEye',
-              child: Text('About GabEye'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildStartHeader(ColorScheme colors, TextTheme textTheme) {
     return Row(
       children: [
@@ -248,15 +180,14 @@ void _applyDebugProfile(List<int> caps) {
   }
 
   Widget _buildHowItWorksPill(ColorScheme colors) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return OutlinedButton.icon(
       onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);}, 
       icon: const Icon(Icons.help_outline, size: 16),
       label: const Text('How it works?', style: TextStyle(fontWeight: FontWeight.bold)),
       style: OutlinedButton.styleFrom(
-        foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
-        backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
-        side: isDark ? BorderSide.none : BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         padding: const EdgeInsets.symmetric(vertical: 14),
       ),
@@ -301,6 +232,7 @@ void _applyDebugProfile(List<int> caps) {
   }
 
   Widget _buildStartGrid(ColorScheme colors) {
+    final nextEmptyIdx = _arrangedCaps.indexOf(null);
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -316,7 +248,7 @@ void _applyDebugProfile(List<int> caps) {
           return _buildPilotCell(colors);
         }
         final slotIdx = index - 1;
-        return _buildTargetSlotCell(slotIdx, colors);
+        return _buildTargetSlotCell(slotIdx, colors, isNextEmpty: slotIdx == nextEmptyIdx);
       },
     );
   }
@@ -345,7 +277,7 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
+  Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors, {required bool isNextEmpty}) {
     return DragTarget<CapDragData>(
       onAcceptWithDetails: (details) => _handleDrop(details.data, slotIdx),
       builder: (context, candidateData, rejectedData) {
@@ -368,7 +300,13 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
               ),
             ),
             alignment: Alignment.center,
-            child: Icon(Icons.add, size: 18, color: colors.onSurfaceVariant.withOpacity(0.4)),
+            child: isNextEmpty
+                ? Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: colors.onSurfaceVariant.withOpacity(0.7),
+                  )
+                : null,
           );
         }
 
@@ -459,7 +397,6 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
   }
 
   Widget _buildFooterButtons(ColorScheme colors) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         ElevatedButton(
@@ -478,8 +415,8 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
             }
           : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
-            foregroundColor: isDark ? AppColors.darkSurface : Colors.white,
+            backgroundColor:  AppColors.darkPrimaryButton,
+            foregroundColor:  AppColors.darkSurface ,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 55),
             elevation: _isTestComplete ? 4 : 0,
@@ -493,9 +430,9 @@ Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors) {
         OutlinedButton(
           onPressed: _resetTest,
           style: OutlinedButton.styleFrom(
-            foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
-            backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
-            side: isDark ? BorderSide.none : BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             minimumSize: const Size(double.infinity, 55),
           ),
