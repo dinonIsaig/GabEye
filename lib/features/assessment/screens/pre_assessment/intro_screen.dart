@@ -17,7 +17,7 @@ class PreAssessmentIntroScreen extends StatelessWidget {
       onNext: () {
         Navigator.pushNamed(context, AppRoutes.preAssessmentHowItWorks);
       },
-      onBack: () => Navigator.pushNamed(context, AppRoutes.getStarted),
+      onBack: null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

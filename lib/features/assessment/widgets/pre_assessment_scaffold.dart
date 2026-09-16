@@ -10,7 +10,7 @@ class PreAssessmentScaffold extends StatelessWidget {
   final String? instructionTitle;
   final Widget body;
   final VoidCallback onNext;
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
 
   const PreAssessmentScaffold({
     super.key,
@@ -20,7 +20,7 @@ class PreAssessmentScaffold extends StatelessWidget {
     this.instructionTitle,
     required this.body,
     required this.onNext,
-    required this.onBack,
+    this.onBack,
   });
 
   @override
@@ -150,7 +150,9 @@ class PreAssessmentScaffold extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                           side: BorderSide(
-                            color: Theme.of(context).colorScheme.outline,
+                                color: onBack == null 
+                                ? Theme.of(context).colorScheme.outline.withOpacity(0.38)
+                                : Theme.of(context).colorScheme.outline,
                             width: 1,
                           ),
                           elevation: 0,
@@ -166,7 +168,9 @@ class PreAssessmentScaffold extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.arrow_back_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
+                                    color: onBack == null
+                                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
+                                    : Theme.of(context).colorScheme.onSurface,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
@@ -176,7 +180,9 @@ class PreAssessmentScaffold extends StatelessWidget {
                                   fontFamily: 'Inter',
                                   fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                      color: onBack == null
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
+                                      : Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                             ],
