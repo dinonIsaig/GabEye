@@ -759,17 +759,25 @@ class ComparisonTableWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final borderColor = Theme.of(
-      context,
-    ).colorScheme.outlineVariant.withValues(alpha: 0.6);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colors = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.35)
+        : AppColors.primaryNavy.withValues(alpha: 0.45);
+    final innerBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.20)
+        : AppColors.primaryNavy.withValues(alpha: 0.20);
+    final headerColor = isDark
+        ? AppColors.darkPrimaryButton.withValues(alpha: 0.15)
+        : AppColors.primaryNavy.withValues(alpha: 0.08);
 
     TableRow buildRow(List<String> cells, {bool isHeader = false}) {
       return TableRow(
         decoration: BoxDecoration(
-          color: isHeader
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
+          color: isHeader ? headerColor : null,
         ),
         children: cells
             .asMap()
@@ -793,7 +801,7 @@ class ComparisonTableWidget extends StatelessWidget {
                             ))
                         .copyWith(
                       fontSize: 16,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: colors.onSurface,
                       fontWeight: (isHeader || isFirstColumn)
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -809,8 +817,9 @@ class ComparisonTableWidget extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: borderColor, width: 1.2),
       ),
       clipBehavior: Clip.antiAlias,
       child: Table(
@@ -820,7 +829,8 @@ class ComparisonTableWidget extends StatelessWidget {
           2: FlexColumnWidth(1.1),
         },
         border: TableBorder(
-          horizontalInside: BorderSide(color: borderColor),
+          horizontalInside: BorderSide(color: innerBorderColor, width: 1.0),
+          verticalInside: BorderSide(color: innerBorderColor, width: 1.0),
         ),
         children: [
           buildRow(table.columnHeaders, isHeader: true),

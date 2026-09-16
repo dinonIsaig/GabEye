@@ -587,15 +587,24 @@ class _ImportantInformationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = Theme.of(context).colorScheme;
-    final iconColor = Theme.of(context).brightness == Brightness.dark
+    final iconColor = isDark
         ? AppColors.darkPrimaryButton
         : AppColors.primaryColor;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: .12),
+        color: isDark
+            ? AppColors.darkPrimaryButton.withValues(alpha: 0.15)
+            : AppColors.primaryColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.35)
+              : AppColors.primaryNavy.withValues(alpha: 0.45),
+          width: 1.2,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

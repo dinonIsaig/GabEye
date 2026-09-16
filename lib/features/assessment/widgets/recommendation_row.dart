@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 class RecommendationRow extends StatelessWidget {
+  final String? title;
   final String description;
   final String buttonText;
   final VoidCallback onPressed;
 
   const RecommendationRow({
     super.key,
+    this.title,
     required this.description,
     required this.buttonText,
     required this.onPressed,
@@ -29,7 +31,7 @@ class RecommendationRow extends StatelessWidget {
             child: Image.asset(imagePath, fit: BoxFit.cover),
           ),
           Positioned.fill(
-            child: Container(color: Colors.black.withOpacity(0.15)),
+            child: Container(color: Colors.black.withValues(alpha: 0.15)),
           ),
           Padding(
             padding: const EdgeInsets.all(20),
@@ -37,6 +39,17 @@ class RecommendationRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Text(
                   description,
                   style: textTheme.bodyMedium?.copyWith(
@@ -63,7 +76,7 @@ class RecommendationRow extends StatelessWidget {
                         buttonText,
                         style: textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color:Colors.black,
+                          color: Colors.black,
                         ),
                       ),
                       const Icon(
