@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
 import 'gabeye_settings.dart';
@@ -316,61 +317,85 @@ class _ModeCompareTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final borderColor = colors.primary.withValues(alpha: .15);
-    final headerColor = colors.primary.withValues(alpha: .08);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colors = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
-    TableRow buildRow(String label, String real, String stat, {bool header = false}) {
-      final style = (Theme.of(context).textTheme.bodyMedium ??
-              const TextStyle(
-                fontFamily: 'AtkinsonHyperlegible',
-                fontSize: 16,
-              ))
-          .copyWith(
-            fontSize: 16,
-            color: colors.onSurface,
-            fontWeight: header ? FontWeight.bold : FontWeight.normal,
-            height: 1.4,
-          );
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.35)
+        : AppColors.primaryNavy.withValues(alpha: 0.45);
+    final innerBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.20)
+        : AppColors.primaryNavy.withValues(alpha: 0.20);
+    final headerColor = isDark
+        ? AppColors.darkPrimaryButton.withValues(alpha: 0.15)
+        : AppColors.primaryNavy.withValues(alpha: 0.08);
+
+    TableRow buildRow(
+      String label,
+      String real,
+      String stat, {
+      bool header = false,
+    }) {
+      TextStyle getStyle({bool isBold = false}) {
+        return (textTheme.bodyMedium ??
+                const TextStyle(
+                  fontFamily: 'AtkinsonHyperlegible',
+                  fontSize: 16,
+                ))
+            .copyWith(
+              fontSize: 16,
+              color: colors.onSurface,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              height: 1.4,
+            );
+      }
 
       return TableRow(
         decoration: BoxDecoration(color: header ? headerColor : null),
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Text(label, style: style),
+            child: Text(
+              label,
+              style: getStyle(isBold: header || label.isNotEmpty),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Text(real, style: style),
+            child: Text(real, style: getStyle(isBold: header)),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Text(stat, style: style),
+            child: Text(stat, style: getStyle(isBold: header)),
           ),
         ],
       );
     }
 
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: borderColor, width: 1.2),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Table(
-          columnWidths: const {
-            0: FlexColumnWidth(0.9),
-            1: FlexColumnWidth(1.1),
-            2: FlexColumnWidth(1.1),
-          },
-          border: TableBorder(horizontalInside: BorderSide(color: borderColor)),
-          children: [
-            buildRow('', 'Real-Time Mode', 'Static Mode', header: true),
-            for (final row in rows) buildRow(row.label, row.realTime, row.static_),
-          ],
+      clipBehavior: Clip.antiAlias,
+      child: Table(
+        columnWidths: const {
+          0: FlexColumnWidth(0.9),
+          1: FlexColumnWidth(1.1),
+          2: FlexColumnWidth(1.1),
+        },
+        border: TableBorder(
+          horizontalInside: BorderSide(color: innerBorderColor, width: 1.0),
+          verticalInside: BorderSide(color: innerBorderColor, width: 1.0),
         ),
+        children: [
+          buildRow('', 'Real-Time Mode', 'Static Mode', header: true),
+          for (final row in rows)
+            buildRow(row.label, row.realTime, row.static_),
+        ],
       ),
     );
   }
@@ -440,21 +465,23 @@ class _NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final useRed = title.toLowerCase() == 'remember';
+    final tones = context.errorAccentTones;
     final accent = useRed
-        ? (isDark ? const Color(0xFFFFB4AB) : AppColors.errorRed)
+        ? tones.accent
         : (isDark ? AppColors.darkPrimaryButton : AppColors.primaryColor);
     final bg = useRed
-        ? (isDark
-            ? AppColors.errorRed.withValues(alpha: 0.18)
-            : AppColors.errorRed.withValues(alpha: 0.08))
-        : Theme.of(context).colorScheme.primary.withValues(alpha: .12);
+        ? tones.background
+        : (isDark
+            ? AppColors.darkPrimaryButton.withValues(alpha: 0.15)
+            : AppColors.primaryColor.withValues(alpha: 0.08));
     final border = useRed
-        ? Border.all(
+        ? Border.all(color: tones.border, width: 1.2)
+        : Border.all(
             color: isDark
-                ? const Color(0xFFFFB4AB).withValues(alpha: 0.35)
-                : AppColors.errorRed.withValues(alpha: 0.25),
-          )
-        : null;
+                ? Colors.white.withValues(alpha: 0.35)
+                : AppColors.primaryNavy.withValues(alpha: 0.45),
+            width: 1.2,
+          );
 
     return Container(
       padding: const EdgeInsets.all(18),

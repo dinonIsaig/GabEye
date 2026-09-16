@@ -10,8 +10,13 @@ import 'terms_and_conditions_page.dart';
 class SettingItem {
   final String title;
   final VoidCallback onTap;
+  final IconData? icon;
 
-  SettingItem({required this.title, required this.onTap});
+  SettingItem({
+    required this.title,
+    required this.onTap,
+    this.icon,
+  });
 }
 
 class SettingSection {
@@ -35,6 +40,7 @@ class SettingsContent {
           items: [
             SettingItem(
               title: 'Terms & Conditions',
+              icon: Icons.description_outlined,
               onTap: () {
                 Navigator.push(
                   context,
@@ -46,6 +52,7 @@ class SettingsContent {
             ),
             SettingItem(
               title: 'Help & Feedback',
+              icon: Icons.help_outline_rounded,
               onTap: () {
                 Navigator.push(
                   context,
@@ -62,6 +69,7 @@ class SettingsContent {
           items: [
             SettingItem(
               title: 'How to Use GabEye',
+              icon: Icons.menu_book_outlined,
               onTap: () {
                 Navigator.push(
                   context,
@@ -73,6 +81,7 @@ class SettingsContent {
             ),
             SettingItem(
               title: 'Real-time Mode Safety',
+              icon: Icons.shield_outlined,
               onTap: () {
                 Navigator.push(
                   context,
@@ -229,8 +238,17 @@ class _SettingContainerState extends State<SettingContainer> {
             ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              if (widget.item.icon != null) ...[
+                Icon(
+                  widget.item.icon,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppColors.primaryNavy,
+                  size: 22,
+                ),
+                const SizedBox(width: 14),
+              ],
               Expanded(
                 child: Text(
                   widget.item.title,

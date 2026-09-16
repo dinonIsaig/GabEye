@@ -41,10 +41,11 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                         _buildRecommendationCard(colors, textTheme),
                         const SizedBox(height: 16),
                         RecommendationRow(
+                          title: 'Recommended Personalize UI',
                           description:
-                              "Read more about your results, know what is GabEye and what it can do for you.",
-                          buttonText: 'Featured Reads',
-                          onPressed: () => _goToFeaturedReads(context),
+                              'We recommend high-contrast monochrome tokens to maximize legibility across all app sections.',
+                          buttonText: 'Continue with Personalized UI',
+                          onPressed: () => _goToPersonalizedUI(context),
                         ),
                         const SizedBox(height: 12),
                         RecommendationRow(
@@ -85,7 +86,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             foregroundColor: colors.onSurface,
-                            side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
+                            side: BorderSide(color: colors.onSurfaceVariant.withValues(alpha: 0.4)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             minimumSize: const Size(double.infinity, 55),
                           ),
@@ -115,7 +116,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
           bottomLeft: Radius.zero,
           bottomRight: Radius.zero,
         ),
-        border: Border.all(color: colors.onSurfaceVariant.withOpacity(0.1)),
+        border: Border.all(color: colors.onSurfaceVariant.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +141,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
   }
 
   Widget _buildOrDivider(ColorScheme colors) {
-    final line = Divider(color: colors.onSurfaceVariant.withOpacity(0.2), height: 1);
+    final line = Divider(color: colors.onSurfaceVariant.withValues(alpha: 0.2), height: 1);
     return Row(
       children: [
         Expanded(child: line),
@@ -161,7 +162,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
     );
   }
 
-  void _goToFeaturedReads(BuildContext context) {
+  void _goToPersonalizedUI(BuildContext context) {
     Navigator.pushNamedAndRemoveUntil(
       context,
       AppRoutes.home,

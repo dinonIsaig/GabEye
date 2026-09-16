@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 import '../settings/help_feedback_screen.dart';
 import '../settings/gabeye_settings.dart';
@@ -624,26 +625,19 @@ class RememberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentRed = isDark ? const Color(0xFFFFB4AB) : AppColors.errorRed;
-    final bgRed = isDark
-        ? AppColors.errorRed.withValues(alpha: 0.18)
-        : AppColors.errorRed.withValues(alpha: 0.08);
-    final borderRed = isDark
-        ? const Color(0xFFFFB4AB).withValues(alpha: 0.35)
-        : AppColors.errorRed.withValues(alpha: 0.25);
+    final tones = context.errorAccentTones;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: bgRed,
+        color: tones.background,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderRed),
+        border: Border.all(color: tones.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, color: accentRed, size: 28),
+          Icon(Icons.info_outline, color: tones.accent, size: 28),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -652,7 +646,7 @@ class RememberCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: accentRed,
+                    color: tones.accent,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -765,17 +759,25 @@ class ComparisonTableWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final borderColor = Theme.of(
-      context,
-    ).colorScheme.outlineVariant.withValues(alpha: 0.6);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colors = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.35)
+        : AppColors.primaryNavy.withValues(alpha: 0.45);
+    final innerBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.20)
+        : AppColors.primaryNavy.withValues(alpha: 0.20);
+    final headerColor = isDark
+        ? AppColors.darkPrimaryButton.withValues(alpha: 0.15)
+        : AppColors.primaryNavy.withValues(alpha: 0.08);
 
     TableRow buildRow(List<String> cells, {bool isHeader = false}) {
       return TableRow(
         decoration: BoxDecoration(
-          color: isHeader
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
+          color: isHeader ? headerColor : null,
         ),
         children: cells
             .asMap()
@@ -799,7 +801,7 @@ class ComparisonTableWidget extends StatelessWidget {
                             ))
                         .copyWith(
                       fontSize: 16,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: colors.onSurface,
                       fontWeight: (isHeader || isFirstColumn)
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -815,8 +817,9 @@ class ComparisonTableWidget extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: borderColor, width: 1.2),
       ),
       clipBehavior: Clip.antiAlias,
       child: Table(
@@ -826,7 +829,8 @@ class ComparisonTableWidget extends StatelessWidget {
           2: FlexColumnWidth(1.1),
         },
         border: TableBorder(
-          horizontalInside: BorderSide(color: borderColor),
+          horizontalInside: BorderSide(color: innerBorderColor, width: 1.0),
+          verticalInside: BorderSide(color: innerBorderColor, width: 1.0),
         ),
         children: [
           buildRow(table.columnHeaders, isHeader: true),
