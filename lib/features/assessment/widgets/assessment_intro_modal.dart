@@ -132,7 +132,7 @@ class AssessmentIntroModal extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Drag and drop the color discs below to arrange them in a continuous sequence, starting from the fixed reference disc on the left.',
+                    'This short assessment helps identify how you distinguish between different color hues. You’ll arrange the color discs in the order that looks most natural to you.',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                       height: 1.6,
