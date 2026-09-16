@@ -17,7 +17,7 @@ class PreAssessmentIntroScreen extends StatelessWidget {
       onNext: () {
         Navigator.pushNamed(context, AppRoutes.preAssessmentHowItWorks);
       },
-      onBack: () => Navigator.pop(context),
+      onBack: () => Navigator.pushNamed(context, AppRoutes.getStarted),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -45,7 +45,7 @@ class PreAssessmentIntroScreen extends StatelessWidget {
             subtitle: 'Know more about',
             title: 'Farnsworth D-15',
             description:
-                'Lorem ipsum dolor sit amet consectetur. Semper adipiscing pellentesque aliquam sed augue arcu.',
+                'The Farnsworth D-15 is a simple color arrangement test where you arrange 15 colored discs in sequence to identify your color vision pattern...',
             onReadMore: () {
               Navigator.push(
                 context,

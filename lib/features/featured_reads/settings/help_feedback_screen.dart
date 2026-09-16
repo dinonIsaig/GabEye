@@ -313,7 +313,7 @@ class _QuickHelpTile extends StatelessWidget {
                         item.title,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: colors.onSurface,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),

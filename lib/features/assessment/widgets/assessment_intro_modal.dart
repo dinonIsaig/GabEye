@@ -8,9 +8,8 @@ class AssessmentIntroModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme;
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -60,7 +59,7 @@ class AssessmentIntroModal extends StatelessWidget {
                   OutlinedButton(
                     onPressed: () {
                       Navigator.popAndPushNamed(
-                          context, AppRoutes.preAssessmentHowItWorks);
+                          context, AppRoutes.preAssessmentIntro);
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,

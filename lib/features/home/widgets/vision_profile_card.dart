@@ -111,7 +111,7 @@ class VisionProfileCard extends StatelessWidget {
                           Text(
                             data.ctaLabel,
                             style: const TextStyle(
-                              fontFamily: 'Inter',
+                              fontFamily: 'AtkinsonHyperlegible',
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
                             ),

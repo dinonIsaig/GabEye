@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
-import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/core/widgets/gabeye_app_bar.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
@@ -11,6 +11,7 @@ class DisclaimerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final tones = context.errorAccentTones;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -65,7 +66,7 @@ class DisclaimerScreen extends StatelessWidget {
                               children: [
                                 Container(
                                   width: Responsive.space(context, base: 17, min: 12, max: 22),
-                                  color: AppColors.errorRed,
+                                  color: tones.accent,
                                 ),
                                 Expanded(
                                   child: Padding(
@@ -83,9 +84,9 @@ class DisclaimerScreen extends StatelessWidget {
                                         SizedBox(height: Responsive.space(context, base: 6, min: 4, max: 10)),
                                         Row(
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.warning_amber_rounded,
-                                              color: AppColors.errorRed,
+                                              color: tones.accent,
                                               size: 24,
                                             ),
                                             const SizedBox(width: 8),
@@ -94,7 +95,7 @@ class DisclaimerScreen extends StatelessWidget {
                                               style: textTheme.titleLarge?.copyWith(
                                                 fontFamily: 'Inter',
                                                 fontSize: Responsive.font(context, base: 24, min: 18, max: 28),
-                                                color: AppColors.errorOrange,
+                                                color: tones.accent,
                                               ),
                                             ),
                                           ],

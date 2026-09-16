@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
 import 'gabeye_settings.dart';
@@ -440,21 +441,14 @@ class _NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final useRed = title.toLowerCase() == 'remember';
+    final tones = context.errorAccentTones;
     final accent = useRed
-        ? (isDark ? const Color(0xFFFFB4AB) : AppColors.errorRed)
+        ? tones.accent
         : (isDark ? AppColors.darkPrimaryButton : AppColors.primaryColor);
     final bg = useRed
-        ? (isDark
-            ? AppColors.errorRed.withValues(alpha: 0.18)
-            : AppColors.errorRed.withValues(alpha: 0.08))
+        ? tones.background
         : Theme.of(context).colorScheme.primary.withValues(alpha: .12);
-    final border = useRed
-        ? Border.all(
-            color: isDark
-                ? const Color(0xFFFFB4AB).withValues(alpha: 0.35)
-                : AppColors.errorRed.withValues(alpha: 0.25),
-          )
-        : null;
+    final border = useRed ? Border.all(color: tones.border) : null;
 
     return Container(
       padding: const EdgeInsets.all(18),
