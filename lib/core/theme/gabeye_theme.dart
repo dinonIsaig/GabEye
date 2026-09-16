@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/cvd_color_tokens.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 
 class GabEyeTheme {
   static TextTheme _buildTextTheme(Color color) {
@@ -105,116 +107,135 @@ class GabEyeTheme {
     );
   }
 
-  static final ThemeData lightTheme = ThemeData(
-    brightness: Brightness.light,
-    fontFamily: 'AtkinsonHyperlegible',
-    scaffoldBackgroundColor: AppColors.lightSurface,
-    colorScheme: const ColorScheme.light(
-      primary: AppColors.lightPrimaryButton,
-      onPrimary: AppColors.lightPrimaryButton,
-      surface: AppColors.lightSurface,
-      surfaceContainer: AppColors.altLightSurface,
-      onSurface: AppColors.lightTextPrimary,
-      onSurfaceVariant: AppColors.lightTextSecondary,
-      error: AppColors.errorRed,
-      tertiary: AppColors.lightInfo,
-      outline: AppColors.borderLight,
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primaryNavy,
-        foregroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 55),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.lightPrimaryButton,
-        foregroundColor: AppColors.lightSurface,
-        disabledBackgroundColor: AppColors.disabledButton,
-        disabledForegroundColor: AppColors.disabledText,
-        minimumSize: const Size(double.infinity, 55),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.lightSurface,
-        foregroundColor: AppColors.lightPrimaryButton,
-        side: const BorderSide(color: AppColors.borderLight, width: 1),
-        minimumSize: const Size(double.infinity, 55),
-      ),
-    ),
-    textTheme: _buildTextTheme(AppColors.lightTextPrimary),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.lightSurface,
-      foregroundColor: AppColors.lightTextPrimary,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-    ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: AppColors.lightSurface,
-    ),
-  );
+  static final ThemeData lightTheme = _buildLight(CvdProfile.none);
+  static final ThemeData darkTheme = _buildDark(CvdProfile.none);
 
-  static final ThemeData darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    fontFamily: 'AtkinsonHyperlegible',
-    scaffoldBackgroundColor: AppColors.darkMode,
-    colorScheme: const ColorScheme.dark(
-      primary: AppColors.primaryColor,
-      onPrimary: AppColors.darkTextSecondary,
-      surface: AppColors.darkSurface,
-      surfaceContainer: AppColors.altDarkSurface,
-      onSurface: AppColors.darkTextPrimary,
-      onSurfaceVariant: AppColors.darkTextSecondary,
-      error: AppColors.errorRed,
-      tertiary: AppColors.darkInfo,
-      outline: AppColors.borderDark,
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.darkPrimaryButton,
-        foregroundColor: AppColors.darkSurface,
-        minimumSize: const Size(double.infinity, 55),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+  /// Builds the theme for a given brightness + CVD personalization profile.
+  /// `CvdProfile.none` reproduces today's default palette exactly.
+  static ThemeData themeFor(Brightness brightness, CvdProfile profile) {
+    return brightness == Brightness.dark
+        ? _buildDark(profile)
+        : _buildLight(profile);
+  }
+
+  static ThemeData _buildLight(CvdProfile profile) {
+    final tokens = CvdColorTokens.resolve(Brightness.light, profile);
+    return ThemeData(
+      brightness: Brightness.light,
+      fontFamily: 'AtkinsonHyperlegible',
+      scaffoldBackgroundColor: AppColors.lightSurface,
+      colorScheme: ColorScheme.light(
+        primary: tokens.primaryButton,
+        onPrimary: tokens.primaryButton,
+        surface: AppColors.lightSurface,
+        surfaceContainer: AppColors.altLightSurface,
+        onSurface: AppColors.lightTextPrimary,
+        onSurfaceVariant: AppColors.lightTextSecondary,
+        error: tokens.error,
+        tertiary: tokens.info,
+        outline: tokens.border,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: tokens.primaryButton,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 55),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 14),
       ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.darkPrimaryButton,
-        surfaceTintColor: AppColors.lightTextSecondary,
-        foregroundColor: AppColors.darkSurface,
-        disabledBackgroundColor: AppColors.disabledButton,
-        disabledForegroundColor: AppColors.disabledText,
-        minimumSize: const Size(double.infinity, 55),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: tokens.primaryButton,
+          foregroundColor: AppColors.lightSurface,
+          disabledBackgroundColor: AppColors.disabledButton,
+          disabledForegroundColor: AppColors.disabledText,
+          minimumSize: const Size(double.infinity, 55),
+        ),
       ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.altDarkSurface,
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.lightSurface,
+          foregroundColor: tokens.primaryButton,
+          side: BorderSide(color: tokens.border, width: 1),
+          minimumSize: const Size(double.infinity, 55),
+        ),
+      ),
+      textTheme: _buildTextTheme(AppColors.lightTextPrimary),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.lightSurface,
+        foregroundColor: AppColors.lightTextPrimary,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.lightSurface,
+      ),
+      extensions: [GabEyeSemanticColors.fromTokens(tokens)],
+    );
+  }
+
+  static ThemeData _buildDark(CvdProfile profile) {
+    final tokens = CvdColorTokens.resolve(Brightness.dark, profile);
+    return ThemeData(
+      brightness: Brightness.dark,
+      fontFamily: 'AtkinsonHyperlegible',
+      scaffoldBackgroundColor: AppColors.darkMode,
+      colorScheme: ColorScheme.dark(
+        primary: AppColors.primaryColor,
+        onPrimary: AppColors.darkTextSecondary,
+        surface: AppColors.darkSurface,
+        surfaceContainer: AppColors.altDarkSurface,
+        onSurface: AppColors.darkTextPrimary,
+        onSurfaceVariant: AppColors.darkTextSecondary,
+        error: tokens.error,
+        tertiary: tokens.info,
+        outline: tokens.border,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: tokens.primaryButton,
+          foregroundColor: AppColors.darkSurface,
+          minimumSize: const Size(double.infinity, 55),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: tokens.primaryButton,
+          surfaceTintColor: AppColors.lightTextSecondary,
+          foregroundColor: AppColors.darkSurface,
+          disabledBackgroundColor: AppColors.disabledButton,
+          disabledForegroundColor: AppColors.disabledText,
+          minimumSize: const Size(double.infinity, 55),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.altDarkSurface,
+          foregroundColor: AppColors.darkTextPrimary,
+          side: BorderSide(color: tokens.border, width: 1),
+          minimumSize: const Size(double.infinity, 55),
+        ),
+      ),
+      textTheme: _buildTextTheme(AppColors.darkTextPrimary),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkTextPrimary,
-        side: const BorderSide(color: AppColors.borderDark, width: 1),
-        minimumSize: const Size(double.infinity, 55),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
       ),
-    ),
-    textTheme: _buildTextTheme(AppColors.darkTextPrimary),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.darkSurface,
-      foregroundColor: AppColors.darkTextPrimary,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-    ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: AppColors.darkMode,
-    ),
-  );
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.darkMode,
+      ),
+      extensions: [GabEyeSemanticColors.fromTokens(tokens)],
+    );
+  }
 }
 
 
