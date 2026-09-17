@@ -188,7 +188,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         ),
         SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
         Text(
-          'Last Update: July 2026',
+          'Last Update: Spetember 2026',
           style: GoogleFonts.atkinsonHyperlegibleNext(
             fontSize: 16,
             color: AppColors.disabledText,

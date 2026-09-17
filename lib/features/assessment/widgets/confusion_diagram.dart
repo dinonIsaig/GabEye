@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_semantic_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import '../models/cap.dart';
 
 /// Renders the CIE L*u*v* confusion plot: all 16 caps placed around a
@@ -8,12 +9,12 @@ import '../models/cap.dart';
 /// axes for the three classic confusion lines (Protan / Deutan / Tritan).
 ///
 /// Each connecting segment is colored by what it represents — matching
-/// the same AppSemanticColors tokens used in the confusion line list
-/// below the diagram, so a green line here means the same thing as a
-/// green row there:
+/// the same semantic colors used in the confusion line list below the
+/// diagram, so a green line here means the same thing as a green row
+/// there:
 /// - neutral: caps placed correctly adjacent to each other
-/// - green (AppSemanticColors.minorError): a minor swap
-/// - red (AppSemanticColors.majorError): a major crossover
+/// - green (context.semanticColors.success): a minor swap
+/// - red (context.semanticColors.error): a major crossover
 class ConfusionDiagram extends StatelessWidget {
   final List<int> arrangedCaps;
   final bool showLegend;
@@ -23,6 +24,7 @@ class ConfusionDiagram extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final semantic = context.semanticColors;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -49,12 +51,14 @@ class ConfusionDiagram extends StatelessWidget {
                   normalSegmentColor: colors.onSurfaceVariant.withOpacity(0.25),
                   labelColor: colors.onSurface,
                   labelShadowColor: colors.surface,
+                  minorErrorColor: semantic.success,
+                  majorErrorColor: semantic.error,
                 ),
               ),
             ),
             if (showLegend) ...[
               const SizedBox(height: 12),
-              _buildLegend(colors),
+              _buildLegend(colors, semantic),
             ],
           ],
         );
@@ -62,14 +66,14 @@ class ConfusionDiagram extends StatelessWidget {
     );
   }
 
-  Widget _buildLegend(ColorScheme colors) {
+  Widget _buildLegend(ColorScheme colors, GabEyeSemanticColors semantic) {
     return Wrap(
       spacing: 12,
       runSpacing: 6,
       alignment: WrapAlignment.center,
       children: [
-        _legendItem(colors, AppSemanticColors.minorError, 'Minor swap'),
-        _legendItem(colors, AppSemanticColors.majorError, 'Major crossover'),
+        _legendItem(colors, semantic.success, 'Minor swap'),
+        _legendItem(colors, semantic.error, 'Major crossover'),
         _legendItem(colors, colors.onSurfaceVariant.withOpacity(0.4), 'Confusion axis'),
       ],
     );
@@ -93,6 +97,8 @@ class ConfusionDiagramPainter extends CustomPainter {
   final Color normalSegmentColor;
   final Color labelColor;
   final Color labelShadowColor;
+  final Color minorErrorColor;
+  final Color majorErrorColor;
 
   ConfusionDiagramPainter({
     required this.arrangedCaps,
@@ -100,6 +106,8 @@ class ConfusionDiagramPainter extends CustomPainter {
     required this.normalSegmentColor,
     required this.labelColor,
     required this.labelShadowColor,
+    required this.minorErrorColor,
+    required this.majorErrorColor,
   });
 
   @override
@@ -178,10 +186,10 @@ class ConfusionDiagramPainter extends CustomPainter {
         segmentColor = normalSegmentColor;
         strokeWidth = 1.5;
       } else if (step == 2 || step == 14) {
-        segmentColor = AppSemanticColors.minorError;
+        segmentColor = minorErrorColor;
         strokeWidth = 2.0;
       } else {
-        segmentColor = AppSemanticColors.majorError;
+        segmentColor = majorErrorColor;
         strokeWidth = 2.5;
       }
 
@@ -201,6 +209,8 @@ class ConfusionDiagramPainter extends CustomPainter {
         oldDelegate.circleColor != circleColor ||
         oldDelegate.normalSegmentColor != normalSegmentColor ||
         oldDelegate.labelColor != labelColor ||
-        oldDelegate.labelShadowColor != labelShadowColor;
+        oldDelegate.labelShadowColor != labelShadowColor ||
+        oldDelegate.minorErrorColor != minorErrorColor ||
+        oldDelegate.majorErrorColor != majorErrorColor;
   }
 }

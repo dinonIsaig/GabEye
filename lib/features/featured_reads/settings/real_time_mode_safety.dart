@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
 import 'gabeye_settings.dart';
@@ -268,26 +269,19 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentRed = isDark ? const Color(0xFFFFB4AB) : AppColors.errorRed;
-    final bgRed = isDark
-        ? AppColors.errorRed.withValues(alpha: 0.18)
-        : AppColors.errorRed.withValues(alpha: 0.08);
-    final borderRed = isDark
-        ? const Color(0xFFFFB4AB).withValues(alpha: 0.35)
-        : AppColors.errorRed.withValues(alpha: 0.25);
+    final tones = context.errorAccentTones;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: bgRed,
+        color: tones.background,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderRed),
+        border: Border.all(color: tones.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, color: accentRed, size: 28),
+          Icon(Icons.info_outline, color: tones.accent, size: 28),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -296,7 +290,7 @@ class _NoteCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: accentRed,
+                    color: tones.accent,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
