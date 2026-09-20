@@ -40,6 +40,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
 
   // Flashlight Torch, Zoom, & Split Screen Full View state
   bool _isTorchOn = false;
+  bool _wasTorchOnBeforeFreeze = false;
   double _currentZoomLevel = 1.0;
   final double _minZoom = 1.0;
   final double _maxZoom = 5.0;
@@ -86,22 +87,37 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   bool _showUploadedNotification = false;
   Timer? _uploadedNotificationTimer;
 
+  bool get _isTorchDisabled =>
+      _isFreezeFrameActive ||
+      (_isDisplayingUploadedImage &&
+          (_isUploadedIdentifyMode || _activeCameraMode == CameraRealtimeMode.knn));
+
   Future<void> _toggleTorch() async {
+    if (_isTorchDisabled) return;
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         final newMode = _isTorchOn ? FlashMode.off : FlashMode.torch;
         await _cameraController!.setFlashMode(newMode);
         setState(() {
           _isTorchOn = !_isTorchOn;
+          if (_isFreezeFrameActive) {
+            _wasTorchOnBeforeFreeze = _isTorchOn;
+          }
         });
       } catch (_) {
         setState(() {
           _isTorchOn = !_isTorchOn;
+          if (_isFreezeFrameActive) {
+            _wasTorchOnBeforeFreeze = _isTorchOn;
+          }
         });
       }
     } else {
       setState(() {
         _isTorchOn = !_isTorchOn;
+        if (_isFreezeFrameActive) {
+          _wasTorchOnBeforeFreeze = _isTorchOn;
+        }
       });
     }
   }
@@ -295,7 +311,10 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       try {
         _isKnnStreamActive = true;
         await _cameraController!.startImageStream((CameraImage image) async {
-          if (_activeCameraMode == CameraRealtimeMode.knn && mounted) {
+          if (_activeCameraMode == CameraRealtimeMode.knn &&
+              !_isDisplayingUploadedImage &&
+              !_isFreezeFrameActive &&
+              mounted) {
             final result = await CameraFrameIngestionService.instance.processCameraFrame(
               image: image,
               dataset: _isccDataset,
@@ -348,6 +367,21 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       // Step 2: Stop the live KNN stream — we no longer need frame callbacks.
       await _stopKnnFrameStream();
 
+      // Step 2b: Automatically turn off torch/flash if active, saving previous state.
+      if (_isTorchOn) {
+        _wasTorchOnBeforeFreeze = true;
+        try {
+          await _cameraController!.setFlashMode(FlashMode.off);
+        } catch (_) {}
+        if (mounted) {
+          setState(() {
+            _isTorchOn = false;
+          });
+        }
+      } else {
+        _wasTorchOnBeforeFreeze = false;
+      }
+
       // Step 3: Decode JPEG bytes into a dart:ui.Image for O(1) pixel access.
       final ui.Codec codec = await ui.instantiateImageCodec(rawBytes);
       final ui.FrameInfo frame = await codec.getNextFrame();
@@ -397,6 +431,21 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       _isSamplingPixel = false;
     });
 
+    // Automatically restore the torch if it was active prior to freeze-frame capture.
+    if (_wasTorchOnBeforeFreeze) {
+      _wasTorchOnBeforeFreeze = false;
+      if (_cameraController != null && _cameraController!.value.isInitialized) {
+        try {
+          await _cameraController!.setFlashMode(FlashMode.torch);
+          if (mounted) {
+            setState(() {
+              _isTorchOn = true;
+            });
+          }
+        } catch (_) {}
+      }
+    }
+
     // Restart the live KNN image stream.
     await _startKnnFrameStream();
   }
@@ -416,10 +465,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     required Offset localPosition,
     required Size renderBoxSize,
   }) {
+    final Size imageSize = _isDisplayingUploadedImage
+        ? (_uploadedUiImage != null
+            ? Size(_uploadedUiImage!.width.toDouble(), _uploadedUiImage!.height.toDouble())
+            : Size.zero)
+        : _capturedImageSize;
+
     final Offset norm = _screenTouchToNormalisedImageCoord(
       localPosition: localPosition,
       renderBoxSize: renderBoxSize,
-      imagePixelSize: _capturedImageSize,
+      imagePixelSize: imageSize,
     );
 
     setState(() {
@@ -464,13 +519,14 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     final double imageW = imagePixelSize.width;
     final double imageH = imagePixelSize.height;
 
-    // Scale factor for BoxFit.contain (the smaller axis drives the scale).
-    final double scale = (containerW / imageW).clamp(0.0, containerH / imageH);
-    // Alternatively: min(containerW / imageW, containerH / imageH)
+    // Scale factor for BoxFit.cover (the larger axis drives the scale so it covers the viewport).
+    final double scale = (containerW / imageW) > (containerH / imageH)
+        ? (containerW / imageW)
+        : (containerH / imageH);
     final double renderedW = imageW * scale;
     final double renderedH = imageH * scale;
 
-    // Letterbox / pillarbox offsets (empty band on each side).
+    // Center-crop offsets (negative or zero, as rendered dimension >= container dimension).
     final double offsetX = (containerW - renderedW) / 2.0;
     final double offsetY = (containerH - renderedH) / 2.0;
 
@@ -481,20 +537,27 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     return Offset(normX, normY);
   }
 
-  /// Samples the pixel at [_crosshairNorm] within [_capturedUiImage],
+  /// Samples the pixel at [_crosshairNorm] within [_uploadedUiImage] or [_capturedUiImage],
   /// updating [_freezeFrameColorResult] and [_currentIdentifiedColor] strictly for
   /// real-time visual UI overlay rendering without triggering TTS.
   Future<void> _sampleCrosshairPixel() async {
-    if (_capturedUiImage == null || _isccDataset.isEmpty || _isSamplingPixel) return;
+    final ui.Image? targetImage = _isDisplayingUploadedImage ? _uploadedUiImage : _capturedUiImage;
+    final Size targetSize = _isDisplayingUploadedImage
+        ? (_uploadedUiImage != null
+            ? Size(_uploadedUiImage!.width.toDouble(), _uploadedUiImage!.height.toDouble())
+            : Size.zero)
+        : _capturedImageSize;
+
+    if (targetImage == null || _isccDataset.isEmpty || _isSamplingPixel || targetSize.isEmpty) return;
     _isSamplingPixel = true;
 
     // Convert normalised coordinates to actual pixel indices.
-    final int px = (_crosshairNorm.dx * (_capturedImageSize.width - 1)).round();
-    final int py = (_crosshairNorm.dy * (_capturedImageSize.height - 1)).round();
+    final int px = (_crosshairNorm.dx * (targetSize.width - 1)).round();
+    final int py = (_crosshairNorm.dy * (targetSize.height - 1)).round();
 
     try {
       final KnnIsolateResult result = await CapturePixelSamplerService.samplePixelAt(
-        image: _capturedUiImage!,
+        image: targetImage,
         pixelX: px,
         pixelY: py,
         dataset: _isccDataset,
@@ -555,6 +618,9 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         final mode = await showAssistanceModeModal(context);
         if (mode == null || !mounted) return;
 
+        // Stop the live KNN camera frame stream while viewing an uploaded photo.
+        await _stopKnnFrameStream();
+
         final bytes = await picked.readAsBytes();
         _uploadedNotificationTimer?.cancel();
         setState(() {
@@ -571,6 +637,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
             _isUploadedIdentifyMode = true;
           }
         });
+        if (mode != AssistanceMode.remapColor && _isTorchOn) {
+          if (_cameraController != null && _cameraController!.value.isInitialized) {
+            try {
+              await _cameraController!.setFlashMode(FlashMode.off);
+            } catch (_) {}
+          }
+          setState(() {
+            _isTorchOn = false;
+          });
+        }
         await _decodeUploadedImage(bytes);
         _uploadedNotificationTimer = Timer(const Duration(seconds: 4), () {
           if (mounted) {
@@ -589,6 +665,10 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       if (mounted) {
         final mode = await showAssistanceModeModal(context);
         if (mode == null || !mounted) return;
+
+        // Stop the live KNN camera frame stream while viewing an uploaded photo.
+        await _stopKnnFrameStream();
+
         _uploadedNotificationTimer?.cancel();
         setState(() {
           _isDisplayingUploadedImage = true;
@@ -601,6 +681,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
             _isUploadedIdentifyMode = true;
           }
         });
+        if (mode != AssistanceMode.remapColor && _isTorchOn) {
+          if (_cameraController != null && _cameraController!.value.isInitialized) {
+            try {
+              await _cameraController!.setFlashMode(FlashMode.off);
+            } catch (_) {}
+          }
+          setState(() {
+            _isTorchOn = false;
+          });
+        }
         _uploadedNotificationTimer = Timer(const Duration(seconds: 4), () {
           if (mounted) {
             setState(() {
@@ -621,22 +711,10 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
     if (mounted) {
       setState(() {
         _uploadedUiImage = frame.image;
+        _crosshairNorm = const Offset(0.5, 0.5);
       });
       if (_isUploadedIdentifyMode && _isccDataset.isNotEmpty) {
-        final rawDatasetJson = _isccDataset.map((e) => e.toJson()).toList();
-        final request = KnnIsolateRequest(
-          pixelBuffer: bytes,
-          width: frame.image.width,
-          height: frame.image.height,
-          rawDatasetJson: rawDatasetJson,
-        );
-        final result = await KnnIsolateWorker.processRoiInIsolate(request);
-        if (mounted) {
-          setState(() {
-            _currentIdentifiedColor = result.colorName;
-            _currentIdentifiedObject = 'Uploaded Image';
-          });
-        }
+        await _sampleCrosshairPixel();
       }
     }
   }
@@ -653,6 +731,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
       _isUploadedIdentifyMode = false;
       _isRemapActive = true;
       _activeCameraMode = CameraRealtimeMode.daltonization;
+      _freezeFrameColorResult = null;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -898,13 +977,15 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         : (_isSplitScreenView
             ? _buildSplitScreenViewport(context, colors)
             : (_isDisplayingUploadedImage
-                // Uploaded photo: pass the decoded ui.Image directly to the shader.
+                // Uploaded photo: pass the decoded ui.Image directly to the shader or inspection view.
                 ? (_uploadedUiImage != null
-                    ? DaltonizationShaderWidget(
-                        customType: _getEffectiveShaderType(),
-                        intensity: _getEffectiveShaderIntensity(),
-                        image: _uploadedUiImage!,
-                      )
+                    ? (_isUploadedIdentifyMode
+                        ? _buildUploadedImageInspectionView(context, colors)
+                        : DaltonizationShaderWidget(
+                            customType: _getEffectiveShaderType(),
+                            intensity: _getEffectiveShaderIntensity(),
+                            image: _uploadedUiImage!,
+                          ))
                     : const Center(child: CircularProgressIndicator()))
                 : (_isCameraPermissionGranted
                     // In KNN mode, display natural un-filtered camera preview. Otherwise apply ColorFiltered Daltonization pass.
@@ -985,8 +1066,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         // Viewport: Uploaded photo or Realtime Hardware Camera Feed through GLSL LMS Daltonization Shader
         Positioned.fill(child: viewportContent),
 
-        // Indicator Chip when displaying uploaded photo
-        if (_isDisplayingUploadedImage && !_isSplitScreenView)
+        // Indicator Chip when displaying uploaded photo (remap mode only, since KNN inspection view has its own badge)
+        if (_isDisplayingUploadedImage && !_isUploadedIdentifyMode && !_isSplitScreenView)
           Positioned(
             top: 16,
             left: 20,
@@ -1056,12 +1137,13 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
           ),
 
         // Precision Pinpoint Dot ROI Target Overlay when in KNN / Identify Mode
-        // Hidden during freeze-frame; the interactive crosshair in the freeze-frame
-        // view replaces this static centre-only overlay.
+        // Hidden during freeze-frame and when viewing an uploaded image; the
+        // interactive crosshair in those inspection views replaces this static centre-only overlay.
         if (!_isFreezeFrameActive &&
-            (_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode) &&
+            !_isDisplayingUploadedImage &&
+            _activeCameraMode == CameraRealtimeMode.knn &&
             !_isSplitScreenView &&
-            (_isDisplayingUploadedImage || _isCameraPermissionGranted))
+            _isCameraPermissionGranted)
           Positioned.fill(
             child: IgnorePointer(
               child: Center(
@@ -1274,12 +1356,23 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         return Stack(
           children: [
             // ── Still Image ──────────────────────────────────────────
+            // Uses the identical FittedBox(fit: BoxFit.cover) and previewSize footprint
+            // as _buildCameraPreviewWidget so that freeze frame perfectly matches the
+            // live CameraPreview geometry with zero layout shifts or scaling discrepancies.
             Positioned.fill(
-              child: Image.memory(
-                bytes,
-                fit: BoxFit.contain,
-                // Disable gapless playback to ensure the image renders immediately.
-                gaplessPlayback: false,
+              child: ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _cameraController?.value.previewSize?.height ?? 720,
+                    height: _cameraController?.value.previewSize?.width ?? 1280,
+                    child: Image.memory(
+                      bytes,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+                ),
               ),
             ),
 
@@ -1346,6 +1439,115 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                     Text(
                       'Freeze-Frame • Tap or drag to inspect',
                       style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUploadedImageInspectionView(BuildContext context, ColorScheme colors) {
+    final Uint8List bytes = _uploadedImageBytes!;
+    final Size imageSize = _uploadedUiImage != null
+        ? Size(_uploadedUiImage!.width.toDouble(), _uploadedUiImage!.height.toDouble())
+        : Size.zero;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final Size containerSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+        return Stack(
+          children: [
+            // ── Uploaded Image ───────────────────────────────────────
+            Positioned.fill(
+              child: ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: imageSize.width > 0 ? imageSize.width : containerSize.width,
+                    height: imageSize.height > 0 ? imageSize.height : containerSize.height,
+                    child: Image.memory(
+                      bytes,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Interactive Crosshair Gesture Layer ─────────────────────
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTapDown: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                onPanUpdate: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                // Visual crosshair and color readout badge rendered directly over the image.
+                child: CustomPaint(
+                  painter: FreezeFrameCrosshairPainter(
+                    normPosition: _crosshairNorm,
+                    imageSize: imageSize,
+                    containerSize: containerSize,
+                    colorResult: _freezeFrameColorResult,
+                    accentColor: colors.primary,
+                  ),
+                  size: containerSize,
+                ),
+              ),
+            ),
+
+            // ── Uploaded Image Status Badge (top-left) ──────────────────
+            Positioned(
+              top: 16,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.palette_outlined, size: 15, color: Colors.white),
+                    const SizedBox(width: 7),
+                    Text(
+                      'KNN Image Inspection • ${_uploadedFileName ?? "Tap or drag to inspect"}',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1737,12 +1939,14 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
         // Flashlight Torch Toggle Button
         _buildFloatingCircleButton(
           icon: _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-          isActive: _isTorchOn,
-          onTap: _toggleTorch,
+          isActive: _isTorchOn && !_isTorchDisabled,
+          onTap: _isTorchDisabled ? null : _toggleTorch,
           bgColor: bgColor,
           activeBgColor: Colors.amber.shade700,
-          iconColor: _isTorchOn ? Colors.white : iconColor,
-          tooltip: 'Flashlight',
+          iconColor: _isTorchDisabled
+              ? iconColor.withValues(alpha: 0.35)
+              : (_isTorchOn ? Colors.white : iconColor),
+          tooltip: _isTorchDisabled ? 'Flashlight unavailable' : 'Flashlight',
         ),
         // Split Screen View Comparison Toggle Button (Hidden in KNN Mode)
         if (!isKnnMode) ...[
@@ -1809,7 +2013,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   Widget _buildFloatingCircleButton({
     required IconData icon,
     required bool isActive,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
     required Color bgColor,
     required Color activeBgColor,
     required Color iconColor,
@@ -2128,7 +2332,7 @@ class FreezeFrameCrosshairPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (imageSize.isEmpty || containerSize.isEmpty) return;
 
-    // ── Step 1: Compute the rendered image rect (BoxFit.contain) ──────────
+    // ── Step 1: Compute the rendered image rect (BoxFit.cover) ────────────
     // Mirror the same math as _screenTouchToNormalisedImageCoord so the
     // crosshair is always pixel-accurate relative to what the user sees.
     final double cW = containerSize.width;
@@ -2136,7 +2340,7 @@ class FreezeFrameCrosshairPainter extends CustomPainter {
     final double iW = imageSize.width;
     final double iH = imageSize.height;
 
-    final double scale = (cW / iW) < (cH / iH) ? (cW / iW) : (cH / iH);
+    final double scale = (cW / iW) > (cH / iH) ? (cW / iW) : (cH / iH);
     final double renderedW = iW * scale;
     final double renderedH = iH * scale;
     final double offsetX = (cW - renderedW) / 2.0;
