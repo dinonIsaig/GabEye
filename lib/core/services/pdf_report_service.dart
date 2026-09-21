@@ -14,7 +14,6 @@ import 'package:gabeye/features/assessment/services/scoring_service.dart';
 class PdfReportService {
   PdfReportService._();
 
-  /// Primary entry point to generate and present the PDF export dialog / print preview.
   static Future<void> generateAndExportPdf(
     BuildContext context, {
     D15ScoreResult? scoreResult,
@@ -22,14 +21,17 @@ class PdfReportService {
   }) async {
     final caps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
     final result = scoreResult ?? VisionProfileService.instance.value;
-    final pdfBytes = await buildPdfDocument(scoreResult: result, arrangedCaps: caps);
 
     final filename = result != null
         ? 'GabEye_Vision_Report_${result.shortName}_${DateTime.now().millisecondsSinceEpoch}.pdf'
         : 'GabEye_Vision_Report_Baseline_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
     await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdfBytes,
+      onLayout: (PdfPageFormat format) async => buildPdfDocument(
+        scoreResult: result,
+        arrangedCaps: caps,
+        pageFormat: format,
+      ),
       name: filename,
     );
   }
@@ -38,6 +40,7 @@ class PdfReportService {
   static Future<Uint8List> buildPdfDocument({
     required D15ScoreResult? scoreResult,
     required List<int> arrangedCaps,
+    PdfPageFormat pageFormat = PdfPageFormat.a4,
   }) async {
     final pdf = pw.Document(
       title: 'GabEye Vision Profile Report',
@@ -46,24 +49,26 @@ class PdfReportService {
     );
 
     final result = scoreResult ?? ScoringService.calculateScore(arrangedCaps);
-    final primaryColor = _getDiagnosisPdfColor(result.diagnosisType);
+    
+    final severityColor = _getSeverityPdfColor(result.severityLabel);
+    final diagnosisColor = _getDiagnosisPrimaryColor(result.diagnosisType);
     final formattedDate = _formatCurrentDate();
 
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: pageFormat,
         margin: const pw.EdgeInsets.all(32),
         header: (pw.Context ctx) => _buildPdfHeader(formattedDate),
         footer: (pw.Context ctx) => _buildPdfFooter(ctx),
         build: (pw.Context ctx) => [
           pw.SizedBox(height: 12),
-          _buildExecutiveSummary(result, primaryColor),
+          _buildExecutiveSummary(result, severityColor, diagnosisColor),
           pw.SizedBox(height: 16),
           _buildQuantitativeMetricsTable(result),
           pw.SizedBox(height: 16),
           _buildCapArrangementSection(arrangedCaps, result),
-          pw.SizedBox(height: 16),
-          _buildConfusionPlotSection(arrangedCaps, result),
+          // Sized box removed here; spacing is now handled securely inside the unbreakable Wrap below
+          _buildConfusionPlotSection(arrangedCaps, result, pageFormat),
           pw.SizedBox(height: 16),
           _buildClinicalInterpretationGuide(),
           pw.SizedBox(height: 16),
@@ -123,7 +128,7 @@ class PdfReportService {
                 ),
               ),
               pw.Text(
-                'Farnsworth D-15 Quantitative Analysis (Vingrys & King-Smith, 1988)',
+                'Farnsworth D-15 Quantitative Analysis',
                 style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
               ),
               pw.Text(
@@ -150,7 +155,7 @@ class PdfReportService {
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text(
-            'GabEye • Professional Vision Reference • Confidential Medical Data',
+            'GabEye | Professional Vision Reference | Confidential Medical Data',
             style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
           ),
           pw.Text(
@@ -162,7 +167,7 @@ class PdfReportService {
     );
   }
 
-  static pw.Widget _buildExecutiveSummary(D15ScoreResult result, PdfColor primaryColor) {
+  static pw.Widget _buildExecutiveSummary(D15ScoreResult result, PdfColor severityColor, PdfColor diagnosisColor) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(14),
       decoration: pw.BoxDecoration(
@@ -189,11 +194,11 @@ class PdfReportService {
                   ),
                   pw.SizedBox(height: 2),
                   pw.Text(
-                    result.diagnosisName,
+                    _sanitizeText(result.diagnosisName),
                     style: pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
-                      color: primaryColor,
+                      color: diagnosisColor, 
                     ),
                   ),
                 ],
@@ -201,11 +206,11 @@ class PdfReportService {
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: pw.BoxDecoration(
-                  color: primaryColor,
+                  color: severityColor, 
                   borderRadius: pw.BorderRadius.circular(4),
                 ),
                 child: pw.Text(
-                  'Severity: ${result.severityLabel}',
+                  _sanitizeText('Severity: ${result.severityLabel}'),
                   style: pw.TextStyle(
                     fontSize: 10,
                     fontWeight: pw.FontWeight.bold,
@@ -235,7 +240,7 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 2),
           pw.Text(
-            result.description.isNotEmpty ? result.description : result.rangeBody,
+            _sanitizeText(result.description.isNotEmpty ? result.description : result.rangeBody),
             style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey900, lineSpacing: 1.3),
           ),
         ],
@@ -248,7 +253,7 @@ class PdfReportService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(label, style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
-        pw.Text(value, style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
+        pw.Text(_sanitizeText(value), style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
       ],
     );
   }
@@ -298,10 +303,10 @@ class PdfReportService {
             ),
             pw.TableRow(
               children: [
-                _buildTableCell('Major Error Angle (θ)'),
-                _buildTableCell('${result.angle.toStringAsFixed(1)}°', bold: true),
+                _buildTableCell('Major Error Angle'),
+                _buildTableCell('${result.angle.toStringAsFixed(1)} deg', bold: true),
                 _buildTableCell('Axis Sectors*'),
-                _buildTableCell('Identifies specific axis: Protan (+3° to +17°), Deutan (-11° to -4°), Tritan (-90° to -70°).'),
+                _buildTableCell('Identifies specific axis: Protan (+3 to +17), Deutan (-11 to -4), Tritan (-90 to -70).'),
               ],
             ),
             pw.TableRow(
@@ -316,7 +321,7 @@ class PdfReportService {
               children: [
                 _buildTableCell('Minor Radius (r1)'),
                 _buildTableCell(result.minorRadius.toStringAsFixed(2)),
-                _buildTableCell('—'),
+                _buildTableCell('--'),
                 _buildTableCell('Magnitude of error dispersion along the minor axis.'),
               ],
             ),
@@ -324,8 +329,8 @@ class PdfReportService {
               children: [
                 _buildTableCell('Total Error Score (Stotal)'),
                 _buildTableCell(result.totalError.toStringAsFixed(2)),
-                _buildTableCell('—'),
-                _buildTableCell('Overall chromaticity vector length sqrt(r0² + r1²).'),
+                _buildTableCell('--'),
+                _buildTableCell('Overall chromaticity vector length sqrt(r0^2 + r1^2).'),
               ],
             ),
           ],
@@ -338,7 +343,7 @@ class PdfReportService {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: pw.Text(
-        text,
+        _sanitizeText(text),
         style: pw.TextStyle(
           fontSize: isHeader ? 8 : 7.5,
           fontWeight: isHeader || bold ? pw.FontWeight.bold : pw.FontWeight.normal,
@@ -350,6 +355,13 @@ class PdfReportService {
 
   static pw.Widget _buildCapArrangementSection(List<int> arrangedCaps, D15ScoreResult result) {
     final fullSequence = [0, ...arrangedCaps];
+    final Set<int> majorCrossingCaps = {};
+    for (var err in result.crossings) {
+      if (err.isMajor) {
+        majorCrossingCaps.add(err.capA);
+        majorCrossingCaps.add(err.capB);
+      }
+    }
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -380,11 +392,16 @@ class PdfReportService {
                 children: fullSequence.map((capNum) {
                   final colorData = ColorCap.allCaps[capNum];
                   final isPilot = capNum == 0;
+                  final hasMajorCrossing = majorCrossingCaps.contains(capNum);
+
                   final pdfRgb = PdfColor(
                     colorData.rgb.r,
                     colorData.rgb.g,
                     colorData.rgb.b,
                   );
+
+                  final borderColor = isPilot ? PdfColors.black : (hasMajorCrossing ? PdfColors.red800 : PdfColors.grey400);
+                  final borderWidth = isPilot ? 1.5 : (hasMajorCrossing ? 1.5 : 0.5);
 
                   return pw.Container(
                     width: 28,
@@ -393,8 +410,8 @@ class PdfReportService {
                       color: pdfRgb,
                       borderRadius: pw.BorderRadius.circular(4),
                       border: pw.Border.all(
-                        color: isPilot ? PdfColors.black : PdfColors.grey400,
-                        width: isPilot ? 1.5 : 0.5,
+                        color: borderColor,
+                        width: borderWidth,
                       ),
                     ),
                     alignment: pw.Alignment.center,
@@ -461,115 +478,198 @@ class PdfReportService {
     );
   }
 
-  static pw.Widget _buildConfusionPlotSection(List<int> arrangedCaps, D15ScoreResult result) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'CIE L*u*v* CHROMATICITY CONFUSION DIAGRAM',
-          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey900),
+  static pw.Widget _buildConfusionPlotSection(List<int> arrangedCaps, D15ScoreResult result, PdfPageFormat format) {
+    final double availableWidth = format.availableWidth - 64; 
+    
+    final double boxSize = math.min(availableWidth * 0.65, 260);
+    final double innerSize = boxSize - 16;
+    final double center = innerSize / 2;
+    final double radius = center - 24; 
+    final double cap0Angle = math.pi;
+
+    final List<pw.Widget> stackChildren = [
+      pw.CustomPaint(
+        size: PdfPoint(innerSize, innerSize),
+        painter: (PdfGraphics canvas, PdfPoint size) {
+          _paintPdfConfusionDiagram(canvas, size, arrangedCaps, center, center, radius, cap0Angle);
+        },
+      ),
+    ];
+
+    for (int i = 0; i < 16; i++) {
+      final angle = cap0Angle + (i / 16.0) * 2 * math.pi;
+      final labelRadius = radius + 15;
+      final lx = center + labelRadius * math.cos(angle);
+
+      // Changed from '-' to '+' to invert the label drawing map correctly to clockwise
+      final ly = center + labelRadius * math.sin(angle);
+
+      stackChildren.add(
+        pw.Positioned(
+          left: lx - 10,
+          bottom: ly - 10,
+          child: pw.Container(
+            width: 20,
+            height: 20,
+            alignment: pw.Alignment.center,
+            child: pw.Text(
+              '$i',
+              style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey900,
+              ),
+            ),
+          ),
         ),
-        pw.SizedBox(height: 6),
-        pw.Container(
-          width: double.infinity,
-          height: 180,
-          padding: const pw.EdgeInsets.all(8),
-          decoration: pw.BoxDecoration(
-            color: PdfColors.white,
-            borderRadius: pw.BorderRadius.circular(6),
-            border: pw.Border.all(color: PdfColors.grey300, width: 0.8),
-          ),
-          child: pw.CustomPaint(
-            size: const PdfPoint(240, 160),
-            painter: (PdfGraphics canvas, PdfPoint size) {
-              _paintPdfConfusionDiagram(canvas, size, arrangedCaps);
-            },
-          ),
+      );
+    }
+
+    // Wrapping the entire section in a Wrap ensures that the title and plot are treated as an 
+    // atomic, unbreakable block, preventing the header from being split on the preceding page.
+    return pw.Wrap(
+      children: [
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.SizedBox(height: 24), // Added padding space above the card/title as requested
+            pw.Text(
+              'CIE L*u*v* CHROMATICITY CONFUSION DIAGRAM',
+              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey900),
+            ),
+            pw.SizedBox(height: 16), 
+            pw.Center(
+              child: pw.Container(
+                width: boxSize,
+                height: boxSize,
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.white,
+                  borderRadius: pw.BorderRadius.circular(6),
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.8),
+                ),
+                child: pw.Stack(
+                  children: stackChildren,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  static void _paintPdfConfusionDiagram(PdfGraphics canvas, PdfPoint size, List<int> arrangedCaps) {
-    final centerX = size.x / 2;
-    final centerY = size.y / 2;
-    final radius = (math.min(size.x, size.y) / 2) - 20;
+  static void _paintPdfConfusionDiagram(
+    PdfGraphics canvas, 
+    PdfPoint size, 
+    List<int> arrangedCaps,
+    double centerX,
+    double centerY,
+    double radius,
+    double cap0Angle,
+  ) {
+    final double originalCode2Start = 135 * math.pi / 180;
+    final double rotationOffset = cap0Angle - originalCode2Start;
 
-    // Draw main circle
     canvas.setStrokeColor(PdfColors.grey400);
-    canvas.setLineWidth(0.8);
+    canvas.setLineWidth(1.0);
     canvas.drawEllipse(centerX, centerY, radius, radius);
     canvas.strokePath();
 
-    // Draw reference confusion axes
     void drawPdfAxis(double angleRad, PdfColor color, double shiftX, double shiftY) {
+      final x_f_shift = shiftX * math.cos(rotationOffset) - shiftY * math.sin(rotationOffset);
+      final y_f_shift = shiftX * math.sin(rotationOffset) + shiftY * math.cos(rotationOffset);
+
+      final axisCenterX = centerX + x_f_shift;
+      final axisCenterY = centerY + y_f_shift; // Changed from '-' to '+' to invert Y axes 
+
+      final finalAngle = angleRad + rotationOffset;
+      final dx_f = math.cos(finalAngle) * radius;
+      final dy_f = math.sin(finalAngle) * radius;
+
+      final startX = axisCenterX - dx_f;
+      final startY = axisCenterY - dy_f; // Changed from '+' to '-' 
+      final endX = axisCenterX + dx_f;
+      final endY = axisCenterY + dy_f;   // Changed from '-' to '+'
+      
       canvas.setStrokeColor(color);
-      canvas.setLineWidth(0.6);
-      final dx = math.cos(angleRad) * radius;
-      final dy = math.sin(angleRad) * radius;
+      canvas.setLineWidth(1.2);
 
-      final startX = centerX + shiftX - dx;
-      final startY = centerY + shiftY - dy;
-      final endX = centerX + shiftX + dx;
-      final endY = centerY + shiftY + dy;
-
-      canvas.drawLine(startX, startY, endX, endY);
-      canvas.strokePath();
-    }
-
-    drawPdfAxis(-124 * math.pi / 180, PdfColors.amber700, -20, 10); // Deutan
-    drawPdfAxis(-146 * math.pi / 180, PdfColors.red700, -10, 15);  // Protan
-    drawPdfAxis(-62 * math.pi / 180, PdfColors.blue700, 10, 0);   // Tritan
-
-    // Precompute coordinates for 16 caps
-    final List<PdfPoint> points = [];
-    const startAngle = 135 * math.pi / 180;
-    const angleDelta = 22.5 * math.pi / 180;
-
-    for (int i = 0; i < 16; i++) {
-      final angle = startAngle + i * angleDelta;
-      points.add(PdfPoint(
-        centerX + math.cos(angle) * radius,
-        centerY + math.sin(angle) * radius,
-      ));
-    }
-
-    final fullList = [0, ...arrangedCaps];
-    if (fullList.length == 16) {
-      for (int i = 0; i < fullList.length - 1; i++) {
-        final capA = fullList[i];
-        final capB = fullList[i + 1];
-        final diffDist = (capA - capB).abs();
-
-        if (diffDist <= 1) {
-          canvas.setStrokeColor(PdfColors.grey400);
-          canvas.setLineWidth(0.8);
-        } else if (diffDist >= 4) {
-          canvas.setStrokeColor(PdfColors.red800);
-          canvas.setLineWidth(1.5);
-        } else {
-          canvas.setStrokeColor(PdfColors.amber800);
-          canvas.setLineWidth(1.2);
+      const int dashCount = 15;
+      for (int i = 0; i < dashCount; i++) {
+        if (i % 2 == 0) {
+          final tStart = i / dashCount;
+          final tEnd = (i + 1) / dashCount;
+          final pStartX = startX + (endX - startX) * tStart;
+          final pStartY = startY + (endY - startY) * tStart;
+          final pEndX = startX + (endX - startX) * tEnd;
+          final pEndY = startY + (endY - startY) * tEnd;
+          canvas.drawLine(pStartX, pStartY, pEndX, pEndY);
+          canvas.strokePath();
         }
-
-        canvas.drawLine(points[capA].x, points[capA].y, points[capB].x, points[capB].y);
-        canvas.strokePath();
       }
     }
 
-    // Draw cap dots
+    drawPdfAxis(-124 * math.pi / 180, PdfColor.fromInt(0xFFF5CB20), -40, 25); // Deutan (Murky)
+    drawPdfAxis(-146 * math.pi / 180, PdfColor.fromInt(0xFFF19C92), -23, 30); // Protan (Salmon)
+    drawPdfAxis(-62 * math.pi / 180, PdfColor.fromInt(0xFF018F8F), 13, 0);   // Tritan (Blue)
+
+    final fullList = [0, ...arrangedCaps];
+
+    for (int i = 0; i < fullList.length - 1; i++) {
+      final capA = fullList[i];
+      final capB = fullList[i + 1];
+
+      final angleA = cap0Angle + (capA / 16.0) * 2 * math.pi;
+      final angleB = cap0Angle + (capB / 16.0) * 2 * math.pi;
+
+      final pAx = centerX + radius * math.cos(angleA);
+      final pAy = centerY + radius * math.sin(angleA); // Changed from '-' to '+'
+      final pBx = centerX + radius * math.cos(angleB);
+      final pBy = centerY + radius * math.sin(angleB); // Changed from '-' to '+'
+
+      final step = (capA - capB).abs();
+      PdfColor segmentColor;
+      double strokeWidth;
+
+      if (step == 1 || step == 15) {
+        segmentColor = PdfColors.grey500;
+        strokeWidth = 1.5;
+      } else if (step == 2 || step == 14) {
+        segmentColor = PdfColor.fromInt(0xFF4CAF50); // Minor swap (Success green)
+        strokeWidth = 2.0;
+      } else {
+        segmentColor = PdfColor.fromInt(0xFFD32F2F); // Major crossover (Error red)
+        strokeWidth = 2.5;
+      }
+
+      canvas.setStrokeColor(segmentColor);
+      canvas.setLineWidth(strokeWidth);
+      canvas.drawLine(pAx, pAy, pBx, pBy);
+      canvas.strokePath();
+    }
+
     for (int i = 0; i < 16; i++) {
-      final pt = points[i];
+      final angle = cap0Angle + (i / 16.0) * 2 * math.pi;
+      final ptX = centerX + radius * math.cos(angle);
+      final ptY = centerY + radius * math.sin(angle); // Changed from '-' to '+'
+
+      if (i == 0) {
+        canvas.setFillColor(PdfColors.black);
+        canvas.drawEllipse(ptX, ptY, 10, 10);
+        canvas.fillPath();
+      }
+
       final colorData = ColorCap.allCaps[i];
       final pdfRgb = PdfColor(colorData.rgb.r, colorData.rgb.g, colorData.rgb.b);
 
       canvas.setFillColor(pdfRgb);
-      canvas.drawEllipse(pt.x, pt.y, 5, 5);
+      canvas.drawEllipse(ptX, ptY, 8, 8);
       canvas.fillPath();
 
-      canvas.setStrokeColor(i == 0 ? PdfColors.black : PdfColors.grey700);
-      canvas.setLineWidth(i == 0 ? 1.0 : 0.5);
-      canvas.drawEllipse(pt.x, pt.y, 5, 5);
+      canvas.setStrokeColor(PdfColors.black);
+      canvas.setLineWidth(0.5);
+      canvas.drawEllipse(ptX, ptY, 8, 8);
       canvas.strokePath();
     }
   }
@@ -586,14 +686,14 @@ class PdfReportService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'NOTES FOR EYE CARE PROFESSIONALS',
+            _sanitizeText('NOTES FOR EYE CARE PROFESSIONALS'),
             style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
           ),
           pw.SizedBox(height: 4),
           pw.Text(
-            '• Standard Cutoff (C-Index = 1.78): Established by Vingrys & King-Smith (1988) based on 95th percentile confidence limits for normal trichromats.\n'
-            '• Axis Selectivity (S-Index >= 2.0): S-Index represents the ratio of major to minor dispersion radii (r0/r1). Values >=2.0 indicate specific cone-pigment deficiency alignment.\n'
-            '• Daltonization Uniforms: GabEye uses these quantitative metrics to dynamically calibrate GLSL LMS Daltonization shader algorithms for LMS photopigment error correction.',
+            _sanitizeText('- Standard Cutoff (C-Index = 1.78): Established by Vingrys & King-Smith (1988) based on 95th percentile confidence limits for normal trichromats.\n'
+            '- Axis Selectivity (S-Index >= 2.0): S-Index represents the ratio of major to minor dispersion radii (r0/r1). Values >= 2.0 indicate specific cone-pigment deficiency alignment.\n'
+            '- Daltonization Uniforms: GabEye uses these quantitative metrics to dynamically calibrate GLSL LMS Daltonization shader algorithms for LMS photopigment error correction.'),
             style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey800, lineSpacing: 1.3),
           ),
         ],
@@ -609,9 +709,9 @@ class PdfReportService {
         borderRadius: pw.BorderRadius.circular(4),
       ),
       child: pw.Text(
-        'DISCLAIMER: This report is generated by GabEye using standardized CIE L*u*v* Farnsworth D-15 quantitative scoring algorithms. '
+        _sanitizeText('DISCLAIMER: This report is generated by GabEye using standardized CIE L*u*v* Farnsworth D-15 quantitative scoring algorithms. '
         'This document is intended as a screening reference for qualified eye care professionals (optometrists, ophthalmologists). '
-        'Screening results should be validated with formal clinical equipment in controlled lighting environments.',
+        'Screening results should be validated with formal clinical equipment in controlled lighting environments.'),
         style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700, lineSpacing: 1.2),
       ),
     );
@@ -621,20 +721,52 @@ class PdfReportService {
   // Helper Utilities
   // ---------------------------------------------------------------------------
 
-  static PdfColor _getDiagnosisPdfColor(ColorDeficiencyType type) {
+  /// Systematically removes problematic Unicode characters that crash base PDF fonts 
+  static String _sanitizeText(String text) {
+    return text
+        .replaceAll('•', '-')
+        .replaceAll('°', ' deg')
+        .replaceAll('²', '^2')
+        .replaceAll('³', '^3')
+        .replaceAll('—', '-')
+        .replaceAll('–', '-')
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('‘', "'")
+        .replaceAll('’', "'")
+        .replaceAll('≤', '<=')
+        .replaceAll('≥', '>=')
+        .replaceAll('±', '+/-');
+  }
+
+  static PdfColor _getDiagnosisPrimaryColor(ColorDeficiencyType type) {
     switch (type) {
       case ColorDeficiencyType.protan:
-        return PdfColor.fromInt(0xFFD32F2F); // Red
+        return PdfColor.fromInt(0xFFA33612); // Matches AppSemanticColors.salmon
       case ColorDeficiencyType.deutan:
-        return PdfColor.fromInt(0xFF388E3C); // Green
+        return PdfColor.fromInt(0xFFF5CB20); // Matches AppSemanticColors.murky
       case ColorDeficiencyType.tritan:
-        return PdfColor.fromInt(0xFF1976D2); // Blue
+        return PdfColor.fromInt(0xFF018F8F); // Matches AppSemanticColors.tritan
       case ColorDeficiencyType.normal:
-        return PdfColor.fromInt(0xFF2E7D32); // Dark Green
+        return PdfColor.fromInt(0xFF4CAF50); // Fallback Success Green
       case ColorDeficiencyType.unclassified:
       case ColorDeficiencyType.random:
-        return PdfColor.fromInt(0xFF7B1FA2); // Purple
+        return PdfColor.fromInt(0xFF4E4E4E); // Fallback Neutral Grey
     }
+  }
+
+  static PdfColor _getSeverityPdfColor(String label) {
+    final lowerLabel = label.toLowerCase();
+    if (lowerLabel.contains('mild')) {
+      return PdfColor.fromInt(0xFFFBC02D);
+    } else if (lowerLabel.contains('moderate')) {
+      return PdfColor.fromInt(0xFFF57C00);
+    } else if (lowerLabel.contains('strong')) {
+      return PdfColor.fromInt(0xFFD32F2F);
+    } else if (lowerLabel.contains('normal')) {
+      return PdfColor.fromInt(0xFF388E3C);
+    }
+    return PdfColor.fromInt(0xFF1976D2);
   }
 
   static String _formatCurrentDate() {
