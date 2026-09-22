@@ -160,7 +160,7 @@ class AssessmentIntroModal extends StatelessWidget {
                   const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.getStarted),
+                        Navigator.pushNamed(context, AppRoutes.preAssessmentIntro),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isDark ? AppColors.darkSurface : colors.onSurface,
                       backgroundColor: isDark ? AppColors.darkPrimaryButton : Colors.transparent,
