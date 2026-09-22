@@ -15,7 +15,6 @@ import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
 import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
-import 'package:gabeye/features/home/widgets/delay_page_overlay.dart';
 import 'package:gabeye/features/knn/models/iscc_nbs_color_dataset.dart';
 import 'package:gabeye/features/knn/services/knn_isolate_worker.dart';
 
