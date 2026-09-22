@@ -1859,6 +1859,115 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     );
   }
 
+  Widget _buildUploadedImageInspectionView(BuildContext context, ColorScheme colors) {
+    final Uint8List bytes = _uploadedImageBytes!;
+    final Size imageSize = _uploadedUiImage != null
+        ? Size(_uploadedUiImage!.width.toDouble(), _uploadedUiImage!.height.toDouble())
+        : Size.zero;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final Size containerSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+        return Stack(
+          children: [
+            // ── Uploaded Image ───────────────────────────────────────
+            Positioned.fill(
+              child: ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: imageSize.width > 0 ? imageSize.width : containerSize.width,
+                    height: imageSize.height > 0 ? imageSize.height : containerSize.height,
+                    child: Image.memory(
+                      bytes,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Interactive Crosshair Gesture Layer ─────────────────────
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTapDown: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                onPanUpdate: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                // Visual crosshair and color readout badge rendered directly over the image.
+                child: CustomPaint(
+                  painter: FreezeFrameCrosshairPainter(
+                    normPosition: _crosshairNorm,
+                    imageSize: imageSize,
+                    containerSize: containerSize,
+                    colorResult: _freezeFrameColorResult,
+                    accentColor: colors.primary,
+                  ),
+                  size: containerSize,
+                ),
+              ),
+            ),
+
+            // ── Uploaded Image Status Badge (top-left) ──────────────────
+            Positioned(
+              top: 16,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.palette_outlined, size: 15, color: Colors.white),
+                    const SizedBox(width: 7),
+                    Text(
+                      'KNN Image Inspection • ${_uploadedFileName ?? "Tap or drag to inspect"}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildCameraPreviewWidget(ColorScheme colors) {
     if (_isCameraInitializing) {
       return Container(
