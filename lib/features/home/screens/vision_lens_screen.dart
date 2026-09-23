@@ -17,6 +17,8 @@ import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
 import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
 import 'package:gabeye/features/knn/models/iscc_nbs_color_dataset.dart';
 import 'package:gabeye/features/knn/services/knn_isolate_worker.dart';
+import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
+import 'package:gabeye/features/home/widgets/object_detection_overlay.dart';
 
 enum PresetMode { customized, protan, deutan, tritan, off }
 enum CameraRealtimeMode { daltonization, knn }
@@ -76,6 +78,14 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   String _currentIdentifiedColor = 'Vivid Red';
   String? _currentIdentifiedObject;
   bool _isKnnStreamActive = false;
+  Timer? _crosshairObjectDetectionTimer;
+
+  // Real-Time Object Detection Mode State
+  bool _isObjectDetectionMode = false;
+  List<DetectedObject> _detectedObjects = [];
+  Size _cameraFrameSize = Size.zero;
+  DateTime _lastObjectDetectionTimestamp = DateTime.now();
+  bool _isObjectDetectionProcessing = false;
 
   // ---------------------------------------------------------------------------
   // Freeze-Frame Capture Inspection Mode State
@@ -337,6 +347,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   void dispose() {
     _delayAnimationController?.dispose();
     _stopKnnFrameStream();
+    _crosshairObjectDetectionTimer?.cancel();
     ObjectDetectionService.instance.dispose();
     AuditoryFeedbackService.instance.stop();
     _cameraController?.dispose();
@@ -353,21 +364,47 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       try {
         _isKnnStreamActive = true;
         await _cameraController!.startImageStream((CameraImage image) async {
-          if (_activeCameraMode == CameraRealtimeMode.knn &&
-              !_isDisplayingUploadedImage &&
-              !_isFreezeFrameActive &&
-              mounted) {
+          if (!mounted || _isDisplayingUploadedImage || _isFreezeFrameActive) return;
+
+          // 1. Isolated Object Detection Mode (KNN isolate completely bypassed)
+          if (_isObjectDetectionMode) {
+            final now = DateTime.now();
+            if (_isObjectDetectionProcessing ||
+                now.difference(_lastObjectDetectionTimestamp) < const Duration(milliseconds: 150)) {
+              return;
+            }
+            _isObjectDetectionProcessing = true;
+            _lastObjectDetectionTimestamp = now;
+
+            try {
+              final objects = await ObjectDetectionService.instance.processLiveFrame(
+                image: image,
+                camera: _cameraController!.description,
+              );
+              if (mounted && _isObjectDetectionMode) {
+                setState(() {
+                  _detectedObjects = objects;
+                  _cameraFrameSize = Size(image.width.toDouble(), image.height.toDouble());
+                });
+              }
+            } finally {
+              _isObjectDetectionProcessing = false;
+            }
+            return;
+          }
+
+          // 2. Isolated KNN Color Identification Mode (ML Kit completely bypassed)
+          if (_activeCameraMode == CameraRealtimeMode.knn) {
             final result = await CameraFrameIngestionService.instance.processCameraFrame(
               image: image,
               dataset: _isccDataset,
             );
-            if (result != null && mounted) {
-              final objectLabel = await ObjectDetectionService.instance.detectObjectInFrame(image);
+            if (result != null && mounted && _activeCameraMode == CameraRealtimeMode.knn && !_isObjectDetectionMode) {
               setState(() {
                 _currentIdentifiedColor = result.colorName;
-                _currentIdentifiedObject = objectLabel;
               });
             }
+            return;
           }
         });
       } catch (_) {
@@ -377,13 +414,63 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   }
 
   Future<void> _stopKnnFrameStream() async {
-    if (_cameraController != null && _cameraController!.value.isInitialized && !_isKnnStreamActive) {
+    if (_cameraController != null && _cameraController!.value.isInitialized && _isKnnStreamActive) {
       try {
         await _cameraController!.stopImageStream();
         _isKnnStreamActive = false;
       } catch (_) {
         _isKnnStreamActive = false;
       }
+    }
+  }
+
+  Future<void> _toggleObjectDetectionMode() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    if (_isDisplayingUploadedImage || _isFreezeFrameActive) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final willBeActive = !_isObjectDetectionMode;
+
+    // Conditionally close split screen if toggling object detection mode ON
+    if (willBeActive && _isSplitScreenView) {
+      _isSplitScreenView = false;
+      VisionLensScreen.isFullScreenNotifier.value = false;
+    }
+
+    setState(() {
+      _isObjectDetectionMode = willBeActive;
+      if (!willBeActive) {
+        _detectedObjects = [];
+      }
+      _showZoomSlider = false;
+    });
+
+    if (willBeActive) {
+      if (!_isKnnStreamActive) {
+        await _startKnnFrameStream();
+      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Object Labeling Mode enabled (KNN paused)'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else {
+      if (_activeCameraMode == CameraRealtimeMode.daltonization) {
+        await _stopKnnFrameStream();
+      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            _activeCameraMode == CameraRealtimeMode.knn
+                ? 'Resumed KNN Color Identification Mode'
+                : 'Resumed LMS Daltonization Mode',
+          ),
+          duration: const Duration(seconds: 1),
+        ),
+      );
     }
   }
 
@@ -486,16 +573,27 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       _capturedUiImage?.dispose();
     }
 
+    _crosshairObjectDetectionTimer?.cancel();
     setState(() {
       _isFreezeFrameActive = false;
       _capturedFrameBytes = null;
       _capturedUiImage = null;
       _capturedImageSize = Size.zero;
       _freezeFrameColorResult = null;
+      _currentIdentifiedObject = null;
       _isSamplingPixel = false;
     });
 
     if (!_isDisplayingUploadedImage) {
+      if (_wasTorchOnBeforeFreeze) {
+        if (_cameraController != null && _cameraController!.value.isInitialized) {
+          try {
+            await _cameraController!.setFlashMode(FlashMode.torch);
+            if (mounted) setState(() => _isTorchOn = true);
+          } catch (_) {}
+        }
+        _wasTorchOnBeforeFreeze = false;
+      }
       await _startKnnFrameStream();
     }
   }
@@ -622,6 +720,26 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     } finally {
       _isSamplingPixel = false;
     }
+
+    _triggerDebouncedCrosshairObjectDetection(targetImage, _crosshairNorm);
+  }
+
+  /// Debounces object detection (300ms) when moving the crosshair to ensure
+  /// smooth 60fps touch interactions while keeping the object label targeted.
+  void _triggerDebouncedCrosshairObjectDetection(ui.Image targetImage, Offset crosshairNorm) {
+    _crosshairObjectDetectionTimer?.cancel();
+    _crosshairObjectDetectionTimer = Timer(const Duration(milliseconds: 300), () async {
+      if (!mounted) return;
+      final label = await ObjectDetectionService.instance.detectObjectInImageRoi(
+        image: targetImage,
+        normalizedCrosshair: crosshairNorm,
+      );
+      if (mounted) {
+        setState(() {
+          _currentIdentifiedObject = label;
+        });
+      }
+    });
   }
 
   Future<void> _requestCameraPermission() async {
@@ -687,6 +805,10 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           _showZoomSlider = false;
           _isSplitScreenView = false;
           VisionLensScreen.isFullScreenNotifier.value = false;
+          _currentIdentifiedObject = null;
+          _isObjectDetectionMode = false;
+          _detectedObjects = [];
+          _isObjectDetectionProcessing = false;
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
             _isUploadedIdentifyMode = false;
@@ -738,6 +860,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           _showZoomSlider = false;
           _isSplitScreenView = false;
           VisionLensScreen.isFullScreenNotifier.value = false;
+          _currentIdentifiedObject = null;
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
             _isUploadedIdentifyMode = false;
@@ -781,11 +904,23 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       if (_isUploadedIdentifyMode && _isccDataset.isNotEmpty) {
         await _captureUploadedPhotoFreezeFrame();
       }
+      if (_isUploadedIdentifyMode) {
+        final objectLabel = await ObjectDetectionService.instance.detectObjectInImageRoi(
+          image: frame.image,
+          normalizedCrosshair: const Offset(0.5, 0.5),
+        );
+        if (mounted) {
+          setState(() {
+            _currentIdentifiedObject = objectLabel;
+          });
+        }
+      }
     }
   }
 
   void _switchToRealtimeCameraRemapping() {
     _uploadedNotificationTimer?.cancel();
+    _crosshairObjectDetectionTimer?.cancel();
     _stopKnnFrameStream();
     if (_capturedUiImage != null && _capturedUiImage != _uploadedUiImage) {
       _capturedUiImage?.dispose();
@@ -804,6 +939,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       _capturedUiImage = null;
       _capturedImageSize = Size.zero;
       _freezeFrameColorResult = null;
+      _currentIdentifiedObject = null;
       _isRemapActive = true;
       _activeCameraMode = CameraRealtimeMode.daltonization;
       _isSplitScreenView = false;
@@ -1383,8 +1519,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
                           ))
                     : const Center(child: CircularProgressIndicator()))
                 : (_isCameraPermissionGranted
-                    // In KNN mode, display natural un-filtered camera preview. Otherwise apply ColorFiltered Daltonization pass.
-                    ? (_activeCameraMode == CameraRealtimeMode.knn
+                    // In KNN mode or Object Detection mode, display natural un-filtered camera preview. Otherwise apply ColorFiltered Daltonization pass.
+                    ? (_activeCameraMode == CameraRealtimeMode.knn || _isObjectDetectionMode
                         ? _buildCameraPreviewWidget(colors)
                         : ColorFiltered(
                             colorFilter: ColorFilter.matrix(
@@ -1500,9 +1636,56 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
             ),
           ),
 
+        // Real-Time Object Detection Bounding Box & Label Overlay
+        if (_isObjectDetectionMode &&
+            !_isDisplayingUploadedImage &&
+            !_isFreezeFrameActive &&
+            _isCameraPermissionGranted)
+          Positioned.fill(
+            child: ObjectDetectionOverlay(
+              objects: _detectedObjects,
+              imageSize: _cameraFrameSize,
+              cameraDescription: _cameraController?.description,
+            ),
+          ),
+
+        // Indicator Chip when Live Camera is in Object Labeling Mode
+        if (!_isDisplayingUploadedImage &&
+            !_isFreezeFrameActive &&
+            _isObjectDetectionMode &&
+            !_isSplitScreenView)
+          Positioned(
+            top: 16,
+            left: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: colors.primary, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.category_rounded, size: 14, color: colors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Object Labeling',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'AtkinsonHyperlegible',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         // Indicator Chip when Live Camera is in KNN Color Identification Mode
-        // Hidden during freeze-frame (the freeze-frame view has its own status badge).
+        // Hidden during freeze-frame (the freeze-frame view has its own status badge) and during Object Detection mode.
         if (!_isDisplayingUploadedImage && !_isFreezeFrameActive &&
+            !_isObjectDetectionMode &&
             _activeCameraMode == CameraRealtimeMode.knn && !_isSplitScreenView)
           Positioned(
             top: 16,
@@ -1532,10 +1715,10 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           ),
 
         // Precision Pinpoint Dot ROI Target Overlay when in KNN / Identify Mode
-        // Hidden during freeze-frame and when viewing an uploaded image; the
-        // interactive crosshair in those inspection views replaces this static centre-only overlay.
+        // Hidden during freeze-frame, when viewing an uploaded image, and during Object Detection mode.
         if (!_isFreezeFrameActive &&
             !_isDisplayingUploadedImage &&
+            !_isObjectDetectionMode &&
             _activeCameraMode == CameraRealtimeMode.knn &&
             !_isSplitScreenView &&
             _isCameraPermissionGranted)
@@ -2146,6 +2329,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
                     if (!mounted) return;
                     setState(() {
                       _activeCameraMode = nextMode;
+                      _isObjectDetectionMode = false;
+                      _detectedObjects = [];
                       _isSplitScreenView = false;
                       _showCalibrationSlider = false;
                       VisionLensScreen.isFullScreenNotifier.value = false;
@@ -2338,10 +2523,26 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
         _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode || _isFreezeFrameActive;
     final bool isLiveCamera = !_isDisplayingUploadedImage && !_isFreezeFrameActive;
     final bool isLiveDaltonization = isLiveCamera && _activeCameraMode == CameraRealtimeMode.daltonization;
+    final bool canSpeakObjectDetection =
+        _isObjectDetectionMode && !_isDisplayingUploadedImage && !_isFreezeFrameActive && !_isUploadedIdentifyMode;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Object Labeling Mode Toggle Button (Accessible in live feeds for both Daltonization & KNN)
+        if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) ...[
+          _buildFloatingCircleButton(
+            icon: Icons.category_rounded,
+            isActive: _isObjectDetectionMode,
+            onTap: _toggleObjectDetectionMode,
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: _isObjectDetectionMode ? Colors.white : iconColor,
+            tooltip: _isObjectDetectionMode ? 'Disable Object Labeling' : 'Enable Object Labeling',
+          ),
+          const SizedBox(height: 12),
+        ],
+
         // Zoom Toggle Button (Live camera feed only; hidden when viewing an uploaded photo)
         if (!_isDisplayingUploadedImage) ...[
           _buildFloatingCircleButton(
@@ -2374,8 +2575,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           const SizedBox(height: 12),
         ],
 
-        // Split Screen View Comparison Toggle Button (Live camera feeds only — both Daltonization & Identify mode; hidden in Freeze-Frame & Uploads)
-        if (isLiveCamera) ...[
+        // Split Screen View Comparison Toggle Button (Live camera feeds only — both Daltonization & Identify mode; hidden in Object Detection mode, Freeze-Frame & Uploads)
+        if (isLiveCamera && !_isObjectDetectionMode) ...[
           _buildFloatingCircleButton(
             icon: _isSplitScreenView ? Icons.compare_rounded : Icons.splitscreen_rounded,
             isActive: _isSplitScreenView,
@@ -2404,32 +2605,47 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           const SizedBox(height: 12),
         ],
 
-        // On-Demand Audio Narration Speak Button (Available in Identify / KNN mode & Freeze-Frame)
-        if (isKnnMode) ...[
+        // On-Demand Audio Narration Speak Button (Available in Identify / KNN mode, Object Labeling mode & Freeze-Frame)
+        if (isKnnMode || canSpeakObjectDetection) ...[
           _buildFloatingCircleButton(
             icon: Icons.volume_up_rounded,
             isActive: false,
             onTap: () {
-              AuditoryFeedbackService.instance.speakIdentification(
-                colorName: _currentIdentifiedColor,
-                objectLabel: _currentIdentifiedObject,
-              );
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    _currentIdentifiedObject != null && _currentIdentifiedObject!.isNotEmpty
-                        ? 'Speaking: $_currentIdentifiedColor $_currentIdentifiedObject'
-                        : 'Speaking: $_currentIdentifiedColor',
+              if (canSpeakObjectDetection) {
+                final objectNames = _detectedObjects
+                    .where((o) => o.labels.isNotEmpty)
+                    .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
+                    .toSet()
+                    .toList();
+                final speechText = objectNames.isNotEmpty
+                    ? 'Detected: ${objectNames.join(", ")}'
+                    : 'No objects detected';
+                AuditoryFeedbackService.instance.speakText(speechText);
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(speechText),
+                    duration: const Duration(seconds: 2),
                   ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+                );
+              } else {
+                AuditoryFeedbackService.instance.speakIdentification(
+                  colorName: _currentIdentifiedColor,
+                  objectLabel: null,
+                );
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Speaking: $_currentIdentifiedColor'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
             },
             bgColor: bgColor,
             activeBgColor: colors.primary,
             iconColor: iconColor,
-            tooltip: 'Speak Color & Object',
+            tooltip: canSpeakObjectDetection ? 'Speak Detected Objects' : 'Speak Color',
           ),
         ],
       ],
