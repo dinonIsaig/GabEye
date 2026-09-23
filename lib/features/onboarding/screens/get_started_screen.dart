@@ -50,6 +50,7 @@ class GetStartedScreen extends StatelessWidget {
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
+                          SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
                           Text(
                             'GabEye!',
                             style: GoogleFonts.inter(
@@ -60,14 +61,14 @@ class GetStartedScreen extends StatelessWidget {
                               height: 1.0,
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
                           Text(
-                            " We don't just show you how colors look different — we shift them to make things easier to see.",
+                            "We don't just show you how colors look different — we shift them to make things easier to see.",
                             style: GoogleFonts.atkinsonHyperlegibleNext(
-                              fontSize: 16,
+                              fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              height: 1.5,
                             ),
+                            textAlign: TextAlign.justify,
                           ),
                         ],
                       ),
@@ -89,12 +90,19 @@ class GetStartedScreen extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
+                        minimumSize: Size(
+                          double.infinity,
+                          Responsive.space(context, base: 55, min: 48, max: 64),
+                        ),
                       ),
-                      child: const Text(
-                        'Get Started',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Get Started',
+                          style: TextStyle(
+                            fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),

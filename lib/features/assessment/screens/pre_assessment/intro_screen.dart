@@ -3,14 +3,14 @@ import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_cards.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_scaffold.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
+import 'package:gabeye/core/utils/responsive.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PreAssessmentIntroScreen extends StatelessWidget {
   const PreAssessmentIntroScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return PreAssessmentScaffold(
       currentStep: 1,
       totalSteps: 4,
@@ -23,7 +23,8 @@ class PreAssessmentIntroScreen extends StatelessWidget {
         children: [
           Text.rich(
             TextSpan(
-              style: textTheme.bodyMedium?.copyWith(
+              style: GoogleFonts.atkinsonHyperlegibleNext(
+                fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                 color: Theme.of(context).colorScheme.onSurface,
                 height: 1.5,
               ),
@@ -37,6 +38,7 @@ class PreAssessmentIntroScreen extends StatelessWidget {
                 ),
               ],
             ),
+            textAlign: TextAlign.justify,
           ),
           const SizedBox(height: 24),
           

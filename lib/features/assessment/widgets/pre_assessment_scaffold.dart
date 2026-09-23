@@ -98,7 +98,6 @@ class PreAssessmentScaffold extends StatelessWidget {
                   ),
                 ),
               ),
-
               Padding(
                 padding: Responsive.only(
                   context,
@@ -119,7 +118,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                             width: 1,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                         ),
                         onPressed: onNext,
@@ -131,8 +130,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 'Next',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                  fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -158,7 +156,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                           ),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                         ),
                         onPressed: onBack,
@@ -178,8 +176,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 'Back',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                  fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                       color: onBack == null
                                       ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
