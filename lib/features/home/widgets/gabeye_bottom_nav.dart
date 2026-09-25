@@ -73,7 +73,7 @@ class GabEyeBottomNav extends StatelessWidget {
                         child: Text(
                           item.label,
                           style: TextStyle(
-                            fontFamily: 'Inter',
+                            fontFamily: 'AtkinsonHyperlegible',
                             fontSize: 14,
                             color: isSelected
                                 ? (isDark ? AppColors.darkSurface : Colors.white)

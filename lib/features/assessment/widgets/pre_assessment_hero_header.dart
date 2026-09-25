@@ -33,7 +33,7 @@ class PreAssessmentHeroHeader extends StatelessWidget {
             child: Text(
               title,
               style: const TextStyle(
-                fontFamily: 'Inter',
+                fontFamily: 'AtkinsonHyperlegible',
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,

@@ -9,6 +9,7 @@ import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/features/assessment/screens/assessment_keyfindings_screen.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 
 /// Post-assessment 9: the plain-language summary shown right after the
@@ -61,25 +62,83 @@ class AssessmentSummaryScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         _buildDiagnosisCard(context, colors, result, severityStyle, diagnosisStyle),
                         const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => _goToKeyfindings(context),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            minimumSize: const Size(double.infinity, 55),
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text('Next', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, size: 20),
-                              ],
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => _goToKeyfindings(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Next',
+                                    style: TextStyle(
+                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: Responsive.space(context, base: 10, min: 6, max: 14)),
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.arrow_back_rounded,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Back',
+                                    style: TextStyle(
+                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -126,6 +185,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                 child: Text(
                   result.rangeHeadline,
                   style: TextStyle(
+                    fontFamily: 'AtkinsonHyperlegible',
                     color: colors.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -138,7 +198,12 @@ class AssessmentSummaryScreen extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             result.rangeBody,
-            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16, height: 1.5),
+            style: TextStyle(
+              fontFamily: 'AtkinsonHyperlegible',
+              color: colors.onSurfaceVariant,
+              fontSize: 16,
+              height: 1.5,
+            ),
           ),
         ],
       ),

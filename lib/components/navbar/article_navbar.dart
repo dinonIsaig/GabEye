@@ -8,11 +8,13 @@ class GabEyeArticleNavbar extends StatefulWidget {
     this.title = 'Know More About GabEye',
     this.onBack,
     this.onMenuSelected,
+    this.menuOptions,
   });
 
   final String title;
   final VoidCallback? onBack;
   final ValueChanged<MenuButtonOption>? onMenuSelected;
+  final List<MenuButtonOption>? menuOptions;
 
   @override
   State<GabEyeArticleNavbar> createState() => _GabEyeArticleNavbarState();
@@ -117,7 +119,10 @@ class _GabEyeArticleNavbarState extends State<GabEyeArticleNavbar> {
                     ),
                   ),
                   // No onPressed passed -> renders as PopupMenuButton.
-                  MenuButton(onSelected: widget.onMenuSelected),
+                  MenuButton(
+                    options: widget.menuOptions ?? MenuButton.defaultOptions,
+                    onSelected: widget.onMenuSelected,
+                  ),
                 ],
               ),
             ),

@@ -169,6 +169,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
                 child: Text(
                   result.rangeHeadline,
                   style: TextStyle(
+                    fontFamily: 'AtkinsonHyperlegible',
                     color: colors.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -182,6 +183,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
           Text(
             result.rangeBody,
             style: TextStyle(
+              fontFamily: 'AtkinsonHyperlegible',
               color: colors.onSurfaceVariant,
               fontSize: 16,
               height: 1.5,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/components/menu_button.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/confusion_diagram.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 
 /// Post-assessment 8: the detailed technical breakdown, reached from the
@@ -34,6 +36,7 @@ class ResultsPage extends StatelessWidget {
               Navigator.pop(context);
             }
           },
+          menuOptions: MenuButton.assessmentOptions,
         ),
       ),
       body: SafeArea(
@@ -455,28 +458,80 @@ class ResultsPage extends StatelessWidget {
   Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
     return Column(
       children: [
-        ElevatedButton.icon(
-          onPressed: () => _exportAsPdf(context),
-          iconAlignment: IconAlignment.end,
-          icon: const Icon(Icons.download, size: 20),
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            minimumSize: const Size(double.infinity, 55),
+        SizedBox(
+          width: double.infinity,
+          height: Responsive.space(context, base: 55, min: 48, max: 64),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outline,
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => _exportAsPdf(context),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Export as PDF',
+                    style: TextStyle(
+                      fontFamily: 'AtkinsonHyperlegible',
+                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.download_rounded, size: 20),
+                ],
+              ),
+            ),
           ),
-          label: const Text('Export as PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
         ),
-        const SizedBox(height: 12), 
-        OutlinedButton.icon(
-          onPressed: () => Navigator.pop(context),
-          label: const Text('Back', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
-          iconAlignment: IconAlignment.start,
-          icon: const Icon(Icons.arrow_back, size: 20),
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: colors.onSurface,
-            side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.4)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            minimumSize: const Size(double.infinity, 50),
+        SizedBox(height: Responsive.space(context, base: 10, min: 6, max: 14)),
+        SizedBox(
+          width: double.infinity,
+          height: Responsive.space(context, base: 55, min: 48, max: 64),
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outline,
+                width: 1,
+              ),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.arrow_back_rounded,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Back',
+                    style: TextStyle(
+                      fontFamily: 'AtkinsonHyperlegible',
+                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],

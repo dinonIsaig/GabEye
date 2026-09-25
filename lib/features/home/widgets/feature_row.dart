@@ -72,7 +72,7 @@ class FeatureRow extends StatelessWidget {
                     textAlign: TextAlign.left,
                     style: (theme.textTheme.titleMedium ??
                             const TextStyle(
-                              fontFamily: 'Inter',
+                              fontFamily: 'AtkinsonHyperlegible',
                               fontWeight: FontWeight.bold,
                             ))
                         .copyWith(
@@ -96,6 +96,7 @@ class FeatureRow extends StatelessWidget {
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
                       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                      fontFamily: 'AtkinsonHyperlegible',
                     ),
                   ),
                   Expanded(
@@ -109,6 +110,7 @@ class FeatureRow extends StatelessWidget {
                             color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.normal,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                            fontFamily: 'AtkinsonHyperlegible',
                           ),
                     ),
                   ),
@@ -127,7 +129,7 @@ class FeatureRow extends StatelessWidget {
                 child: Text(
                   data.ctaLabel,
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: 'AtkinsonHyperlegible',
                     fontWeight: FontWeight.w600,
                     fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                   ),

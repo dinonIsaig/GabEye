@@ -544,9 +544,9 @@ class _BrandHeader extends StatelessWidget {
         Text(
           brandName,
           style: (textTheme.titleLarge ??
-                  const TextStyle(fontFamily: 'Inter'))
+                  const TextStyle(fontFamily: 'AtkinsonHyperlegible'))
               .copyWith(
-            fontFamily: 'Inter',
+            fontFamily: 'AtkinsonHyperlegible',
             fontSize: 32,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white

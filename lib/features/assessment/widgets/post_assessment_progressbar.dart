@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/components/menu_button.dart';
 import 'package:gabeye/core/widgets/gabeye_app_bar.dart';
 
 class ProgressBarScaffold extends StatelessWidget {
@@ -19,16 +20,26 @@ class ProgressBarScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: false,
-      appBar: GabEyeAppBar(
-        showBackButton: showBackButton,
-        showLogo: false,
-        progressValue: currentStep / totalSteps,
-        progressText: 'Step $currentStep/$totalSteps',
-        onBackPressed: onBack,
+    return PopScope(
+      canPop: onBack != null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (onBack != null) {
+          onBack!();
+        }
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: false,
+        appBar: GabEyeAppBar(
+          showBackButton: showBackButton,
+          showLogo: false,
+          progressValue: currentStep / totalSteps,
+          progressText: 'Step $currentStep/$totalSteps',
+          onBackPressed: onBack,
+          menuOptions: MenuButton.assessmentOptions,
+        ),
+        body: child,
       ),
-      body: child,
     );
   }
 }

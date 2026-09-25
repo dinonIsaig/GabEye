@@ -52,7 +52,6 @@ class AssessmentIntroModal extends StatelessWidget {
                     'Drag and drop the color discs below to arrange them in a continuous sequence, starting from the fixed reference disc on the left.',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
-                      height: 1.6,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -87,6 +86,7 @@ class AssessmentIntroModal extends StatelessWidget {
                         Text(
                           'How it works?',
                           style: TextStyle(
+                            fontFamily: 'AtkinsonHyperlegible',
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: isDark ? Colors.white : colors.onSurface,
@@ -135,7 +135,6 @@ class AssessmentIntroModal extends StatelessWidget {
                     'This short assessment helps identify how you distinguish between different color hues. You’ll arrange the color discs in the order that looks most natural to you.',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
-                      height: 1.6,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -154,7 +153,11 @@ class AssessmentIntroModal extends StatelessWidget {
                     ),
                     child: const Text(
                       'Start Now',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Inter'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontFamily: 'AtkinsonHyperlegible',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -176,7 +179,11 @@ class AssessmentIntroModal extends StatelessWidget {
                     ),
                     child: const Text(
                       'Not Ready',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Inter'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontFamily: 'AtkinsonHyperlegible',
+                      ),
                     ),
                   ),
                 ],

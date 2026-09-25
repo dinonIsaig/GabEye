@@ -65,7 +65,7 @@ class HeroSection extends StatelessWidget {
                             'GabEye',
                             style: (Theme.of(context).textTheme.headlineMedium ??
                                     const TextStyle(
-                                      fontFamily: 'Inter',
+                                      fontFamily: 'AtkinsonHyperlegible',
                                       fontWeight: FontWeight.bold,
                                     ))
                                 .copyWith(

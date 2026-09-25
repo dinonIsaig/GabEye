@@ -21,7 +21,7 @@ class WhatToMindScreen extends StatelessWidget {
         children: [
           PreAssessmentInfoCard(
             title: 'Well-being',
-            headerColor: Theme.of(context).colorScheme.tertiary,
+            headerColor: context.semanticColors.info,
             iconWidget: const Icon(Icons.wb_sunny_outlined, color: Colors.white, size: 20),
             normalTextBefore: 'Ensure that ',
             boldText: 'you are ready',

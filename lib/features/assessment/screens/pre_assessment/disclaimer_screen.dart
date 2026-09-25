@@ -10,7 +10,7 @@ class DisclaimerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final tones = context.errorAccentTones;
+    final errorColor = context.semanticColors.error;
 
     return PreAssessmentScaffold(
       currentStep: 4,
@@ -48,7 +48,7 @@ class DisclaimerScreen extends StatelessWidget {
                   children: [
                     Container(
                       width: Responsive.space(context, base: 17, min: 12, max: 22),
-                      color: tones.accent,
+                      color: errorColor,
                     ),
                     Expanded(
                       child: Padding(
@@ -68,16 +68,16 @@ class DisclaimerScreen extends StatelessWidget {
                               children: [
                                 Icon(
                                   Icons.warning_amber_rounded,
-                                  color: tones.accent,
+                                  color: errorColor,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Disclaimer',
                                   style: textTheme.titleLarge?.copyWith(
-                                    fontFamily: 'Inter',
+                                    fontFamily: 'AtkinsonHyperlegible',
                                     fontSize: Responsive.font(context, base: 24, min: 18, max: 28),
-                                    color: tones.accent,
+                                    color: errorColor,
                                   ),
                                 ),
                               ],

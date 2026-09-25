@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Core Features',
                   style: (theme.textTheme.headlineSmall ??
                           const TextStyle(
-                            fontFamily: 'Inter',
+                            fontFamily: 'AtkinsonHyperlegible',
                             fontWeight: FontWeight.bold,
                           ))
                       .copyWith(

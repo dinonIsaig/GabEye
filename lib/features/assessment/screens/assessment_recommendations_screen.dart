@@ -3,6 +3,7 @@ import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 import 'package:gabeye/features/assessment/widgets/recommendation_row.dart';
 
@@ -22,6 +23,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
     return ProgressBarScaffold(
       currentStep: 3,
       totalSteps: 3,
+      onBack: () => Navigator.pop(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -64,34 +66,83 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                         const SizedBox(height: 24),
                         _buildOrDivider(colors),
                         const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () => _goHome(context),
-                          iconAlignment: IconAlignment.end,
-                          icon: const Icon(Icons.arrow_forward, size: 20),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            minimumSize: const Size(double.infinity, 55),
-                          ),
-                          label: const Text(
-                            'Go to Home',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => _goHome(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Go to Home',
+                                    style: TextStyle(
+                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () => Navigator.pop(context),
-                          label: const Text('Back', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          iconAlignment: IconAlignment.start,
-                          icon: const Icon(Icons.arrow_back, size: 20),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: colors.onSurface,
-                            side: BorderSide(color: colors.onSurfaceVariant.withValues(alpha: 0.4)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            minimumSize: const Size(double.infinity, 55),
+                        SizedBox(height: Responsive.space(context, base: 10, min: 6, max: 14)),
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.arrow_back_rounded,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Back',
+                                    style: TextStyle(
+                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),

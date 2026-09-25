@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
+import 'package:gabeye/components/menu_button.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
@@ -125,6 +126,7 @@ void _applyDebugProfile(List<int> caps) {
               preferredSize: const Size.fromHeight(64),
               child: GabEyeHomeNavbar(
                 onBack: () => Navigator.pop(context),
+                menuOptions: MenuButton.assessmentOptions,
               ),
             ),
             body: SafeArea(
@@ -219,7 +221,7 @@ void _applyDebugProfile(List<int> caps) {
               'Select Next Color',
               style: textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Inter',
+                fontFamily: 'AtkinsonHyperlegible',
                 color: colors.onSurfaceVariant,
               ),
             ),
@@ -342,7 +344,7 @@ void _applyDebugProfile(List<int> caps) {
           'All caps placed — ready to finish!',
           style: textTheme.bodyMedium?.copyWith(
             color: colors.onSurfaceVariant,
-            fontFamily: 'Inter',
+            fontFamily: 'AtkinsonHyperlegible',
           ),
         ),
       );
@@ -423,7 +425,7 @@ void _applyDebugProfile(List<int> caps) {
           ),
           child: const Text(
             'Finish Assessment', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'AtkinsonHyperlegible'),
           ),
         ),
         const SizedBox(height: 10),
@@ -438,7 +440,7 @@ void _applyDebugProfile(List<int> caps) {
           ),
           child: const Text(
             'Start Over', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'), 
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'AtkinsonHyperlegible'), 
           ),
         ),
         

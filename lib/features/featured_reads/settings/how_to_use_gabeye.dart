@@ -264,7 +264,7 @@ class _StepCard extends StatelessWidget {
                 child: Text(
                   '$stepNumber',
                   style: const TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: 'AtkinsonHyperlegible',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -409,9 +409,7 @@ class _TipsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final iconColor = Theme.of(context).brightness == Brightness.dark
-        ? AppColors.darkPrimaryButton
-        : AppColors.primaryColor;
+    final iconColor = context.semanticColors.success;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -433,7 +431,7 @@ class _TipsCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle_outline, color: iconColor, size: 20),
+                      Icon(Icons.check_circle, color: iconColor, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(

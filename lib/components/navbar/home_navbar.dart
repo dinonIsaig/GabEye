@@ -10,11 +10,13 @@ class GabEyeHomeNavbar extends StatelessWidget {
     this.onBack,
     this.onLogoTap,
     this.onMenuSelected,
+    this.menuOptions,
   });
 
   final VoidCallback? onBack;
   final VoidCallback? onLogoTap;
   final ValueChanged<MenuButtonOption>? onMenuSelected;
+  final List<MenuButtonOption>? menuOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +97,10 @@ class GabEyeHomeNavbar extends StatelessWidget {
                     ),
                   ),
                   // No onPressed passed -> renders as PopupMenuButton.
-                  MenuButton(onSelected: onMenuSelected),
+                  MenuButton(
+                    options: menuOptions ?? MenuButton.defaultOptions,
+                    onSelected: onMenuSelected,
+                  ),
                 ],
               ),
             ),

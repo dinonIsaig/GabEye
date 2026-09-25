@@ -11,6 +11,7 @@ import 'package:gabeye/core/services/gallery_service.dart';
 import 'package:gabeye/core/services/object_detection_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
 import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
 import 'package:gabeye/features/knn/models/iscc_nbs_color_dataset.dart';
@@ -874,7 +875,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
               style: TextStyle(
-                fontFamily: 'Inter',
+                fontFamily: 'AtkinsonHyperlegible',
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: isSelected ? Colors.white : colors.onSurface,
@@ -1399,17 +1400,20 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
   Widget _buildTransparentFloatingActionCard(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark
+        ? AppColors.darkPrimaryButton
+        : AppColors.primaryColor;
 
     final cardBgColor = isDark
-        ? Colors.black.withValues(alpha: 0.45)
-        : Colors.white.withValues(alpha: 0.75);
+        ? Colors.black.withValues(alpha: 0.55)
+        : Colors.white.withValues(alpha: 0.85);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(35),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
           decoration: BoxDecoration(
             color: cardBgColor,
             borderRadius: BorderRadius.circular(35),
@@ -1431,17 +1435,17 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
               // Upload Button
               InkWell(
                 onTap: _pickUploadedPhoto,
-                splashColor: colors.primary.withValues(alpha: 0.15),
-                highlightColor: colors.primary.withValues(alpha: 0.08),
+                splashColor: iconColor.withValues(alpha: 0.15),
+                highlightColor: iconColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.collections_outlined,
-                        color: colors.primary,
+                        color: iconColor,
                         size: 24,
                       ),
                       const SizedBox(height: 4),
@@ -1450,7 +1454,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: colors.primary,
+                          color: iconColor,
                         ),
                       ),
                     ],
@@ -1487,8 +1491,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      // Border pulses with brand primary when in freeze-frame inspection mode.
-                      color: colors.primary,
+                      // White in dark mode, brand primary in light mode
+                      color: isDark ? Colors.white : colors.primary,
                       width: _isFreezeFrameActive ? 5 : 4,
                     ),
                     color: Colors.transparent,
@@ -1500,13 +1504,19 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                       height: 44,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        // Fill uses brand primary when frozen or when remapping is active.
+                        // Fill uses white in dark mode, brand primary in light mode when active
                         color: _isFreezeFrameActive
-                            ? colors.primary
-                            : (_isRemapActive ? colors.primary : colors.surfaceContainerHighest),
+                            ? (isDark ? Colors.white : colors.primary)
+                            : (_isRemapActive
+                                ? (isDark ? Colors.white : colors.primary)
+                                : (isDark ? const Color(0xFF334155) : colors.surfaceContainerHighest)),
                       ),
                       child: _isFreezeFrameActive
-                          ? const Icon(Icons.replay_rounded, color: Colors.white, size: 20)
+                          ? Icon(
+                              Icons.replay_rounded,
+                              color: isDark ? AppColors.darkSurface : Colors.white,
+                              size: 20,
+                            )
                           : null,
                     ),
                   ),
@@ -1547,11 +1557,11 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                     );
                   }
                 },
-                splashColor: colors.primary.withValues(alpha: 0.15),
-                highlightColor: colors.primary.withValues(alpha: 0.08),
+                splashColor: iconColor.withValues(alpha: 0.15),
+                highlightColor: iconColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1561,7 +1571,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                             : (_activeCameraMode == CameraRealtimeMode.daltonization
                                 ? Icons.auto_awesome
                                 : Icons.palette_outlined),
-                        color: colors.primary,
+                        color: iconColor,
                         size: 24,
                       ),
                       const SizedBox(height: 4),
@@ -1572,7 +1582,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: colors.primary,
+                          color: iconColor,
                         ),
                       ),
                     ],
@@ -2354,3 +2364,4 @@ class OpenTrianglePainter extends CustomPainter {
   bool shouldRepaint(covariant OpenTrianglePainter oldDelegate) =>
       oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
 }
+

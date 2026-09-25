@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'vision_profile_card.dart';
 
 class FeaturedReadsSection extends StatefulWidget {
@@ -37,6 +38,7 @@ class _FeaturedReadsSectionState extends State<FeaturedReadsSection> {
   Widget build(BuildContext context) {
     final atStart = _currentIndex == 0;
     final atEnd = _currentIndex == widget.reads.length - 1;
+    final listHeight = Responsive.space(context, base: 345, min: 320, max: 360);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +50,7 @@ class _FeaturedReadsSectionState extends State<FeaturedReadsSection> {
               'Featured Reads',
               style: Theme.of(context).textTheme.headlineSmall ??
                   const TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: 'AtkinsonHyperlegible',
                     fontWeight: FontWeight.bold,
                     fontSize: 24,
                   ),
@@ -74,7 +76,7 @@ class _FeaturedReadsSectionState extends State<FeaturedReadsSection> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 380,
+          height: listHeight,
           child: ListView.separated(
             controller: _controller,
             scrollDirection: Axis.horizontal,

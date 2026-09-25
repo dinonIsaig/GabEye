@@ -3,7 +3,9 @@ import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/assessment_recommendations_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
+import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 
 
 class AssessmentKeyfindingsScreen extends StatelessWidget {
@@ -24,6 +26,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
     return ProgressBarScaffold(
       currentStep: 2,
       totalSteps: 3,
+      onBack: () => Navigator.pop(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -41,7 +44,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildKeyFindingsCard(
-                          context,
+                           context,
                           colors,
                           textTheme,
                           diagnosisStyle,
@@ -51,57 +54,88 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                           context,
                           colors,
                           diagnosisStyle,
+                          result.diagnosisType,
                         ),
                         const SizedBox(height: 20),
 
 
-                        ElevatedButton.icon(
-                          onPressed: () => _goToRecommendations(context),
-                          iconAlignment: IconAlignment.end,
-                          icon: const Icon(Icons.arrow_forward, size: 20),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                            minimumSize: const Size(double.infinity, 55),
+                            onPressed: () => _goToRecommendations(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Next',
+                                    style: TextStyle(
+                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                                ],
+                              ),
+                            ),
                           ),
-                          label: const Text(
-                            'Next',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                        ),
+                        SizedBox(height: Responsive.space(context, base: 10, min: 6, max: 14)),
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.arrow_back_rounded,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Back',
+                                    style: TextStyle(
+                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-
-                        const SizedBox(height: 12),
-
-                        OutlinedButton.icon(
-                          onPressed: () => Navigator.pop(context),
-                          label: const Text(
-                            'Back',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          iconAlignment: IconAlignment.start,
-                          icon: const Icon(Icons.arrow_back, size: 20),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: colors.surfaceContainer,
-                            foregroundColor: colors.onSurface,
-                            side: BorderSide(
-                              color: colors.outline,
-                              width: 1,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            minimumSize: const Size(double.infinity, 55),
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -235,6 +269,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
     BuildContext context,
     ColorScheme colors,
     DiagnosisStyle diagnosisStyle,
+    ColorDeficiencyType diagnosisType,
   ) {
     return Container(
       width: double.infinity,
@@ -295,41 +330,82 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
             diagnosisStyle.closerLook,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
-                  fontSize: 14,
-                  height: 1.4,
+                  fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
+                  height: 1.5,
                 ) ??
                 TextStyle(
                   fontFamily: 'AtkinsonHyperlegible',
                   color: colors.onSurfaceVariant,
-                  fontSize: 14,
-                  height: 1.4,
+                  fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
+                  height: 1.5,
                 ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => _goToRecommendations(context), 
-              child: Text(
-                'Learn more...',
-                style: TextStyle(
-                  color: colors.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                side: BorderSide(color: colors.outline, width: 1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
                 ),
+              ),
+              onPressed: () => _openArticle(context, diagnosisType),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Read More',
+                    style: TextStyle(
+                      fontFamily: 'AtkinsonHyperlegible',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Icon(
+                    Icons.help_outline_rounded,
+                    size: 18,
+                  ),
+                ],
               ),
             ),
           ),
-        const SizedBox(height: 20),
         ],
       ),
     );
   }
 
   // -------------------- Navigation / actions --------------------
+  void _openArticle(BuildContext context, ColorDeficiencyType diagnosisType) {
+    Widget screen;
+    switch (diagnosisType) {
+      case ColorDeficiencyType.protan:
+        screen = const ProtanArticleScreen();
+        break;
+      case ColorDeficiencyType.deutan:
+        screen = const DeutanArticleScreen();
+        break;
+      case ColorDeficiencyType.tritan:
+        screen = const TritanArticleScreen();
+        break;
+      case ColorDeficiencyType.normal:
+      case ColorDeficiencyType.unclassified:
+      case ColorDeficiencyType.random:
+      default:
+        screen = const FarnsworthD15ArticleScreen();
+        break;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
+  }
+
   void _goToRecommendations(BuildContext context) {
     Navigator.push(
       context,

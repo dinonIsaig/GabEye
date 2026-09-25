@@ -24,6 +24,10 @@ class MenuButton extends StatelessWidget {
     MenuButtonOption(label: 'About GabEye', icon: Icons.info_outline),
   ];
 
+  static const assessmentOptions = [
+    MenuButtonOption(label: 'About GabEye', icon: Icons.info_outline),
+  ];
+
   final List<MenuButtonOption> options;
   final VoidCallback? onPressed;
   final ValueChanged<MenuButtonOption>? onSelected;

@@ -4,6 +4,7 @@ import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
@@ -87,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             result.rangeHeadline,
                             style: TextStyle(
                               color: colors.onSurface,
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               height: 1.25,
                             ),
@@ -100,8 +101,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       result.rangeBody,
                       style: TextStyle(
                         color: colors.onSurfaceVariant,
-                        fontSize: 14,
-                        height: 1.45,
+                        fontSize: 16,
+                        height: 1.5,
                       ),
                     ),
                   ],
@@ -132,7 +133,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       'Based on your Farnsworth D-15 assessment...',
-                      style: TextStyle(color: colors.onSurfaceVariant, fontSize: 14),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            color: colors.onSurfaceVariant,
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                          ) ??
+                          TextStyle(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            color: colors.onSurfaceVariant,
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -152,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _buildDescription(colors, result, diagnosisStyle),
+                    _buildDescription(context, colors, result, diagnosisStyle),
                     const SizedBox(height: 18),
                     Row(
                       children: [
@@ -184,11 +194,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
                     Text(
                       result.practicalTip,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 14,
-                        height: 1.45,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            color: colors.onSurfaceVariant,
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                            height: 1.5,
+                          ) ??
+                          TextStyle(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            color: colors.onSurfaceVariant,
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                            height: 1.5,
+                          ),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -318,14 +335,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDescription(
+    BuildContext context,
     ColorScheme colors,
     D15ScoreResult result,
     DiagnosisStyle style,
   ) {
-    final baseStyle = TextStyle(
+    final textTheme = Theme.of(context).textTheme;
+    final baseStyle = (textTheme.bodyMedium ??
+            const TextStyle(fontFamily: 'AtkinsonHyperlegible'))
+        .copyWith(
       color: colors.onSurfaceVariant,
-      fontSize: 14,
-      height: 1.45,
+      fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+      height: 1.5,
+    );
+    final boldStyle = (textTheme.bodyLarge ??
+            const TextStyle(fontFamily: 'AtkinsonHyperlegible'))
+        .copyWith(
+      color: colors.onSurface,
+      fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+      fontWeight: FontWeight.bold,
+      height: 1.5,
     );
 
     if (result.diagnosisType == ColorDeficiencyType.normal) {
@@ -343,10 +372,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextSpan(text: prefix),
           TextSpan(
             text: style.highlightPhrase,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: colors.onSurface,
-            ),
+            style: boldStyle,
           ),
         ],
       ),
@@ -424,6 +450,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark
+        ? AppColors.darkPrimaryButton
+        : AppColors.primaryColor;
 
     return Container(
       decoration: BoxDecoration(
@@ -443,10 +472,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.1),
+                  color: isDark
+                      ? AppColors.darkPrimaryButton.withValues(alpha: 0.15)
+                      : AppColors.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: colors.primary, size: 22),
+                child: Icon(icon, color: iconColor, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -455,19 +486,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: colors.onSurface,
-                      ),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
+                            fontWeight: FontWeight.bold,
+                            color: colors.onSurface,
+                          ) ??
+                          TextStyle(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
+                            fontWeight: FontWeight.bold,
+                            color: colors.onSurface,
+                          ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.onSurfaceVariant,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                            color: colors.onSurfaceVariant,
+                            height: 1.35,
+                          ) ??
+                          TextStyle(
+                            fontFamily: 'AtkinsonHyperlegible',
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                            color: colors.onSurfaceVariant,
+                            height: 1.35,
+                          ),
                     ),
                   ],
                 ),

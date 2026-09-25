@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/components/menu_button.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/core/widgets/gabeye_app_bar.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
@@ -31,14 +32,24 @@ class PreAssessmentScaffold extends StatelessWidget {
       showLogo: false,
       progressValue: currentStep / totalSteps,
       progressText: 'Step $currentStep/$totalSteps',
+      onBackPressed: onBack,
+      menuOptions: MenuButton.assessmentOptions,
     );
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: appBar,
-      body: SafeArea(
-        top: false,
-        child: Responsive.constrainWidth(
+    return PopScope(
+      canPop: onBack != null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (onBack != null) {
+          onBack!();
+        }
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: appBar,
+        body: SafeArea(
+          top: false,
+          child: Responsive.constrainWidth(
           context,
           child: Column(
             children: [
@@ -84,7 +95,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 instructionTitle!,
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
+                                  fontFamily: 'AtkinsonHyperlegible',
                                   fontSize: Responsive.font(context, base: 24, min: 18, max: 28),
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(context).colorScheme.onSurface,
@@ -130,6 +141,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 'Next',
                                 style: TextStyle(
+                                  fontFamily: 'AtkinsonHyperlegible',
                                   fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -176,6 +188,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 'Back',
                                 style: TextStyle(
+                                  fontFamily: 'AtkinsonHyperlegible',
                                   fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                       color: onBack == null
@@ -194,6 +207,7 @@ class PreAssessmentScaffold extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

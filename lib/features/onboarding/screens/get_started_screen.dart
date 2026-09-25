@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/onboarding/widgets/terms_and_conditions_modal.dart';
 
@@ -45,16 +44,18 @@ class GetStartedScreen extends StatelessWidget {
                         children: [
                           Text(
                             'Welcome to',
-                            style: GoogleFonts.atkinsonHyperlegibleNext(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontFamily: 'AtkinsonHyperlegible',
+                              fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
                           Text(
                             'GabEye!',
-                            style: GoogleFonts.inter(
-                              fontSize: 40,
+                            style: TextStyle(
+                              fontFamily: 'AtkinsonHyperlegible',
+                              fontSize: Responsive.font(context, base: 40, min: 30, max: 46),
                               fontWeight: FontWeight.w700,
                               color: Theme.of(context).colorScheme.onSurface,
                               letterSpacing: -1.0,
@@ -64,7 +65,8 @@ class GetStartedScreen extends StatelessWidget {
                           const SizedBox(height: 16),
                           Text(
                             "We don't just show you how colors look different — we shift them to make things easier to see.",
-                            style: GoogleFonts.atkinsonHyperlegibleNext(
+                            style: TextStyle(
+                              fontFamily: 'AtkinsonHyperlegible',
                               fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
@@ -100,6 +102,7 @@ class GetStartedScreen extends StatelessWidget {
                         child: Text(
                           'Get Started',
                           style: TextStyle(
+                            fontFamily: 'AtkinsonHyperlegible',
                             fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                             fontWeight: FontWeight.bold,
                           ),

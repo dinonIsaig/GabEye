@@ -41,11 +41,11 @@ class PreAssessmentStepCard extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '$stepNumber',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
+                  style: const TextStyle(
+                    fontFamily: 'AtkinsonHyperlegible',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.surface,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -59,7 +59,6 @@ class PreAssessmentStepCard extends StatelessWidget {
                     TextSpan(
                       style: textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface,
-                        height: 1.50,
                       ),
                       children: [
                         TextSpan(text: normalTextBefore),
@@ -127,7 +126,7 @@ class PreAssessmentInfoCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontFamily: 'Inter',
+                      fontFamily: 'AtkinsonHyperlegible',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -142,7 +141,6 @@ class PreAssessmentInfoCard extends StatelessWidget {
                 TextSpan(
                   style: textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.45,
                   ),
                   children: [
                     TextSpan(text: normalTextBefore),
@@ -218,7 +216,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                   Text(
                     title,
                       style: TextStyle(
-                      fontFamily: 'Inter',
+                      fontFamily: 'AtkinsonHyperlegible',
                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurfaceVariant,

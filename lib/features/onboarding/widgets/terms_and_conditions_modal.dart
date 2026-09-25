@@ -46,8 +46,27 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
     return SafeArea(
       child: FractionallySizedBox(
         heightFactor: 0.9,
-        child: Stack(
+        child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 12.0, bottom: 6.0),
+              child: Center(
+                child: Container(
+                  width: 110,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Stack(
+                children: [
             Positioned.fill(
               child: Theme(
                 data: Theme.of(context).copyWith(
@@ -99,8 +118,11 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                         child: ElevatedButton(
                           onPressed: _hasScrolledToBottom
                               ? () {
-                                  Navigator.popAndPushNamed(
-                                      context, AppRoutes.preAssessmenLearnMoreScreen);
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    AppRoutes.preAssessmenLearnMoreScreen,
+                                    (route) => false,
+                                  );
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
@@ -141,6 +163,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                               style: TextStyle(
                                 fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                 fontWeight: FontWeight.bold,
+                                fontFamily: 'AtkinsonHyperlegible',
                               ),
                             ),
                           ),
@@ -154,16 +177,22 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
           ],
         ),
       ),
-    );
+    ],
+  ),
+),
+);
   }
 
   Widget _buildTermsTextContent(BuildContext context) {
-    final bodyStyle = GoogleFonts.atkinsonHyperlegibleNext(
+    final bodyStyle = TextStyle(
+      fontFamily: 'AtkinsonHyperlegible',
       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
       color: Theme.of(context).colorScheme.onSurfaceVariant,
+      height: 1.5,
     );
 
-    final headingStyle = GoogleFonts.inter(
+    final headingStyle = TextStyle(
+      fontFamily: 'AtkinsonHyperlegible',
       fontSize: Responsive.font(context, base: 18, min: 15, max: 22),
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -185,8 +214,9 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
         Text(
           'Last Updated: September 2026',
-          style: GoogleFonts.atkinsonHyperlegibleNext(
-            fontSize: 16,
+          style: TextStyle(
+            fontFamily: 'AtkinsonHyperlegible',
+            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
             color: AppColors.disabledText,
           ),
         ),
@@ -1045,8 +1075,9 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         RichText(
           textAlign: TextAlign.justify,
           text: TextSpan(
-            style: GoogleFonts.atkinsonHyperlegibleNext(
-              fontSize: 16,
+            style: TextStyle(
+              fontFamily: 'AtkinsonHyperlegible',
+              fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
               fontStyle: FontStyle.italic,
@@ -1089,6 +1120,7 @@ void showTermsAndConditionsModal(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    showDragHandle: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),

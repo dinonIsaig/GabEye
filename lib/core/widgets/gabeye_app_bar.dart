@@ -11,6 +11,8 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? progressText; // e.g., "Step 4/4"
   final VoidCallback? onMenuPressed;
   final VoidCallback? onBackPressed;
+  final List<MenuButtonOption>? menuOptions;
+  final ValueChanged<MenuButtonOption>? onMenuSelected;
 
   const GabEyeAppBar({
     super.key,
@@ -20,6 +22,8 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.progressText,
     this.onMenuPressed,
     this.onBackPressed,
+    this.menuOptions,
+    this.onMenuSelected,
   });
 
   @override
@@ -60,8 +64,13 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
               ? Padding(
                   padding: const EdgeInsets.only(left: 12),
                   child: IconButton(
-                    icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-                    onPressed: onBackPressed ?? () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: onBackPressed == null
+                          ? colorScheme.onSurface.withValues(alpha: 0.38)
+                          : colorScheme.onSurface,
+                    ),
+                    onPressed: onBackPressed,
                   ),
                 )
               : null,
@@ -113,7 +122,11 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: MenuButton(onPressed: onMenuPressed),
+              child: MenuButton(
+                options: menuOptions ?? MenuButton.defaultOptions,
+                onPressed: onMenuPressed,
+                onSelected: onMenuSelected,
+              ),
             ),
           ],
         ),

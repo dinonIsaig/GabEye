@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'help_feedback_screen.dart';
 
 class TermsAndConditionsPage extends StatelessWidget {
@@ -55,13 +55,16 @@ class TermsAndConditionsPage extends StatelessWidget {
   }
 
   Widget _buildTermsTextContent(BuildContext context) {
-    final bodyStyle = GoogleFonts.atkinsonHyperlegibleNext(
-      fontSize: 16,
+    final bodyStyle = TextStyle(
+      fontFamily: 'AtkinsonHyperlegible',
+      fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
       color: Theme.of(context).colorScheme.onSurfaceVariant,
+      height: 1.5,
     );
 
-    final headingStyle = GoogleFonts.inter(
-      fontSize: 18,
+    final headingStyle = TextStyle(
+      fontFamily: 'AtkinsonHyperlegible',
+      fontSize: Responsive.font(context, base: 18, min: 15, max: 22),
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       height: 1.5,
@@ -72,18 +75,20 @@ class TermsAndConditionsPage extends StatelessWidget {
       children: [
         Text(
           'Terms and Conditions',
-          style: GoogleFonts.inter(
-            fontSize: 26,
+          style: TextStyle(
+            fontFamily: 'AtkinsonHyperlegible',
+            fontSize: Responsive.font(context, base: 26, min: 20, max: 32),
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
         Text(
           'Last Update: July 2026',
-          style: GoogleFonts.atkinsonHyperlegibleNext(
-            fontSize: 16,
+          style: TextStyle(
+            fontFamily: 'AtkinsonHyperlegible',
+            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
             color: AppColors.disabledText,
           ),
         ),
@@ -206,8 +211,9 @@ class TermsAndConditionsPage extends StatelessWidget {
         RichText(
           textAlign: TextAlign.justify,
           text: TextSpan(
-            style: GoogleFonts.atkinsonHyperlegibleNext(
-              fontSize: 16,
+            style: TextStyle(
+              fontFamily: 'AtkinsonHyperlegible',
+              fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
               fontStyle: FontStyle.italic,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
