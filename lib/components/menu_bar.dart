@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/theme/cvd_personalization_controller.dart';
 import 'package:gabeye/core/theme/theme_controller.dart';
 
 class NavbarMenuItem {
@@ -89,6 +90,63 @@ class NavbarMenuPanel extends StatelessWidget {
                             Switch(
                               value: isDarkMode,
                               onChanged: themeController.setDarkMode,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              AnimatedBuilder(
+                animation: cvdPersonalizationController,
+                builder: (context, child) {
+                  final supported = cvdPersonalizationController.isSupported;
+                  final enabled = cvdPersonalizationController.isEnabled;
+                  final contentColor = supported
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+                  return Semantics(
+                    label: 'Personalize UI',
+                    toggled: enabled,
+                    enabled: supported,
+                    hint: supported
+                        ? null
+                        : 'Available once your color vision assessment '
+                            'identifies a supported profile',
+                    child: InkWell(
+                      onTap: supported
+                          ? () => cvdPersonalizationController.setEnabled(
+                                !enabled,
+                              )
+                          : null,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.palette_outlined,
+                              size: 20,
+                              color: contentColor,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'Personalize UI',
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: contentColor,
+                                ),
+                              ),
+                            ),
+                            Switch(
+                              value: enabled,
+                              onChanged: supported
+                                  ? cvdPersonalizationController.setEnabled
+                                  : null,
                             ),
                           ],
                         ),

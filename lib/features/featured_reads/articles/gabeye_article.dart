@@ -3,6 +3,8 @@ import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
+import 'package:gabeye/core/theme/cvd_personalization_controller.dart';
+import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 import '../settings/help_feedback_screen.dart';
 import '../settings/gabeye_settings.dart';
@@ -366,8 +368,11 @@ class FarnsworthD15ArticleScreen extends StatelessWidget {
       actionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: ElevatedButton(
-          onPressed: () =>
-              Navigator.pushNamed(context, AppRoutes.preAssessmentHowItWorks),
+          onPressed: () {
+            assessmentController.reset();
+            cvdPersonalizationController.resetForNewAttempt();
+            Navigator.pushNamed(context, AppRoutes.preAssessmentHowItWorks);
+          },
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 55),
             shape: RoundedRectangleBorder(
