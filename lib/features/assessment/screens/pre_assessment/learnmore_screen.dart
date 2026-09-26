@@ -52,6 +52,7 @@ class LearnMoreScreen extends StatelessWidget {
                               style: GoogleFonts.atkinsonHyperlegibleNext(
                                 fontSize: 16,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                             SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
@@ -71,6 +72,7 @@ class LearnMoreScreen extends StatelessWidget {
                               style: GoogleFonts.atkinsonHyperlegibleNext(
                                 fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w400,
                               ),
                               textAlign: TextAlign.justify,
                             ),
@@ -84,6 +86,7 @@ class LearnMoreScreen extends StatelessWidget {
                                 fontSize: Responsive.font(context, base: 16, min: 12, max: 16),
                                 color: AppColors.disabledText,
                                 fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                             SizedBox(height: Responsive.space(context, base: 16, min: 10, max: 16)),

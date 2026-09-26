@@ -26,6 +26,7 @@ class PreAssessmentIntroScreen extends StatelessWidget {
               style: GoogleFonts.atkinsonHyperlegibleNext(
                 fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                 color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w400,
                 height: 1.5,
               ),
               children: const [

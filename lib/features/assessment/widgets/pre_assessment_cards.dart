@@ -210,6 +210,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                     style: GoogleFonts.atkinsonHyperlegibleNext(
                       fontSize: 16,
                       color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                   SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
@@ -229,6 +230,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                     style: GoogleFonts.atkinsonHyperlegibleNext(
                       fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                       color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w400,
                       height: 1.5,
                     ),
                     textAlign: TextAlign.justify,
