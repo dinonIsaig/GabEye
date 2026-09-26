@@ -3,8 +3,20 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/onboarding/widgets/terms_and_conditions_modal.dart';
 
-class GetStartedScreen extends StatelessWidget {
+class GetStartedScreen extends StatefulWidget {
   const GetStartedScreen({super.key});
+
+  @override
+  State<GetStartedScreen> createState() => _GetStartedScreenState();
+}
+
+class _GetStartedScreenState extends State<GetStartedScreen> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/images/articleHeading.png'), context);
+    precacheImage(const AssetImage('assets/images/farnsworth_d15_banner.png'), context);
+  }
 
   @override
   Widget build(BuildContext context) {

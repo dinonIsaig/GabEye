@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
@@ -363,12 +364,16 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
     DiagnosisStyle style,
   ) {
     final textTheme = Theme.of(context).textTheme;
-    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'Inter')).copyWith(
+    final baseStyle = (textTheme.bodyMedium ??
+            GoogleFonts.atkinsonHyperlegible())
+        .copyWith(
       color: colors.onSurfaceVariant,
       fontSize: 16,
       height: 1.5,
     );
-    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'Inter')).copyWith(
+    final boldStyle = (textTheme.bodyLarge ??
+            GoogleFonts.atkinsonHyperlegible(fontWeight: FontWeight.bold))
+        .copyWith(
       color: colors.onSurface,
       fontSize: 16,
       fontWeight: FontWeight.bold,

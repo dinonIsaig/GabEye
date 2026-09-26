@@ -49,7 +49,7 @@ class LearnMoreScreen extends StatelessWidget {
                           children: [
                             Text(
                               'GabEye can help you understand your',
-                              style: GoogleFonts.atkinsonHyperlegibleNext(
+                              style: GoogleFonts.atkinsonHyperlegible(
                                 fontSize: 16,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w400,
@@ -69,7 +69,7 @@ class LearnMoreScreen extends StatelessWidget {
                             SizedBox(height: Responsive.space(context, base: 16, min: 8, max: 16)),
                             Text(
                               "With this quick color vision assessment it will help you better understand how you perceive colors. In just a few minutes, you’ll get an initial insight into your color vision and help us tailor the app to suit your needs.",
-                              style: GoogleFonts.atkinsonHyperlegibleNext(
+                              style: GoogleFonts.atkinsonHyperlegible(
                                 fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w400,
@@ -82,7 +82,7 @@ class LearnMoreScreen extends StatelessWidget {
                             Text(
                               'This is an initial assessment designed for guidance and app personalization. It is not a medical diagnosis or a substitute for professional evaluation.',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.atkinsonHyperlegibleNext(
+                              style: GoogleFonts.atkinsonHyperlegible(
                                 fontSize: Responsive.font(context, base: 16, min: 12, max: 16),
                                 color: AppColors.disabledText,
                                 fontStyle: FontStyle.italic,

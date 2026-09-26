@@ -8,7 +8,7 @@ import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.d
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 
 
-class AssessmentKeyfindingsScreen extends StatelessWidget {
+class AssessmentKeyfindingsScreen extends StatefulWidget {
   final List<int> arrangedCaps;
 
   const AssessmentKeyfindingsScreen({
@@ -17,10 +17,23 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
   });
 
   @override
+  State<AssessmentKeyfindingsScreen> createState() => _AssessmentKeyfindingsScreenState();
+}
+
+class _AssessmentKeyfindingsScreenState extends State<AssessmentKeyfindingsScreen> {
+  late final D15ScoreResult _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _result = ScoringService.calculateScore(widget.arrangedCaps);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
+    final result = _result;
     final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
     return ProgressBarScaffold(
@@ -411,7 +424,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => AssessmentRecommendationsScreen(
-          arrangedCaps: arrangedCaps,
+          arrangedCaps: widget.arrangedCaps,
         ),
       ),
     );

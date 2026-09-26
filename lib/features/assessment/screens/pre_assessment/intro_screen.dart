@@ -4,6 +4,7 @@ import 'package:gabeye/features/assessment/widgets/pre_assessment_cards.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_scaffold.dart';
 import 'package:gabeye/features/featured_reads/articles/gabeye_article.dart';
 import 'package:gabeye/core/utils/responsive.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 
 class PreAssessmentIntroScreen extends StatelessWidget {
@@ -23,7 +24,7 @@ class PreAssessmentIntroScreen extends StatelessWidget {
         children: [
           Text.rich(
             TextSpan(
-              style: GoogleFonts.atkinsonHyperlegibleNext(
+              style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w400,

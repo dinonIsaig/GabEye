@@ -31,12 +31,14 @@ class PreAssessmentStepCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 44,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 44,
+              child: Container(
                 color: Theme.of(context).colorScheme.tertiary,
                 alignment: Alignment.center,
                 child: Text(
@@ -49,31 +51,31 @@ class PreAssessmentStepCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 44 + 16,
+                right: 16,
+                top: 12,
+                bottom: 12,
+              ),
+              child: Text.rich(
+                TextSpan(
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  child: Text.rich(
+                  children: [
+                    TextSpan(text: normalTextBefore),
                     TextSpan(
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      children: [
-                        TextSpan(text: normalTextBefore),
-                        TextSpan(
-                          text: boldText,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        TextSpan(text: normalTextAfter),
-                      ],
+                      text: boldText,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ),
+                    TextSpan(text: normalTextAfter),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -207,7 +209,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                 children: [
                   Text(
                     subtitle,
-                    style: GoogleFonts.atkinsonHyperlegibleNext(
+                    style: GoogleFonts.atkinsonHyperlegible(
                       fontSize: 16,
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w400,
@@ -227,7 +229,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     description,
-                    style: GoogleFonts.atkinsonHyperlegibleNext(
+                    style: GoogleFonts.atkinsonHyperlegible(
                       fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w400,

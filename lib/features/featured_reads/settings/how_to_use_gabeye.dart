@@ -253,12 +253,14 @@ class _StepCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 44,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 44,
+              child: Container(
                 color: colors.tertiary,
                 alignment: Alignment.center,
                 child: Text(
@@ -271,39 +273,39 @@ class _StepCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        text,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurface,
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 44 + 20,
+                right: 20,
+                top: 14,
+                bottom: 14,
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    text,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurface,
+                      fontSize: 16,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -341,7 +343,7 @@ class _ModeCompareTable extends StatelessWidget {
       TextStyle getStyle({bool isBold = false}) {
         return (textTheme.bodyMedium ??
                 const TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: 'AtkinsonHyperlegible',
                   fontSize: 16,
                 ))
             .copyWith(

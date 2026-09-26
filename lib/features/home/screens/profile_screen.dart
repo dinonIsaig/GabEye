@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
@@ -342,14 +343,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ) {
     final textTheme = Theme.of(context).textTheme;
     final baseStyle = (textTheme.bodyMedium ??
-            const TextStyle(fontFamily: 'Inter'))
+            GoogleFonts.atkinsonHyperlegible())
         .copyWith(
       color: colors.onSurfaceVariant,
       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
       height: 1.5,
     );
     final boldStyle = (textTheme.bodyLarge ??
-            const TextStyle(fontFamily: 'Inter'))
+            GoogleFonts.atkinsonHyperlegible(fontWeight: FontWeight.bold))
         .copyWith(
       color: colors.onSurface,
       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),

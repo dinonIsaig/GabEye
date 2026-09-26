@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/cvd_color_tokens.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
@@ -6,101 +7,86 @@ import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 class GabEyeTheme {
   static TextTheme _buildTextTheme(Color color) {
     return TextTheme(
-      displayLarge: TextStyle(
-        fontFamily: 'Inter',
+      displayLarge: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 34,
         height: 1.3,
         color: color,
       ),
-      displayMedium: TextStyle(
-        fontFamily: 'Inter',
+      displayMedium: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 30,
         height: 1.3,
         color: color,
       ),
-      displaySmall: TextStyle(
-        fontFamily: 'Inter',
+      displaySmall: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 26,
         height: 1.3,
         color: color,
       ),
-      headlineLarge: TextStyle(
-        fontFamily: 'Inter',
+      headlineLarge: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 32,
         height: 1.3,
         color: color,
       ),
-      headlineMedium: const TextStyle(
-        fontFamily: 'Inter',
+      headlineMedium: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 28,
         height: 1.5,
         color: Colors.white,
       ),
-      headlineSmall: TextStyle(
-        fontFamily: 'Inter',
+      headlineSmall: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 24,
         height: 1.5,
         color: color,
       ),
-      titleLarge: TextStyle( //heading
+      titleLarge: GoogleFonts.inter( //heading
         color: color,
-        fontFamily: 'Inter',
         fontSize: 24,
         fontWeight: FontWeight.bold,
         height: 1.5,
       ),
-      titleMedium: TextStyle(
-        fontFamily: 'Inter',
+      titleMedium: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 18,
         color: color,
       ),
-      titleSmall: TextStyle(
-        fontFamily: 'Inter',
+      titleSmall: GoogleFonts.inter(
         fontWeight: FontWeight.bold,
         fontSize: 16,
         color: color,
       ),
-      bodyLarge: TextStyle( //body-bold
+      bodyLarge: GoogleFonts.atkinsonHyperlegible( //body-bold
         color: color,
-        fontFamily: 'Inter',
         fontSize: 16,
         fontWeight: FontWeight.bold,
         height: 1.5,
       ),
-      bodyMedium: TextStyle( //body
+      bodyMedium: GoogleFonts.atkinsonHyperlegible( //body
         color: color,
-        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.5,
       ),
-      bodySmall: TextStyle(
+      bodySmall: GoogleFonts.atkinsonHyperlegible(
         color: color,
-        fontFamily: 'Inter',
-        fontSize: 16,
+        fontSize: 14,
         height: 1.5,
       ),
-      labelLarge: TextStyle( //caption / button
+      labelLarge: GoogleFonts.inter( //caption / button
         color: color,
-        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.4,
       ),
-      labelMedium: TextStyle(
+      labelMedium: GoogleFonts.inter(
         color: color,
-        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.4,
       ),
-      labelSmall: TextStyle(
+      labelSmall: GoogleFonts.inter(
         color: color,
-        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.4,
       ),
@@ -122,7 +108,7 @@ class GabEyeTheme {
     final tokens = CvdColorTokens.resolve(Brightness.light, profile);
     return ThemeData(
       brightness: Brightness.light,
-      fontFamily: 'Inter',
+      fontFamily: GoogleFonts.inter().fontFamily,
       scaffoldBackgroundColor: AppColors.lightSurface,
       colorScheme: ColorScheme.light(
         primary: tokens.primaryButton,
@@ -181,7 +167,7 @@ class GabEyeTheme {
     final tokens = CvdColorTokens.resolve(Brightness.dark, profile);
     return ThemeData(
       brightness: Brightness.dark,
-      fontFamily: 'Inter',
+      fontFamily: GoogleFonts.inter().fontFamily,
       scaffoldBackgroundColor: AppColors.darkMode,
       colorScheme: ColorScheme.dark(
         primary: AppColors.primaryColor,

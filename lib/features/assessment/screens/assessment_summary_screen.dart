@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
@@ -15,29 +16,38 @@ import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.d
 /// Post-assessment 9: the plain-language summary shown right after the
 /// user finishes arranging the caps, before the technical breakdown on
 /// the next screen (post-assessment 8 / ResultsPage).
-class AssessmentSummaryScreen extends StatelessWidget {
+class AssessmentSummaryScreen extends StatefulWidget {
   final List<int> arrangedCaps;
 
   const AssessmentSummaryScreen({super.key, required this.arrangedCaps});
 
   @override
-  Widget build(BuildContext context) {
-    if (assessmentController.value != arrangedCaps) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        assessmentController.setArrangedCaps(arrangedCaps);
-      });
+  State<AssessmentSummaryScreen> createState() => _AssessmentSummaryScreenState();
+}
+
+class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
+  late final D15ScoreResult _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _result = ScoringService.calculateScore(widget.arrangedCaps);
+    if (assessmentController.value != widget.arrangedCaps) {
+      assessmentController.setArrangedCaps(widget.arrangedCaps);
     }
-
-    final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
-    final severityStyle = severityStyleFor(context, result.severity);
-    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (VisionProfileService.instance.value != result) {
-        VisionProfileService.instance.updateAssessmentResult(result, arrangedCaps: arrangedCaps);
+      if (VisionProfileService.instance.value != _result) {
+        VisionProfileService.instance.updateAssessmentResult(_result, arrangedCaps: widget.arrangedCaps);
       }
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final result = _result;
+    final severityStyle = severityStyleFor(context, result.severity);
+    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
     return ProgressBarScaffold(
       currentStep: 1,
@@ -349,12 +359,16 @@ class AssessmentSummaryScreen extends StatelessWidget {
   // -------------------- Description --------------------
   Widget _buildDescription(BuildContext context, ColorScheme colors, D15ScoreResult result, DiagnosisStyle style) {
     final textTheme = Theme.of(context).textTheme;
-    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'Inter')).copyWith(
+    final baseStyle = (textTheme.bodyMedium ??
+            GoogleFonts.atkinsonHyperlegible())
+        .copyWith(
       color: colors.onSurfaceVariant,
       fontSize: 16,
       height: 1.5,
     );
-    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'Inter')).copyWith(
+    final boldStyle = (textTheme.bodyLarge ??
+            GoogleFonts.atkinsonHyperlegible(fontWeight: FontWeight.bold))
+        .copyWith(
       color: colors.onSurface,
       fontSize: 16,
       fontWeight: FontWeight.bold,
@@ -454,21 +468,21 @@ class AssessmentSummaryScreen extends StatelessWidget {
   void _goToDetailedResult(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: arrangedCaps)),
+      MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: widget.arrangedCaps)),
     );
   }
 
   void _goToKeyfindings(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AssessmentKeyfindingsScreen(arrangedCaps: arrangedCaps)),
+      MaterialPageRoute(builder: (context) => AssessmentKeyfindingsScreen(arrangedCaps: widget.arrangedCaps)),
     );
   }
 
   void _exportAsPdf(BuildContext context) {
     PdfReportService.generateAndExportPdf(
       context,
-      arrangedCaps: arrangedCaps,
+      arrangedCaps: widget.arrangedCaps,
     );
   }
 }

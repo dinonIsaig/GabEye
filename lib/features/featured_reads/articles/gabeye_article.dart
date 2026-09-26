@@ -801,7 +801,7 @@ class ComparisonTableWidget extends StatelessWidget {
                     cell,
                     style: (textTheme.bodyMedium ??
                             const TextStyle(
-                              fontFamily: 'Inter',
+                              fontFamily: 'AtkinsonHyperlegible',
                               fontSize: 16,
                             ))
                         .copyWith(

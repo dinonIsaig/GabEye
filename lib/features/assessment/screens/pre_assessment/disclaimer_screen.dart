@@ -42,20 +42,23 @@ class DisclaimerScreen extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      width: Responsive.space(context, base: 17, min: 12, max: 22),
-                      color: errorColor,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: Responsive.space(context, base: 17, min: 12, max: 22),
+                    child: Container(color: errorColor),
+                  ),
+                  Padding(
+                    padding: Responsive.all(context, base: 20, min: 14, max: 26).copyWith(
+                      left: Responsive.space(context, base: 17, min: 12, max: 22) +
+                          Responsive.space(context, base: 20, min: 14, max: 26),
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: Responsive.all(context, base: 20, min: 14, max: 26),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                             Text(
                               'Important Note',
                               style: textTheme.bodyMedium?.copyWith(
@@ -106,14 +109,12 @@ class DisclaimerScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
   }
 }
