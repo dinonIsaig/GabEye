@@ -163,7 +163,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                               style: TextStyle(
                                 fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                 fontWeight: FontWeight.bold,
-                                fontFamily: 'AtkinsonHyperlegible',
+                                fontFamily: 'Inter',
                               ),
                             ),
                           ),
@@ -185,14 +185,14 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
 
   Widget _buildTermsTextContent(BuildContext context) {
     final bodyStyle = TextStyle(
-      fontFamily: 'AtkinsonHyperlegible',
+      fontFamily: 'Inter',
       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       height: 1.5,
     );
 
     final headingStyle = TextStyle(
-      fontFamily: 'AtkinsonHyperlegible',
+      fontFamily: 'Inter',
       fontSize: Responsive.font(context, base: 18, min: 15, max: 22),
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -215,7 +215,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         Text(
           'Last Updated: September 2026',
           style: TextStyle(
-            fontFamily: 'AtkinsonHyperlegible',
+            fontFamily: 'Inter',
             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
             color: AppColors.disabledText,
           ),
@@ -1076,7 +1076,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
           textAlign: TextAlign.justify,
           text: TextSpan(
             style: TextStyle(
-              fontFamily: 'AtkinsonHyperlegible',
+              fontFamily: 'Inter',
               fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,

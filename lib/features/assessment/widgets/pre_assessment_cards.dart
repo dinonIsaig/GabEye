@@ -42,7 +42,7 @@ class PreAssessmentStepCard extends StatelessWidget {
                 child: Text(
                   '$stepNumber',
                   style: const TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -126,7 +126,7 @@ class PreAssessmentInfoCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -216,7 +216,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                   Text(
                     title,
                       style: TextStyle(
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurfaceVariant,
@@ -256,7 +256,7 @@ class PreAssessmentArticleCard extends StatelessWidget {
                           Text(
                             'Read More',
                             style: TextStyle(
-                              fontFamily: 'AtkinsonHyperlegible',
+                              fontFamily: 'Inter',
                               fontSize: Responsive.font(context, base: 12, min: 10, max: 16),
                               fontWeight: FontWeight.bold,
                             ),

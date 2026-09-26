@@ -75,7 +75,7 @@ class VisionProfileCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ) ??
                         TextStyle(
-                          fontFamily: 'AtkinsonHyperlegible',
+                          fontFamily: 'Inter',
                           fontWeight: FontWeight.bold,
                           fontSize: Responsive.font(context, base: 22, min: 18, max: 24),
                         ),
@@ -92,7 +92,7 @@ class VisionProfileCard extends StatelessWidget {
                             height: 1.5,
                           ) ??
                           TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                             color: colorScheme.onSurfaceVariant,
                             height: 1.5,
@@ -118,7 +118,7 @@ class VisionProfileCard extends StatelessWidget {
                             Text(
                               data.ctaLabel,
                               style: const TextStyle(
-                                fontFamily: 'AtkinsonHyperlegible',
+                                fontFamily: 'Inter',
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
                               ),

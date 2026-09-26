@@ -58,7 +58,7 @@ class ProfileHeadingBanner extends StatelessWidget {
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,

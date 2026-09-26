@@ -875,7 +875,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> {
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
               style: TextStyle(
-                fontFamily: 'AtkinsonHyperlegible',
+                fontFamily: 'Inter',
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: isSelected ? Colors.white : colors.onSurface,

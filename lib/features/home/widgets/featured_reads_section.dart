@@ -50,7 +50,7 @@ class _FeaturedReadsSectionState extends State<FeaturedReadsSection> {
               'Featured Reads',
               style: Theme.of(context).textTheme.headlineSmall ??
                   const TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.bold,
                     fontSize: 24,
                   ),

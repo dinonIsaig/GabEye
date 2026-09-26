@@ -264,7 +264,7 @@ class _StepCard extends StatelessWidget {
                 child: Text(
                   '$stepNumber',
                   style: const TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -341,7 +341,7 @@ class _ModeCompareTable extends StatelessWidget {
       TextStyle getStyle({bool isBold = false}) {
         return (textTheme.bodyMedium ??
                 const TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   fontSize: 16,
                 ))
             .copyWith(

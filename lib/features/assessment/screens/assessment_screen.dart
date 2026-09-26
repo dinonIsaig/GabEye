@@ -221,7 +221,7 @@ void _applyDebugProfile(List<int> caps) {
               'Select Next Color',
               style: textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                fontFamily: 'AtkinsonHyperlegible',
+                fontFamily: 'Inter',
                 color: colors.onSurfaceVariant,
               ),
             ),
@@ -344,7 +344,7 @@ void _applyDebugProfile(List<int> caps) {
           'All caps placed — ready to finish!',
           style: textTheme.bodyMedium?.copyWith(
             color: colors.onSurfaceVariant,
-            fontFamily: 'AtkinsonHyperlegible',
+            fontFamily: 'Inter',
           ),
         ),
       );
@@ -425,7 +425,7 @@ void _applyDebugProfile(List<int> caps) {
           ),
           child: const Text(
             'Finish Assessment', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'AtkinsonHyperlegible'),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'),
           ),
         ),
         const SizedBox(height: 10),
@@ -440,7 +440,7 @@ void _applyDebugProfile(List<int> caps) {
           ),
           child: const Text(
             'Start Over', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'AtkinsonHyperlegible'), 
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'), 
           ),
         ),
         

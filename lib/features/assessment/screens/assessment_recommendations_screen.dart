@@ -88,7 +88,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                                   Text(
                                     'Go to Home',
                                     style: TextStyle(
-                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontFamily: 'Inter',
                                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -131,7 +131,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                                   Text(
                                     'Back',
                                     style: TextStyle(
-                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontFamily: 'Inter',
                                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                                       fontWeight: FontWeight.bold,
                                       color: Theme.of(context).colorScheme.onSurface,

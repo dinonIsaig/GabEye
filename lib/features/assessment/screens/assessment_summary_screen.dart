@@ -84,7 +84,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                                   Text(
                                     'Next',
                                     style: TextStyle(
-                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontFamily: 'Inter',
                                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -127,7 +127,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                                   Text(
                                     'Back',
                                     style: TextStyle(
-                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontFamily: 'Inter',
                                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                                       fontWeight: FontWeight.bold,
                                       color: Theme.of(context).colorScheme.onSurface,
@@ -185,7 +185,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                 child: Text(
                   result.rangeHeadline,
                   style: TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     color: colors.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -199,7 +199,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
           Text(
             result.rangeBody,
             style: TextStyle(
-              fontFamily: 'AtkinsonHyperlegible',
+              fontFamily: 'Inter',
               color: colors.onSurfaceVariant,
               fontSize: 16,
               height: 1.5,
@@ -238,7 +238,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                   fontSize: 16,
                 ) ??
                 const TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   fontSize: 16,
                 ),
           ),
@@ -282,7 +282,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                   height: 1.5,
                 ) ??
                 TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   color: colors.onSurfaceVariant,
                   fontSize: 16,
                   height: 1.5,
@@ -349,12 +349,12 @@ class AssessmentSummaryScreen extends StatelessWidget {
   // -------------------- Description --------------------
   Widget _buildDescription(BuildContext context, ColorScheme colors, D15ScoreResult result, DiagnosisStyle style) {
     final textTheme = Theme.of(context).textTheme;
-    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'Inter')).copyWith(
       color: colors.onSurfaceVariant,
       fontSize: 16,
       height: 1.5,
     );
-    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'Inter')).copyWith(
       color: colors.onSurface,
       fontSize: 16,
       fontWeight: FontWeight.bold,

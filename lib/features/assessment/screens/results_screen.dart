@@ -119,7 +119,7 @@ class ResultsPage extends StatelessWidget {
                   height: 1.5,
                 ) ??
                 TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   color: colors.onSurfaceVariant,
                   fontSize: 16,
                   height: 1.5,
@@ -311,7 +311,7 @@ class ResultsPage extends StatelessWidget {
                       height: 1.4,
                     ) ??
                     TextStyle(
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                       color: colors.onSurfaceVariant,
                       fontSize: 16,
                       height: 1.4,
@@ -351,7 +351,7 @@ class ResultsPage extends StatelessWidget {
                       fontSize: 16,
                     ) ??
                     TextStyle(
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                       color: colors.onSurfaceVariant,
                       fontSize: 16,
                     ),
@@ -424,12 +424,12 @@ class ResultsPage extends StatelessWidget {
 
   Widget _buildConfusionLineLegendText(BuildContext context, ColorScheme colors) {
     final textTheme = Theme.of(context).textTheme;
-    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'Inter')).copyWith(
       color: colors.onSurfaceVariant,
       fontSize: 13,
       height: 1.5,
     );
-    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'Inter')).copyWith(
       color: colors.onSurface,
       fontSize: 13,
       fontWeight: FontWeight.bold,
@@ -480,7 +480,7 @@ class ResultsPage extends StatelessWidget {
                   Text(
                     'Export as PDF',
                     style: TextStyle(
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                       fontWeight: FontWeight.bold,
                     ),
@@ -523,7 +523,7 @@ class ResultsPage extends StatelessWidget {
                   Text(
                     'Back',
                     style: TextStyle(
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,

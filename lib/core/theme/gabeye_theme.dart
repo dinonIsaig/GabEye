@@ -7,42 +7,42 @@ class GabEyeTheme {
   static TextTheme _buildTextTheme(Color color) {
     return TextTheme(
       displayLarge: TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 34,
         height: 1.3,
         color: color,
       ),
       displayMedium: TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 30,
         height: 1.3,
         color: color,
       ),
       displaySmall: TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 26,
         height: 1.3,
         color: color,
       ),
       headlineLarge: TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 32,
         height: 1.3,
         color: color,
       ),
       headlineMedium: const TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 28,
         height: 1.5,
         color: Colors.white,
       ),
       headlineSmall: TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 24,
         height: 1.5,
@@ -50,57 +50,57 @@ class GabEyeTheme {
       ),
       titleLarge: TextStyle( //heading
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 24,
         fontWeight: FontWeight.bold,
         height: 1.5,
       ),
       titleMedium: TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 18,
         color: color,
       ),
       titleSmall: TextStyle(
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.bold,
         fontSize: 16,
         color: color,
       ),
       bodyLarge: TextStyle( //body-bold
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 16,
         fontWeight: FontWeight.bold,
         height: 1.5,
       ),
       bodyMedium: TextStyle( //body
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.5,
       ),
       bodySmall: TextStyle(
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.5,
       ),
       labelLarge: TextStyle( //caption / button
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.4,
       ),
       labelMedium: TextStyle(
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.4,
       ),
       labelSmall: TextStyle(
         color: color,
-        fontFamily: 'AtkinsonHyperlegible',
+        fontFamily: 'Inter',
         fontSize: 16,
         height: 1.4,
       ),
@@ -122,7 +122,7 @@ class GabEyeTheme {
     final tokens = CvdColorTokens.resolve(Brightness.light, profile);
     return ThemeData(
       brightness: Brightness.light,
-      fontFamily: 'AtkinsonHyperlegible',
+      fontFamily: 'Inter',
       scaffoldBackgroundColor: AppColors.lightSurface,
       colorScheme: ColorScheme.light(
         primary: tokens.primaryButton,
@@ -181,7 +181,7 @@ class GabEyeTheme {
     final tokens = CvdColorTokens.resolve(Brightness.dark, profile);
     return ThemeData(
       brightness: Brightness.dark,
-      fontFamily: 'AtkinsonHyperlegible',
+      fontFamily: 'Inter',
       scaffoldBackgroundColor: AppColors.darkMode,
       colorScheme: ColorScheme.dark(
         primary: AppColors.primaryColor,

@@ -95,7 +95,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 instructionTitle!,
                                 style: TextStyle(
-                                  fontFamily: 'AtkinsonHyperlegible',
+                                  fontFamily: 'Inter',
                                   fontSize: Responsive.font(context, base: 24, min: 18, max: 28),
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(context).colorScheme.onSurface,
@@ -141,7 +141,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 'Next',
                                 style: TextStyle(
-                                  fontFamily: 'AtkinsonHyperlegible',
+                                  fontFamily: 'Inter',
                                   fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -188,7 +188,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                               Text(
                                 'Back',
                                 style: TextStyle(
-                                  fontFamily: 'AtkinsonHyperlegible',
+                                  fontFamily: 'Inter',
                                   fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                       color: onBack == null

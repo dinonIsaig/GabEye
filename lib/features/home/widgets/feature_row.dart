@@ -72,7 +72,7 @@ class FeatureRow extends StatelessWidget {
                     textAlign: TextAlign.left,
                     style: (theme.textTheme.titleMedium ??
                             const TextStyle(
-                              fontFamily: 'AtkinsonHyperlegible',
+                              fontFamily: 'Inter',
                               fontWeight: FontWeight.bold,
                             ))
                         .copyWith(
@@ -96,7 +96,7 @@ class FeatureRow extends StatelessWidget {
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
                       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                     ),
                   ),
                   Expanded(
@@ -104,13 +104,13 @@ class FeatureRow extends StatelessWidget {
                       b,
                       style: (theme.textTheme.bodyLarge ??
                               const TextStyle(
-                                fontFamily: 'AtkinsonHyperlegible',
+                                fontFamily: 'Inter',
                               ))
                           .copyWith(
                             color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.normal,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                           ),
                     ),
                   ),
@@ -129,7 +129,7 @@ class FeatureRow extends StatelessWidget {
                 child: Text(
                   data.ctaLabel,
                   style: TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                     fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                   ),

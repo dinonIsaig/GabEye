@@ -255,7 +255,7 @@ class _QuickHelpTile extends StatelessWidget {
                 title: Text(
                   item.title,
                   style: TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                     color: colors.onSurface,
@@ -264,7 +264,7 @@ class _QuickHelpTile extends StatelessWidget {
                 content: Text(
                   item.text,
                   style: TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontSize: 16,
                     height: 1.5,
                     color: colors.onSurfaceVariant,
@@ -390,7 +390,7 @@ class _TroubleshootingTile extends StatelessWidget {
                 title: Text(
                   item.title,
                   style: TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                     color: colors.onSurface,
@@ -404,7 +404,7 @@ class _TroubleshootingTile extends StatelessWidget {
                       Text(
                         'Try this:',
                         style: TextStyle(
-                          fontFamily: 'AtkinsonHyperlegible',
+                          fontFamily: 'Inter',
                           color: colors.onSurface,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

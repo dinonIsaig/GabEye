@@ -81,7 +81,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                                   Text(
                                     'Next',
                                     style: TextStyle(
-                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontFamily: 'Inter',
                                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -124,7 +124,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                                   Text(
                                     'Back',
                                     style: TextStyle(
-                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontFamily: 'Inter',
                                       fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                                       fontWeight: FontWeight.bold,
                                       color: Theme.of(context).colorScheme.onSurface,
@@ -253,7 +253,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                   height: 1.4,
                 ) ??
                 TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   color: colors.onSurfaceVariant,
                   fontSize: 16,
                   height: 1.4,
@@ -291,7 +291,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                   fontSize: 12,
                 ) ??
                 TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   color: colors.onSurfaceVariant,
                   fontSize: 12,
                 ),
@@ -334,7 +334,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                   height: 1.5,
                 ) ??
                 TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   color: colors.onSurfaceVariant,
                   fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                   height: 1.5,
@@ -361,7 +361,7 @@ class AssessmentKeyfindingsScreen extends StatelessWidget {
                   Text(
                     'Read More',
                     style: TextStyle(
-                      fontFamily: 'AtkinsonHyperlegible',
+                      fontFamily: 'Inter',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

@@ -45,7 +45,7 @@ class GetStartedScreen extends StatelessWidget {
                           Text(
                             'Welcome to',
                             style: TextStyle(
-                              fontFamily: 'AtkinsonHyperlegible',
+                              fontFamily: 'Inter',
                               fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
@@ -54,7 +54,7 @@ class GetStartedScreen extends StatelessWidget {
                           Text(
                             'GabEye!',
                             style: TextStyle(
-                              fontFamily: 'AtkinsonHyperlegible',
+                              fontFamily: 'Inter',
                               fontSize: Responsive.font(context, base: 40, min: 30, max: 46),
                               fontWeight: FontWeight.w700,
                               color: Theme.of(context).colorScheme.onSurface,
@@ -66,7 +66,7 @@ class GetStartedScreen extends StatelessWidget {
                           Text(
                             "We don't just show you how colors look different — we shift them to make things easier to see.",
                             style: TextStyle(
-                              fontFamily: 'AtkinsonHyperlegible',
+                              fontFamily: 'Inter',
                               fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
@@ -102,7 +102,7 @@ class GetStartedScreen extends StatelessWidget {
                         child: Text(
                           'Get Started',
                           style: TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                             fontWeight: FontWeight.bold,
                           ),

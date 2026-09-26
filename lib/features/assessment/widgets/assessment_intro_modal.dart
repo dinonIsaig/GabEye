@@ -86,7 +86,7 @@ class AssessmentIntroModal extends StatelessWidget {
                         Text(
                           'How it works?',
                           style: TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: isDark ? Colors.white : colors.onSurface,
@@ -156,7 +156,7 @@ class AssessmentIntroModal extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        fontFamily: 'AtkinsonHyperlegible',
+                        fontFamily: 'Inter',
                       ),
                     ),
                   ),
@@ -182,7 +182,7 @@ class AssessmentIntroModal extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        fontFamily: 'AtkinsonHyperlegible',
+                        fontFamily: 'Inter',
                       ),
                     ),
                   ),

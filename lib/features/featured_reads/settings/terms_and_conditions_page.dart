@@ -56,14 +56,14 @@ class TermsAndConditionsPage extends StatelessWidget {
 
   Widget _buildTermsTextContent(BuildContext context) {
     final bodyStyle = TextStyle(
-      fontFamily: 'AtkinsonHyperlegible',
+      fontFamily: 'Inter',
       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       height: 1.5,
     );
 
     final headingStyle = TextStyle(
-      fontFamily: 'AtkinsonHyperlegible',
+      fontFamily: 'Inter',
       fontSize: Responsive.font(context, base: 18, min: 15, max: 22),
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -76,7 +76,7 @@ class TermsAndConditionsPage extends StatelessWidget {
         Text(
           'Terms and Conditions',
           style: TextStyle(
-            fontFamily: 'AtkinsonHyperlegible',
+            fontFamily: 'Inter',
             fontSize: Responsive.font(context, base: 26, min: 20, max: 32),
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
@@ -87,7 +87,7 @@ class TermsAndConditionsPage extends StatelessWidget {
         Text(
           'Last Update: July 2026',
           style: TextStyle(
-            fontFamily: 'AtkinsonHyperlegible',
+            fontFamily: 'Inter',
             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
             color: AppColors.disabledText,
           ),
@@ -212,7 +212,7 @@ class TermsAndConditionsPage extends StatelessWidget {
           textAlign: TextAlign.justify,
           text: TextSpan(
             style: TextStyle(
-              fontFamily: 'AtkinsonHyperlegible',
+              fontFamily: 'Inter',
               fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
               fontStyle: FontStyle.italic,
               color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -134,12 +134,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       'Based on your Farnsworth D-15 assessment...',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             color: colors.onSurfaceVariant,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                           ) ??
                           TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             color: colors.onSurfaceVariant,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                           ),
@@ -195,13 +195,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       result.practicalTip,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             color: colors.onSurfaceVariant,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                             height: 1.5,
                           ) ??
                           TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             color: colors.onSurfaceVariant,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                             height: 1.5,
@@ -342,14 +342,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ) {
     final textTheme = Theme.of(context).textTheme;
     final baseStyle = (textTheme.bodyMedium ??
-            const TextStyle(fontFamily: 'AtkinsonHyperlegible'))
+            const TextStyle(fontFamily: 'Inter'))
         .copyWith(
       color: colors.onSurfaceVariant,
       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
       height: 1.5,
     );
     final boldStyle = (textTheme.bodyLarge ??
-            const TextStyle(fontFamily: 'AtkinsonHyperlegible'))
+            const TextStyle(fontFamily: 'Inter'))
         .copyWith(
       color: colors.onSurface,
       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
@@ -487,13 +487,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                             fontWeight: FontWeight.bold,
                             color: colors.onSurface,
                           ) ??
                           TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                             fontWeight: FontWeight.bold,
                             color: colors.onSurface,
@@ -503,13 +503,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                             color: colors.onSurfaceVariant,
                             height: 1.35,
                           ) ??
                           TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                             color: colors.onSurfaceVariant,
                             height: 1.35,

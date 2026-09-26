@@ -65,7 +65,7 @@ class HeroSection extends StatelessWidget {
                             'GabEye',
                             style: (Theme.of(context).textTheme.headlineMedium ??
                                     const TextStyle(
-                                      fontFamily: 'AtkinsonHyperlegible',
+                                      fontFamily: 'Inter',
                                       fontWeight: FontWeight.bold,
                                     ))
                                 .copyWith(
@@ -79,7 +79,7 @@ class HeroSection extends StatelessWidget {
                         Text(
                           'A Mobile Application Aid for Color Vision Deficiency (CVD)',
                           style: TextStyle(
-                            fontFamily: 'AtkinsonHyperlegible',
+                            fontFamily: 'Inter',
                             color: Colors.white,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                             height: 1.4,
@@ -120,7 +120,7 @@ class HeroSection extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: TextStyle(
-                                    fontFamily: 'AtkinsonHyperlegible',
+                                    fontFamily: 'Inter',
                                     fontWeight: FontWeight.bold,
                                     fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                                     color: AppColors.mutedAccent,

@@ -75,7 +75,7 @@ class DisclaimerScreen extends StatelessWidget {
                                 Text(
                                   'Disclaimer',
                                   style: textTheme.titleLarge?.copyWith(
-                                    fontFamily: 'AtkinsonHyperlegible',
+                                    fontFamily: 'Inter',
                                     fontSize: Responsive.font(context, base: 24, min: 18, max: 28),
                                     color: errorColor,
                                   ),
