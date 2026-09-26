@@ -58,8 +58,10 @@ Rect scaleBoundingBox({
   // Detect if rawBox coordinates are in unrotated landscape sensor space
   // (e.g., box.right > uprightWidth indicates coordinates are in the [0..1280] sensor domain).
   Rect uprightRect;
+  final bool isLandscapeSensor = imageSize.width > imageSize.height;
   final bool isRawSensorSpace = isRotated &&
-      (rawBox.right > uprightWidth ||
+      (isLandscapeSensor ||
+       rawBox.right > uprightWidth ||
        rawBox.left > uprightWidth ||
        rawBox.width > uprightWidth);
 

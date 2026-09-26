@@ -55,38 +55,37 @@ class ObjectDetectionService {
       }
     }
 
-    // 2. Initialize ObjectDetector with custom local model or default detector
+    // 2. Initialize ImageLabeler with custom local offline model if present
     if (localModelPath != null) {
       try {
-        final localOptions = LocalObjectDetectorOptions(
-          mode: DetectionMode.stream,
+        final localLabelerOptions = LocalLabelerOptions(
           modelPath: localModelPath,
-          classifyObjects: true,
-          multipleObjects: true, // Detects objects across the scene reliably
-          confidenceThreshold: 0.35, // Allows specific child classes (e.g. Laptop at ~0.45+) to pass
-          maximumLabelsPerObject: 3, // Retrieves candidate labels so specific items can be selected
+          confidenceThreshold: 0.35,
         );
-        _objectDetector = ObjectDetector(options: localOptions);
+        _imageLabeler = ImageLabeler(options: localLabelerOptions);
         _isCustomModelLoaded = true;
         debugPrint(
-          '[ObjectDetectionService] ✅ Successfully loaded custom fine-grained model: $localModelPath',
+          '[ObjectDetectionService] ✅ Successfully loaded custom offline labeler model: $localModelPath',
         );
       } catch (e) {
         debugPrint(
-          '[ObjectDetectionService] ⚠️ Failed to initialize custom model ($e). Falling back to base ML Kit.',
+          '[ObjectDetectionService] ⚠️ Failed to initialize custom local labeler ($e). Falling back to base options.',
         );
-        _initDefaultObjectDetector();
+        _imageLabeler = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.4));
       }
     } else {
       debugPrint(
-        '[ObjectDetectionService] ℹ️ No custom model found in assets/models/. Using base ML Kit detector.',
+        '[ObjectDetectionService] ℹ️ No custom model found in assets/models/. Using base ML Kit labeler.',
       );
-      _initDefaultObjectDetector();
+      _imageLabeler = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.4));
     }
 
-    // 3. Initialize fallback ImageLabeler for single-image crop inspections
-    final defaultLabelerOptions = ImageLabelerOptions(confidenceThreshold: 0.4);
-    _imageLabeler = ImageLabeler(options: defaultLabelerOptions);
+    // 3. Initialize default ObjectDetector with try-catch safety for sideloaded APKs
+    try {
+      _initDefaultObjectDetector();
+    } catch (e) {
+      debugPrint('[ObjectDetectionService] ⚠️ Base ObjectDetector init deferred/pending: $e');
+    }
 
     _isInitialized = true;
   }
@@ -629,16 +628,51 @@ class ObjectDetectionService {
       final rawObjects = await _objectDetector!.processImage(inputImage);
       _isProcessingLiveFrame = false;
 
-      // Recommended Step 3: Top-2 Prominence Filter (Reduces Visual Clutter & CPU)
-      return filterProminentObjects(
+      final prominent = filterProminentObjects(
         rawObjects,
         frameSize: Size(image.width.toDouble(), image.height.toDouble()),
         maxObjects: 2,
       );
-    } catch (_) {
+
+      // Enrich detected bounding box labels with fine-grained custom TFLite model data
+      if (prominent.isNotEmpty && _imageLabeler != null) {
+        try {
+          final tfliteLabels = await _imageLabeler!.processImage(inputImage);
+          if (tfliteLabels.isNotEmpty) {
+            ImageLabel? bestLabel;
+            for (final l in tfliteLabels) {
+              if (!_isBroadLabel(l.label)) {
+                bestLabel = l;
+                break;
+              }
+            }
+            bestLabel ??= tfliteLabels.first;
+
+            for (int i = 0; i < prominent.length; i++) {
+              final obj = prominent[i];
+              if (obj.labels.isEmpty || _isBroadLabel(obj.labels.first.text)) {
+                prominent[i] = DetectedObject(
+                  boundingBox: obj.boundingBox,
+                  labels: [Label(text: bestLabel.label, confidence: bestLabel.confidence, index: bestLabel.index)],
+                  trackingId: obj.trackingId,
+                );
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      return prominent;
+    } catch (e) {
+      debugPrint('[ObjectDetectionService] Exception in processLiveFrame: $e');
       _isProcessingLiveFrame = false;
       return [];
     }
+  }
+
+  bool _isBroadLabel(String text) {
+    final lower = text.toLowerCase().trim();
+    return umbrellaCategories.contains(lower) || lower == 'object' || lower.contains('???');
   }
 
   InputImage? _convertCameraImageToInputImage(CameraImage image, [CameraDescription? camera]) {
@@ -647,22 +681,18 @@ class ObjectDetectionService {
       if (image.planes.length == 1) {
         bytes = image.planes.first.bytes;
       } else {
-        final WriteBuffer allBytes = WriteBuffer();
-        for (final Plane plane in image.planes) {
-          allBytes.putUint8List(plane.bytes);
-        }
-        bytes = allBytes.done().buffer.asUint8List();
+        bytes = _yuv420ToNv21(image);
       }
 
       final Size imageSize = Size(image.width.toDouble(), image.height.toDouble());
       
-      final int rotationDegrees = camera?.sensorOrientation ?? 0;
+      final int rotationDegrees = camera?.sensorOrientation ?? 90;
       final InputImageRotation imageRotation =
-          InputImageRotationValue.fromRawValue(rotationDegrees) ?? InputImageRotation.rotation0deg;
+          InputImageRotationValue.fromRawValue(rotationDegrees) ?? InputImageRotation.rotation90deg;
 
-      final InputImageFormat inputImageFormat =
-          InputImageFormatValue.fromRawValue(image.format.raw) ??
-              (Platform.isIOS ? InputImageFormat.bgra8888 : InputImageFormat.nv21);
+      final InputImageFormat inputImageFormat = Platform.isAndroid
+          ? InputImageFormat.nv21
+          : (InputImageFormatValue.fromRawValue(image.format.raw) ?? InputImageFormat.bgra8888);
 
       final metadata = InputImageMetadata(
         size: imageSize,
@@ -672,9 +702,56 @@ class ObjectDetectionService {
       );
 
       return InputImage.fromBytes(bytes: bytes, metadata: metadata);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[ObjectDetectionService] Error converting camera image: $e');
       return null;
     }
+  }
+
+  Uint8List _yuv420ToNv21(CameraImage image) {
+    final width = image.width;
+    final height = image.height;
+
+    final yPlane = image.planes[0];
+    final uPlane = image.planes[1];
+    final vPlane = image.planes[2];
+
+    final yBuffer = yPlane.bytes;
+    final uBuffer = uPlane.bytes;
+    final vBuffer = vPlane.bytes;
+
+    final numPixels = width * height;
+    final nv21 = Uint8List(numPixels + (numPixels ~/ 2));
+
+    int idY = 0;
+    int idUV = numPixels;
+
+    final int yRowStride = yPlane.bytesPerRow;
+    final int yPixelStride = yPlane.bytesPerPixel ?? 1;
+
+    final int uvRowStride = uPlane.bytesPerRow;
+    final int uvPixelStride = uPlane.bytesPerPixel ?? 2;
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        nv21[idY++] = yBuffer[y * yRowStride + x * yPixelStride];
+      }
+    }
+
+    final uvHeight = height ~/ 2;
+    final uvWidth = width ~/ 2;
+
+    for (int y = 0; y < uvHeight; y++) {
+      for (int x = 0; x < uvWidth; x++) {
+        final int uvIndex = y * uvRowStride + x * uvPixelStride;
+        if (uvIndex < vBuffer.length && uvIndex < uBuffer.length) {
+          nv21[idUV++] = vBuffer[uvIndex];
+          nv21[idUV++] = uBuffer[uvIndex];
+        }
+      }
+    }
+
+    return nv21;
   }
 
   void dispose() {
