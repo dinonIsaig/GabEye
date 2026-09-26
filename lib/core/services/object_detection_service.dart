@@ -249,6 +249,86 @@ class ObjectDetectionService {
     }
   }
 
+  /// Detects all prominent objects in a static image file (e.g. from gallery upload)
+  /// and returns their bounding boxes and fine-grained labels.
+  Future<List<DetectedObject>> detectObjectsInFilePath(String filePath) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    try {
+      final inputImage = InputImage.fromFilePath(filePath);
+      List<DetectedObject> rawObjects = [];
+
+      if (_objectDetector != null) {
+        try {
+          rawObjects = await _objectDetector!.processImage(inputImage);
+        } catch (e) {
+          debugPrint('[ObjectDetectionService] Object detector error: $e');
+        }
+      }
+
+      // 1. Enrich detected bounding box labels with custom TFLite model data if labels are broad/empty
+      if (rawObjects.isNotEmpty && _imageLabeler != null) {
+        try {
+          final tfliteLabels = await _imageLabeler!.processImage(inputImage);
+          if (tfliteLabels.isNotEmpty) {
+            ImageLabel? bestLabel;
+            for (final l in tfliteLabels) {
+              if (!_isBroadLabel(l.label)) {
+                bestLabel = l;
+                break;
+              }
+            }
+            bestLabel ??= tfliteLabels.first;
+
+            for (int i = 0; i < rawObjects.length; i++) {
+              if (rawObjects[i].labels.isEmpty || _isBroadLabel(rawObjects[i].labels.first.text)) {
+                rawObjects[i] = DetectedObject(
+                  boundingBox: rawObjects[i].boundingBox,
+                  labels: [Label(text: bestLabel.label, confidence: bestLabel.confidence, index: bestLabel.index)],
+                  trackingId: rawObjects[i].trackingId,
+                );
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 2. Fallback: If no distinct object bounding box was found by ObjectDetector on static photo,
+      // use ImageLabeler to generate labeled object entries.
+      if (rawObjects.isEmpty && _imageLabeler != null) {
+        try {
+          final tfliteLabels = await _imageLabeler!.processImage(inputImage);
+          if (tfliteLabels.isNotEmpty) {
+            final List<DetectedObject> fallbackObjects = [];
+            final validLabels = tfliteLabels.where((l) => !_isBroadLabel(l.label)).toList();
+            final topLabels = validLabels.isNotEmpty ? validLabels.take(3).toList() : tfliteLabels.take(3).toList();
+
+            for (int i = 0; i < topLabels.length; i++) {
+              final label = topLabels[i];
+              fallbackObjects.add(
+                DetectedObject(
+                  boundingBox: Rect.fromLTWH(40.0 + (i * 20), 40.0 + (i * 20), 240, 240),
+                  labels: [Label(text: label.label, confidence: label.confidence, index: label.index)],
+                  trackingId: i,
+                ),
+              );
+            }
+            return fallbackObjects;
+          }
+        } catch (e) {
+          debugPrint('[ObjectDetectionService] Image labeler fallback error: $e');
+        }
+      }
+
+      return rawObjects;
+    } catch (e) {
+      debugPrint('[ObjectDetectionService] Error in detectObjectsInFilePath: $e');
+      return [];
+    }
+  }
+
   /// Processes a live [CameraImage] frame and returns the detected object label.
   Future<String?> detectObjectInFrame(CameraImage image) async {
     if (!_isInitialized) {

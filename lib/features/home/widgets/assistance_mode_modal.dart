@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AssistanceMode { remapColor, identifyColor }
+enum AssistanceMode { remapColor, identifyColor, objectLabeling }
 
 /// Shows the "Choose Assistance Mode" dialog matching the GabEye design.
 Future<AssistanceMode?> showAssistanceModeModal(BuildContext context) {
@@ -124,7 +124,29 @@ class AssistanceModeModal extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // 3. Cancel Button
+            // 3. Object Labeling Button
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(AssistanceMode.objectLabeling),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryButtonBg,
+                foregroundColor: primaryButtonFg,
+                elevation: 3,
+                minimumSize: const Size(double.infinity, 54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Object Labeling',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 4. Cancel Button
             OutlinedButton(
               onPressed: () => Navigator.of(context).pop(null),
               style: OutlinedButton.styleFrom(
