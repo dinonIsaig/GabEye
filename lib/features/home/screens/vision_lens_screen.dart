@@ -122,6 +122,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   bool _showUploadedObjectsSheet = true;
   bool _showUploadedNotification = false;
   Timer? _uploadedNotificationTimer;
+  int _uploadedPhotoExifOrientation = 1;
 
   bool get _isTorchDisabled =>
       _isFreezeFrameActive ||
@@ -351,6 +352,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
 
   @override
   void dispose() {
+    _isKnnStreamActive = false;
     _delayAnimationController?.dispose();
     _stopKnnFrameStream();
     _crosshairObjectDetectionTimer?.cancel();
@@ -370,7 +372,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       try {
         _isKnnStreamActive = true;
         await _cameraController!.startImageStream((CameraImage image) async {
-          if (!mounted || _isDisplayingUploadedImage || _isFreezeFrameActive) return;
+          if (!mounted || _isDisplayingUploadedImage || _isFreezeFrameActive || !_isKnnStreamActive) return;
 
           // 1. Isolated Object Detection Mode (KNN isolate completely bypassed)
           if (_isObjectDetectionMode) {
@@ -387,12 +389,14 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
                 image: image,
                 camera: _cameraController!.description,
               );
-              if (mounted && _isObjectDetectionMode) {
+              if (mounted && _isObjectDetectionMode && !_isDisplayingUploadedImage && _isKnnStreamActive) {
                 setState(() {
                   _detectedObjects = objects;
                   _cameraFrameSize = Size(image.width.toDouble(), image.height.toDouble());
                 });
               }
+            } catch (e) {
+              debugPrint('[VisionLensScreen] Live frame object detection error: $e');
             } finally {
               _isObjectDetectionProcessing = false;
             }
@@ -405,7 +409,12 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
               image: image,
               dataset: _isccDataset,
             );
-            if (result != null && mounted && _activeCameraMode == CameraRealtimeMode.knn && !_isObjectDetectionMode) {
+            if (result != null &&
+                mounted &&
+                _activeCameraMode == CameraRealtimeMode.knn &&
+                !_isObjectDetectionMode &&
+                !_isDisplayingUploadedImage &&
+                _isKnnStreamActive) {
               setState(() {
                 _currentIdentifiedColor = result.colorName;
               });
@@ -413,19 +422,22 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
             return;
           }
         });
-      } catch (_) {
+      } catch (e) {
         _isKnnStreamActive = false;
+        debugPrint('[VisionLensScreen] Error starting camera stream: $e');
       }
     }
   }
 
   Future<void> _stopKnnFrameStream() async {
-    if (_cameraController != null && _cameraController!.value.isInitialized && _isKnnStreamActive) {
+    _isKnnStreamActive = false;
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
-        await _cameraController!.stopImageStream();
-        _isKnnStreamActive = false;
-      } catch (_) {
-        _isKnnStreamActive = false;
+        if (_cameraController!.value.isStreamingImages) {
+          await _cameraController!.stopImageStream();
+        }
+      } catch (e) {
+        debugPrint('[VisionLensScreen] Error stopping camera stream: $e');
       }
     }
   }
@@ -786,6 +798,18 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   }
 
   Future<void> _pickUploadedPhoto() async {
+    // 1. Instantly stop live frame streaming and wipe all detected objects state to prevent state bleed
+    await _stopKnnFrameStream();
+    if (mounted) {
+      setState(() {
+        _detectedObjects = [];
+        _uploadedDetectedObjects = [];
+        _isObjectDetectionProcessing = false;
+        _isUploadedObjectLabelingProcessing = false;
+        _currentIdentifiedObject = null;
+      });
+    }
+
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -793,10 +817,11 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
         final mode = await showAssistanceModeModal(context);
         if (mode == null || !mounted) return;
 
-        // Stop the live KNN camera frame stream while viewing an uploaded photo.
+        // Ensure stream remains stopped while viewing an uploaded photo.
         await _stopKnnFrameStream();
 
         final bytes = await picked.readAsBytes();
+        final orientation = ObjectDetectionService.extractExifOrientation(bytes);
         _uploadedNotificationTimer?.cancel();
 
         await _startDelayPage();
@@ -804,6 +829,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
 
         setState(() {
           _uploadedImageBytes = bytes;
+          _uploadedPhotoExifOrientation = orientation;
           _uploadedUiImage = null; // will be set after decode
           _uploadedFileName = picked.name;
           _isDisplayingUploadedImage = true;
@@ -816,7 +842,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           _detectedObjects = [];
           _isObjectDetectionProcessing = false;
           _uploadedDetectedObjects = [];
-          _showUploadedObjectsSheet = true;
+          _showUploadedObjectsSheet = (mode == AssistanceMode.objectLabeling);
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
             _isUploadedIdentifyMode = false;
@@ -845,7 +871,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
         }
         await _decodeUploadedImage(bytes);
         if (mode == AssistanceMode.objectLabeling) {
-          await _processUploadedPhotoForObjectLabeling(bytes);
+          await _processUploadedPhotoForObjectLabeling(bytes, pickedFilePath: picked.path);
         }
         _uploadedNotificationTimer = Timer(const Duration(seconds: 4), () {
           if (mounted) {
@@ -880,8 +906,9 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           _isSplitScreenView = false;
           VisionLensScreen.isFullScreenNotifier.value = false;
           _currentIdentifiedObject = null;
+          _detectedObjects = [];
           _uploadedDetectedObjects = [];
-          _showUploadedObjectsSheet = true;
+          _showUploadedObjectsSheet = (mode == AssistanceMode.objectLabeling);
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
             _isUploadedIdentifyMode = false;
@@ -921,11 +948,10 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   }
 
   Future<void> _decodeUploadedImage(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
+    final image = await decodeImageFromList(bytes);
     if (mounted) {
       setState(() {
-        _uploadedUiImage = frame.image;
+        _uploadedUiImage = image;
         _crosshairNorm = const Offset(0.5, 0.5);
       });
       if (_isUploadedIdentifyMode && _isccDataset.isNotEmpty) {
@@ -933,7 +959,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       }
       if (_isUploadedIdentifyMode) {
         final objectLabel = await ObjectDetectionService.instance.detectObjectInImageRoi(
-          image: frame.image,
+          image: image,
           normalizedCrosshair: const Offset(0.5, 0.5),
         );
         if (mounted) {
@@ -945,20 +971,31 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     }
   }
 
-  Future<void> _processUploadedPhotoForObjectLabeling(Uint8List bytes) async {
-    setState(() {
-      _isUploadedObjectLabelingProcessing = true;
-      _uploadedDetectedObjects = [];
-    });
+  Future<void> _processUploadedPhotoForObjectLabeling(
+    Uint8List bytes, {
+    String? pickedFilePath,
+  }) async {
+    if (mounted) {
+      setState(() {
+        _isUploadedObjectLabelingProcessing = true;
+        _uploadedDetectedObjects = [];
+      });
+    }
     AuditoryFeedbackService.instance.stop();
 
     try {
-      final tempDir = await getTemporaryDirectory();
-      final tempFile = File('${tempDir.path}/gabeye_uploaded_photo.png');
-      await tempFile.writeAsBytes(bytes, flush: true);
+      String targetPath;
+      if (pickedFilePath != null && pickedFilePath.isNotEmpty && await File(pickedFilePath).exists()) {
+        targetPath = pickedFilePath;
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/gabeye_uploaded_photo_${DateTime.now().millisecondsSinceEpoch}.png');
+        await tempFile.writeAsBytes(bytes, flush: true);
+        targetPath = tempFile.path;
+      }
 
-      final detected = await ObjectDetectionService.instance.detectObjectsInFilePath(tempFile.path);
-      if (mounted) {
+      final detected = await ObjectDetectionService.instance.detectObjectsInFilePath(targetPath);
+      if (mounted && _isUploadedObjectLabelMode && _isDisplayingUploadedImage) {
         setState(() {
           _uploadedDetectedObjects = detected;
           _showUploadedObjectsSheet = true;
@@ -987,10 +1024,18 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     setState(() {
       _uploadedImageBytes = null;
       _uploadedUiImage = null;
+      _uploadedPhotoExifOrientation = 1;
       _uploadedFileName = null;
       _isDisplayingUploadedImage = false;
       _showUploadedNotification = false;
       _isUploadedIdentifyMode = false;
+      _isUploadedObjectLabelMode = false;
+      _uploadedDetectedObjects = [];
+      _showUploadedObjectsSheet = false;
+      _isUploadedObjectLabelingProcessing = false;
+      _isObjectDetectionMode = false;
+      _detectedObjects = [];
+      _isObjectDetectionProcessing = false;
       _isFreezeFrameActive = false;
       _capturedFrameBytes = null;
       _capturedUiImage = null;
@@ -1565,15 +1610,17 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
         : (_isSplitScreenView
             ? _buildSplitScreenViewport(context, colors)
             : (_isDisplayingUploadedImage
-                // Uploaded photo: pass the decoded ui.Image directly to the shader or inspection view.
+                // Uploaded photo: pass the decoded ui.Image directly to the shader, inspection view, or object labeling view.
                 ? (_uploadedUiImage != null
                     ? (_isUploadedIdentifyMode
                         ? _buildUploadedImageInspectionView(context, colors)
-                        : DaltonizationShaderWidget(
-                            customType: _getEffectiveShaderType(),
-                            intensity: _getEffectiveShaderIntensity(),
-                            image: _uploadedUiImage!,
-                          ))
+                        : (_isUploadedObjectLabelMode
+                            ? _buildUploadedObjectLabelingView(context, colors)
+                            : DaltonizationShaderWidget(
+                                customType: _getEffectiveShaderType(),
+                                intensity: _getEffectiveShaderIntensity(),
+                                image: _uploadedUiImage!,
+                              )))
                     : const Center(child: CircularProgressIndicator()))
                 : (_isCameraPermissionGranted
                     // In KNN mode or Object Detection mode, display natural un-filtered camera preview. Otherwise apply ColorFiltered Daltonization pass.
@@ -1654,8 +1701,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
         // Viewport: Uploaded photo or Realtime Hardware Camera Feed through GLSL LMS Daltonization Shader
         Positioned.fill(child: viewportContent),
 
-        // Indicator Chip when displaying uploaded photo (remap mode only, since KNN inspection view has its own badge)
-        if (_isDisplayingUploadedImage && !_isUploadedIdentifyMode && !_isSplitScreenView)
+        // Indicator Chip when displaying uploaded photo
+        if (_isDisplayingUploadedImage && !_isSplitScreenView)
           Positioned(
             top: 16,
             left: 20,
@@ -1672,15 +1719,19 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
                 child: Row(
                   children: [
                     Icon(
-                      _isUploadedIdentifyMode ? Icons.palette_outlined : Icons.image,
+                      _isUploadedObjectLabelMode
+                          ? Icons.category_rounded
+                          : (_isUploadedIdentifyMode ? Icons.palette_outlined : Icons.image),
                       size: 14,
                       color: colors.primary,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      _isUploadedIdentifyMode
-                          ? 'Identify Color Mode (${_uploadedFileName ?? "Selected Image"})'
-                          : 'Remap Color Mode (${_uploadedFileName ?? "Selected Image"})',
+                      _isUploadedObjectLabelMode
+                          ? 'Object Labeling Mode (${_uploadedFileName ?? "Selected Image"})'
+                          : (_isUploadedIdentifyMode
+                              ? 'Identify Color Mode (${_uploadedFileName ?? "Selected Image"})'
+                              : 'Remap Color Mode (${_uploadedFileName ?? "Selected Image"})'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -1700,9 +1751,12 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
             _isCameraPermissionGranted)
           Positioned.fill(
             child: ObjectDetectionOverlay(
+              key: const ValueKey('live_camera_object_overlay'),
               objects: _detectedObjects,
               imageSize: _cameraFrameSize,
               cameraDescription: _cameraController?.description,
+              fit: BoxFit.cover,
+              isStaticImage: false,
             ),
           ),
 
@@ -1902,12 +1956,16 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
             _uploadedUiImage != null)
           Positioned.fill(
             child: ObjectDetectionOverlay(
+              key: const ValueKey('uploaded_photo_object_overlay'),
               objects: _uploadedDetectedObjects,
               imageSize: Size(
                 _uploadedUiImage!.width.toDouble(),
                 _uploadedUiImage!.height.toDouble(),
               ),
               cameraDescription: null,
+              fit: BoxFit.contain,
+              isStaticImage: true,
+              exifOrientation: _uploadedPhotoExifOrientation,
             ),
           ),
 
@@ -2173,6 +2231,26 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
           ],
         );
       },
+    );
+  }
+
+  Widget _buildUploadedObjectLabelingView(BuildContext context, ColorScheme colors) {
+    final Uint8List bytes = _uploadedImageBytes!;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.memory(
+            bytes,
+            fit: BoxFit.contain,
+            gaplessPlayback: true,
+          ),
+        ),
+        if (_isUploadedObjectLabelingProcessing)
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+      ],
     );
   }
 
@@ -2666,7 +2744,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     final bool isLiveCamera = !_isDisplayingUploadedImage && !_isFreezeFrameActive;
     final bool isLiveDaltonization = isLiveCamera && _activeCameraMode == CameraRealtimeMode.daltonization;
     final bool canSpeakObjectDetection =
-        _isObjectDetectionMode && !_isDisplayingUploadedImage && !_isFreezeFrameActive && !_isUploadedIdentifyMode;
+        (_isObjectDetectionMode && !_isDisplayingUploadedImage && !_isFreezeFrameActive && !_isUploadedIdentifyMode) ||
+        (_isDisplayingUploadedImage && _isUploadedObjectLabelMode);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -2754,7 +2833,8 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
             isActive: false,
             onTap: () {
               if (canSpeakObjectDetection) {
-                final objectNames = _detectedObjects
+                final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
+                final objectNames = sourceList
                     .where((o) => o.labels.isNotEmpty)
                     .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
                     .toSet()

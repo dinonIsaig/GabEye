@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
@@ -27,11 +28,88 @@ Rect scaleBoundingBox({
   CameraDescription? cameraDescription,
   InputImageRotation? rotation,
   CameraLensDirection? cameraLensDirection,
+  BoxFit fit = BoxFit.cover,
+  bool isStaticImage = false,
+  int exifOrientation = 1,
 }) {
   if (imageSize.width <= 0 || imageSize.height <= 0 || canvasSize.width <= 0 || canvasSize.height <= 0) {
     return rawBox;
   }
 
+  // ── Static Image Scaling (BoxFit.contain letterboxing with orientation alignment) ──
+  if (isStaticImage || (cameraDescription == null && rotation == null)) {
+    double imgW = imageSize.width;
+    double imgH = imageSize.height;
+    Rect uprightBox = rawBox;
+
+    final bool isUprightPortrait = imgH > imgW;
+    final bool isApple = defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+
+    // ML Kit on iOS processes raw CGImage buffers without applying UIImageOrientation,
+    // which leaves bounding boxes in landscape sensor space (imgH x imgW).
+    // On Android, ML Kit's InputImage.fromFilePath automatically transforms coordinates to upright.
+    final bool needs90CwRotation = (isApple && (exifOrientation == 6 || (isUprightPortrait && exifOrientation != 1 && exifOrientation != 3 && exifOrientation != 8))) ||
+        (isUprightPortrait && (rawBox.right > imgW || rawBox.left > imgW || rawBox.width > imgW));
+
+    final bool needs270CwRotation = isApple && exifOrientation == 8;
+    final bool needs180Rotation = isApple && exifOrientation == 3;
+
+    if (needs90CwRotation) {
+      // Rotate 90° clockwise from landscape sensor space to upright portrait:
+      // uprightX = imgW - rawBox.bottom
+      // uprightY = rawBox.left
+      // uprightW = rawBox.height
+      // uprightH = rawBox.width
+      final double rLeft = imgW - rawBox.bottom;
+      final double rTop = rawBox.left;
+      final double rWidth = rawBox.height;
+      final double rHeight = rawBox.width;
+      uprightBox = Rect.fromLTWH(rLeft, rTop, rWidth, rHeight);
+    } else if (needs270CwRotation) {
+      final double rLeft = rawBox.top;
+      final double rTop = imgH - rawBox.right;
+      final double rWidth = rawBox.height;
+      final double rHeight = rawBox.width;
+      uprightBox = Rect.fromLTWH(rLeft, rTop, rWidth, rHeight);
+    } else if (needs180Rotation) {
+      final double rLeft = imgW - rawBox.right;
+      final double rTop = imgH - rawBox.bottom;
+      final double rWidth = rawBox.width;
+      final double rHeight = rawBox.height;
+      uprightBox = Rect.fromLTWH(rLeft, rTop, rWidth, rHeight);
+    }
+
+    // 1. Uniform Aspect Ratio Scale for BoxFit.contain
+    final double scaleX = canvasSize.width / imgW;
+    final double scaleY = canvasSize.height / imgH;
+    final double scale = fit == BoxFit.contain
+        ? math.min(scaleX, scaleY)
+        : math.max(scaleX, scaleY);
+
+    // 2. Rendered dimensions of the image on the screen
+    final double displayedWidth = imgW * scale;
+    final double displayedHeight = imgH * scale;
+
+    // 3. Centering offsets (Letterboxing padding on Y or Pillarboxing on X)
+    final double offsetX = (canvasSize.width - displayedWidth) / 2.0;
+    final double offsetY = (canvasSize.height - displayedHeight) / 2.0;
+
+    // 4. Transform raw bounding box to screen canvas pixels
+    final double left = uprightBox.left * scale + offsetX;
+    final double top = uprightBox.top * scale + offsetY;
+    final double right = uprightBox.right * scale + offsetX;
+    final double bottom = uprightBox.bottom * scale + offsetY;
+
+    final double sortedLeft = math.min(left, right);
+    final double sortedRight = math.max(left, right);
+    final double sortedTop = math.min(top, bottom);
+    final double sortedBottom = math.max(top, bottom);
+
+    return Rect.fromLTRB(sortedLeft, sortedTop, sortedRight, sortedBottom);
+  }
+
+  // ── Live Camera Sensor Geometry (90° / 270° sensor orientation handling) ──
   // Determine rotation degrees (defaults to 90° for mobile portrait back camera)
   int rotationDegrees = 90;
   if (rotation != null) {
@@ -135,6 +213,9 @@ class ObjectDetectorPainter extends CustomPainter {
   final InputImageRotation rotation;
   final CameraLensDirection cameraLensDirection;
   final Color primaryColor;
+  final BoxFit fit;
+  final bool isStaticImage;
+  final int exifOrientation;
 
   ObjectDetectorPainter({
     required this.objects,
@@ -142,6 +223,9 @@ class ObjectDetectorPainter extends CustomPainter {
     this.rotation = InputImageRotation.rotation90deg,
     this.cameraLensDirection = CameraLensDirection.back,
     this.primaryColor = const Color(0xFF00E5FF),
+    this.fit = BoxFit.cover,
+    this.isStaticImage = false,
+    this.exifOrientation = 1,
   });
 
   @override
@@ -175,6 +259,9 @@ class ObjectDetectorPainter extends CustomPainter {
         canvasSize: size,
         rotation: rotation,
         cameraLensDirection: cameraLensDirection,
+        fit: fit,
+        isStaticImage: isStaticImage,
+        exifOrientation: exifOrientation,
       );
 
       // 2. Draw outer shadow and bounding box
@@ -241,7 +328,8 @@ class ObjectDetectorPainter extends CustomPainter {
         oldDelegate.imageSize != imageSize ||
         oldDelegate.rotation != rotation ||
         oldDelegate.cameraLensDirection != cameraLensDirection ||
-        oldDelegate.primaryColor != primaryColor;
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.exifOrientation != exifOrientation;
   }
 }
 
@@ -257,12 +345,18 @@ class ObjectDetectionOverlay extends StatefulWidget {
   final List<DetectedObject> objects;
   final Size imageSize;
   final CameraDescription? cameraDescription;
+  final BoxFit fit;
+  final bool isStaticImage;
+  final int exifOrientation;
 
   const ObjectDetectionOverlay({
     super.key,
     required this.objects,
     required this.imageSize,
     this.cameraDescription,
+    this.fit = BoxFit.cover,
+    this.isStaticImage = false,
+    this.exifOrientation = 1,
   });
 
   @override
@@ -296,8 +390,15 @@ class _ObjectDetectionOverlayState extends State<ObjectDetectionOverlay>
   @override
   void didUpdateWidget(covariant ObjectDetectionOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.objects != oldWidget.objects ||
-        widget.imageSize != oldWidget.imageSize) {
+    if (widget.objects.isEmpty) {
+      _trackedBoxes.clear();
+      _animController.stop();
+      if (mounted) setState(() {});
+    } else if (widget.objects != oldWidget.objects ||
+        widget.imageSize != oldWidget.imageSize ||
+        widget.fit != oldWidget.fit ||
+        widget.isStaticImage != oldWidget.isStaticImage ||
+        widget.exifOrientation != oldWidget.exifOrientation) {
       if (_lastCanvasSize.width > 0 && _lastCanvasSize.height > 0) {
         _syncTrackedBoxes(widget.objects);
       }
@@ -321,37 +422,14 @@ class _ObjectDetectionOverlayState extends State<ObjectDetectionOverlay>
   void _syncTrackedBoxes(List<DetectedObject> incomingObjects) {
     if (_lastCanvasSize.width <= 0 || _lastCanvasSize.height <= 0) return;
 
-    final double currentProgress = _animation.value;
-
     if (incomingObjects.isEmpty) {
-      if (_trackedBoxes.isNotEmpty) {
-        final remainingBoxes = <_TrackedBox>[];
-        for (final box in _trackedBoxes) {
-          box.missedFrames++;
-          final currentPos = Rect.lerp(box.startRect, box.targetRect, currentProgress) ?? box.targetRect;
-          final currentOpacity = ui.lerpDouble(box.startOpacity, box.targetOpacity, currentProgress) ?? box.targetOpacity;
-
-          box.startRect = currentPos;
-          box.targetRect = currentPos;
-          box.startOpacity = currentOpacity;
-
-          if (box.missedFrames <= 2) {
-            // Grace period: keep visible with slight dimming
-            box.targetOpacity = 0.5;
-            remainingBoxes.add(box);
-          } else {
-            // Exceeded grace period: fade out
-            box.targetOpacity = 0.0;
-            if (currentOpacity > 0.05) {
-              remainingBoxes.add(box);
-            }
-          }
-        }
-        _trackedBoxes = remainingBoxes;
-        _animController.forward(from: 0.0);
-      }
+      _trackedBoxes.clear();
+      _animController.stop();
+      if (mounted) setState(() {});
       return;
     }
+
+    final double currentProgress = _animation.value;
 
     // 1. Map incoming objects to screen-space coordinates using scaleBoundingBox
     final mapped = <_IncomingObject>[];
@@ -366,14 +444,19 @@ class _ObjectDetectionOverlayState extends State<ObjectDetectionOverlay>
         imageSize: widget.imageSize,
         canvasSize: _lastCanvasSize,
         cameraDescription: widget.cameraDescription,
+        fit: widget.fit,
+        isStaticImage: widget.isStaticImage,
+        exifOrientation: widget.exifOrientation,
       );
 
       final double area = screenRect.width * screenRect.height;
-      // Step 3 (Noise Floor): Discard tiny background artifacts (< 40px or < 1.5% screen area)
-      if (screenRect.width < 40.0 || screenRect.height < 40.0 || area < minAreaThreshold) {
-        // If it's the sole detection in the frame, preserve it if above basic 32px noise floor
-        if (incomingObjects.length > 1 || screenRect.width < 32.0 || screenRect.height < 32.0) {
-          continue;
+      if (!widget.isStaticImage) {
+        // Step 3 (Noise Floor): Discard tiny background artifacts (< 40px or < 1.5% screen area)
+        if (screenRect.width < 40.0 || screenRect.height < 40.0 || area < minAreaThreshold) {
+          // If it's the sole detection in the frame, preserve it if above basic 32px noise floor
+          if (incomingObjects.length > 1 || screenRect.width < 32.0 || screenRect.height < 32.0) {
+            continue;
+          }
         }
       }
 
@@ -395,6 +478,27 @@ class _ObjectDetectionOverlayState extends State<ObjectDetectionOverlay>
         area: area,
         prominenceScore: prominenceScore,
       ));
+    }
+
+    // For static images, render immediately with full opacity and zero debounce/lerp delay
+    if (widget.isStaticImage) {
+      if (mapped.isEmpty) {
+        _trackedBoxes.clear();
+      } else {
+        _trackedBoxes = mapped.map((c) => _TrackedBox(
+          startRect: c.screenRect,
+          targetRect: c.screenRect,
+          startOpacity: 1.0,
+          targetOpacity: 1.0,
+          stableLabel: c.label,
+          confidence: c.confidence,
+          trackingId: c.trackingId,
+          isPrimary: c == mapped.first,
+        )).toList();
+      }
+      _animController.stop();
+      if (mounted) setState(() {});
+      return;
     }
 
     // 2. Step 3 (Top-2 Prominence Filter): Sort by prominence score descending & take Top 2

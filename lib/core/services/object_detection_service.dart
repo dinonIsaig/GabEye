@@ -18,6 +18,7 @@ class ObjectDetectionService {
   static final ObjectDetectionService instance = ObjectDetectionService._();
 
   ObjectDetector? _objectDetector;
+  ObjectDetector? _staticObjectDetector;
   ImageLabeler? _imageLabeler;
   bool _isInitialized = false;
   bool _isCustomModelLoaded = false;
@@ -55,7 +56,47 @@ class ObjectDetectionService {
       }
     }
 
-    // 2. Initialize ImageLabeler with custom local offline model if present
+    // 2. Initialize ObjectDetector with custom local model if present, or fallback
+    if (localModelPath != null) {
+      try {
+        final localOptions = LocalObjectDetectorOptions(
+          mode: DetectionMode.stream,
+          modelPath: localModelPath,
+          classifyObjects: true,
+          multipleObjects: true, // Detects objects across the scene reliably
+          confidenceThreshold: 0.35, // Allows specific child classes (e.g. Laptop at ~0.45+) to pass
+          maximumLabelsPerObject: 3, // Retrieves candidate labels so specific items can be selected
+        );
+        _objectDetector = ObjectDetector(options: localOptions);
+
+        final staticOptions = LocalObjectDetectorOptions(
+          mode: DetectionMode.single,
+          modelPath: localModelPath,
+          classifyObjects: true,
+          multipleObjects: true,
+          confidenceThreshold: 0.35,
+          maximumLabelsPerObject: 3,
+        );
+        _staticObjectDetector = ObjectDetector(options: staticOptions);
+
+        _isCustomModelLoaded = true;
+        debugPrint(
+          '[ObjectDetectionService] ✅ Successfully loaded custom fine-grained model: $localModelPath',
+        );
+      } catch (e) {
+        debugPrint(
+          '[ObjectDetectionService] ⚠️ Failed to initialize custom model ($e). Falling back to base ML Kit.',
+        );
+        _initDefaultObjectDetector();
+      }
+    } else {
+      debugPrint(
+        '[ObjectDetectionService] ℹ️ No custom model found in assets/models/. Using base ML Kit detector.',
+      );
+      _initDefaultObjectDetector();
+    }
+
+    // 3. Initialize ImageLabeler with custom local model if present (for ROI crop & fallback)
     if (localModelPath != null) {
       try {
         final localLabelerOptions = LocalLabelerOptions(
@@ -63,28 +104,11 @@ class ObjectDetectionService {
           confidenceThreshold: 0.35,
         );
         _imageLabeler = ImageLabeler(options: localLabelerOptions);
-        _isCustomModelLoaded = true;
-        debugPrint(
-          '[ObjectDetectionService] ✅ Successfully loaded custom offline labeler model: $localModelPath',
-        );
       } catch (e) {
-        debugPrint(
-          '[ObjectDetectionService] ⚠️ Failed to initialize custom local labeler ($e). Falling back to base options.',
-        );
         _imageLabeler = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.4));
       }
     } else {
-      debugPrint(
-        '[ObjectDetectionService] ℹ️ No custom model found in assets/models/. Using base ML Kit labeler.',
-      );
       _imageLabeler = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.4));
-    }
-
-    // 3. Initialize default ObjectDetector with try-catch safety for sideloaded APKs
-    try {
-      _initDefaultObjectDetector();
-    } catch (e) {
-      debugPrint('[ObjectDetectionService] ⚠️ Base ObjectDetector init deferred/pending: $e');
     }
 
     _isInitialized = true;
@@ -97,6 +121,13 @@ class ObjectDetectionService {
       multipleObjects: true,
     );
     _objectDetector = ObjectDetector(options: objectOptions);
+
+    final staticOptions = ObjectDetectorOptions(
+      mode: DetectionMode.single,
+      classifyObjects: true,
+      multipleObjects: true,
+    );
+    _staticObjectDetector = ObjectDetector(options: staticOptions);
     _isCustomModelLoaded = false;
   }
 
@@ -249,6 +280,85 @@ class ObjectDetectionService {
     }
   }
 
+  /// Extracts the EXIF Orientation tag (1..8) from image bytes (JPEG).
+  ///
+  /// Returns 1 (normal / upright) if no EXIF metadata or orientation tag is present.
+  /// Common values:
+  /// - 1: Normal upright (0° rotation)
+  /// - 3: Upside-down (180° rotation)
+  /// - 6: 90° Clockwise (standard iOS / Android portrait camera capture)
+  /// - 8: 270° Clockwise (90° Counter-Clockwise)
+  static int extractExifOrientation(Uint8List bytes) {
+    if (bytes.length < 4 || bytes[0] != 0xFF || bytes[1] != 0xD8) {
+      return 1;
+    }
+    int offset = 2;
+    while (offset + 4 <= bytes.length) {
+      if (bytes[offset] != 0xFF) {
+        offset++;
+        continue;
+      }
+      final marker = bytes[offset + 1];
+      if (marker == 0xFF) {
+        offset++;
+        continue;
+      }
+      if (marker == 0xDA || marker == 0xD9) break;
+
+      if (offset + 4 > bytes.length) break;
+      final length = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      if (length < 2) break;
+
+      if (marker == 0xE1 && length >= 14 && offset + 4 + 6 <= bytes.length) {
+        final exifHeader = offset + 4;
+        if (bytes[exifHeader] == 0x45 &&
+            bytes[exifHeader + 1] == 0x78 &&
+            bytes[exifHeader + 2] == 0x69 &&
+            bytes[exifHeader + 3] == 0x66 &&
+            bytes[exifHeader + 4] == 0x00 &&
+            bytes[exifHeader + 5] == 0x00) {
+          final tiffStart = exifHeader + 6;
+          if (tiffStart + 8 <= bytes.length) {
+            final isLittleEndian = bytes[tiffStart] == 0x49 && bytes[tiffStart + 1] == 0x49;
+            int read16(int p) {
+              if (p + 2 > bytes.length) return 0;
+              return isLittleEndian
+                  ? bytes[p] | (bytes[p + 1] << 8)
+                  : (bytes[p] << 8) | bytes[p + 1];
+            }
+
+            int read32(int p) {
+              if (p + 4 > bytes.length) return 0;
+              return isLittleEndian
+                  ? bytes[p] | (bytes[p + 1] << 8) | (bytes[p + 2] << 16) | (bytes[p + 3] << 24)
+                  : (bytes[p] << 24) | (bytes[p + 1] << 16) | (bytes[p + 2] << 8) | bytes[p + 3];
+            }
+
+            final firstIfdOffset = read32(tiffStart + 4);
+            int ifdOffset = tiffStart + firstIfdOffset;
+            if (ifdOffset + 2 <= bytes.length) {
+              final numEntries = read16(ifdOffset);
+              ifdOffset += 2;
+              for (int i = 0; i < numEntries; i++) {
+                final entryOffset = ifdOffset + (i * 12);
+                if (entryOffset + 12 > bytes.length) break;
+                final tag = read16(entryOffset);
+                if (tag == 0x0112) {
+                  final orientation = read16(entryOffset + 8);
+                  if (orientation >= 1 && orientation <= 8) {
+                    return orientation;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      offset += 2 + length;
+    }
+    return 1;
+  }
+
   /// Detects all prominent objects in a static image file (e.g. from gallery upload)
   /// and returns their bounding boxes and fine-grained labels.
   Future<List<DetectedObject>> detectObjectsInFilePath(String filePath) async {
@@ -260,42 +370,16 @@ class ObjectDetectionService {
       final inputImage = InputImage.fromFilePath(filePath);
       List<DetectedObject> rawObjects = [];
 
-      if (_objectDetector != null) {
+      final detector = _staticObjectDetector ?? _objectDetector;
+      if (detector != null) {
         try {
-          rawObjects = await _objectDetector!.processImage(inputImage);
+          rawObjects = await detector.processImage(inputImage);
         } catch (e) {
           debugPrint('[ObjectDetectionService] Object detector error: $e');
         }
       }
 
-      // 1. Enrich detected bounding box labels with custom TFLite model data if labels are broad/empty
-      if (rawObjects.isNotEmpty && _imageLabeler != null) {
-        try {
-          final tfliteLabels = await _imageLabeler!.processImage(inputImage);
-          if (tfliteLabels.isNotEmpty) {
-            ImageLabel? bestLabel;
-            for (final l in tfliteLabels) {
-              if (!_isBroadLabel(l.label)) {
-                bestLabel = l;
-                break;
-              }
-            }
-            bestLabel ??= tfliteLabels.first;
-
-            for (int i = 0; i < rawObjects.length; i++) {
-              if (rawObjects[i].labels.isEmpty || _isBroadLabel(rawObjects[i].labels.first.text)) {
-                rawObjects[i] = DetectedObject(
-                  boundingBox: rawObjects[i].boundingBox,
-                  labels: [Label(text: bestLabel.label, confidence: bestLabel.confidence, index: bestLabel.index)],
-                  trackingId: rawObjects[i].trackingId,
-                );
-              }
-            }
-          }
-        } catch (_) {}
-      }
-
-      // 2. Fallback: If no distinct object bounding box was found by ObjectDetector on static photo,
+      // Fallback: If no distinct object bounding box was found by ObjectDetector on static photo,
       // use ImageLabeler to generate labeled object entries.
       if (rawObjects.isEmpty && _imageLabeler != null) {
         try {
@@ -714,34 +798,6 @@ class ObjectDetectionService {
         maxObjects: 2,
       );
 
-      // Enrich detected bounding box labels with fine-grained custom TFLite model data
-      if (prominent.isNotEmpty && _imageLabeler != null) {
-        try {
-          final tfliteLabels = await _imageLabeler!.processImage(inputImage);
-          if (tfliteLabels.isNotEmpty) {
-            ImageLabel? bestLabel;
-            for (final l in tfliteLabels) {
-              if (!_isBroadLabel(l.label)) {
-                bestLabel = l;
-                break;
-              }
-            }
-            bestLabel ??= tfliteLabels.first;
-
-            for (int i = 0; i < prominent.length; i++) {
-              final obj = prominent[i];
-              if (obj.labels.isEmpty || _isBroadLabel(obj.labels.first.text)) {
-                prominent[i] = DetectedObject(
-                  boundingBox: obj.boundingBox,
-                  labels: [Label(text: bestLabel.label, confidence: bestLabel.confidence, index: bestLabel.index)],
-                  trackingId: obj.trackingId,
-                );
-              }
-            }
-          }
-        } catch (_) {}
-      }
-
       return prominent;
     } catch (e) {
       debugPrint('[ObjectDetectionService] Exception in processLiveFrame: $e');
@@ -836,7 +892,11 @@ class ObjectDetectionService {
 
   void dispose() {
     _objectDetector?.close();
+    _objectDetector = null;
+    _staticObjectDetector?.close();
+    _staticObjectDetector = null;
     _imageLabeler?.close();
+    _imageLabeler = null;
     _isInitialized = false;
   }
 }
