@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/components/menu_button.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/core/widgets/gabeye_app_bar.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
@@ -26,24 +27,35 @@ class PreAssessmentScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final appBar = GabEyeAppBar(
+      showBackButton: true,
+      showLogo: false,
+      progressValue: currentStep / totalSteps,
+      progressText: 'Step $currentStep/$totalSteps',
+      onBackPressed: onBack,
+      menuOptions: MenuButton.assessmentOptions,
+    );
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: GabEyeAppBar(
-        showBackButton: true,
-        showLogo: false,
-        progressValue: currentStep / totalSteps,
-        progressText: 'Step $currentStep/$totalSteps',
-      ),
-      body: SafeArea(
-        top: false,
-        child: Responsive.constrainWidth(
+    return PopScope(
+      canPop: onBack != null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (onBack != null) {
+          onBack!();
+        }
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: appBar,
+        body: SafeArea(
+          top: false,
+          child: Responsive.constrainWidth(
           context,
           child: Column(
             children: [
               Padding(
                 padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + kToolbarHeight - 50,
+                  top: MediaQuery.of(context).padding.top + appBar.preferredSize.height,
                 ),
                 child: const PreAssessmentHeroHeader(),
               ),
@@ -97,7 +109,6 @@ class PreAssessmentScaffold extends StatelessWidget {
                   ),
                 ),
               ),
-
               Padding(
                 padding: Responsive.only(
                   context,
@@ -118,7 +129,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                             width: 1,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                         ),
                         onPressed: onNext,
@@ -131,7 +142,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                                 'Next',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                  fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -157,7 +168,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                           ),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                         ),
                         onPressed: onBack,
@@ -178,7 +189,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                                 'Back',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                  fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                   fontWeight: FontWeight.bold,
                                       color: onBack == null
                                       ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
@@ -196,6 +207,7 @@ class PreAssessmentScaffold extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

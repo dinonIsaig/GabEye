@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/utils/responsive.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PreAssessmentStepCard extends StatelessWidget {
   final int stepNumber;
@@ -29,50 +31,51 @@ class PreAssessmentStepCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 44,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 44,
+              child: Container(
                 color: Theme.of(context).colorScheme.tertiary,
                 alignment: Alignment.center,
                 child: Text(
                   '$stepNumber',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.surface,
+                    color: Colors.white,
                   ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 44 + 16,
+                right: 16,
+                top: 12,
+                bottom: 12,
+              ),
+              child: Text.rich(
+                TextSpan(
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  child: Text.rich(
+                  children: [
+                    TextSpan(text: normalTextBefore),
                     TextSpan(
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        height: 1.50,
-                      ),
-                      children: [
-                        TextSpan(text: normalTextBefore),
-                        TextSpan(
-                          text: boldText,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        TextSpan(text: normalTextAfter),
-                      ],
+                      text: boldText,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ),
+                    TextSpan(text: normalTextAfter),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -140,7 +143,6 @@ class PreAssessmentInfoCard extends StatelessWidget {
                 TextSpan(
                   style: textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.45,
                   ),
                   children: [
                     TextSpan(text: normalTextBefore),
@@ -178,7 +180,6 @@ class PreAssessmentArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -195,47 +196,46 @@ class PreAssessmentArticleCard extends StatelessWidget {
           children: [
             SizedBox(
               height: 150,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Image.asset(
-                      imagePath,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Text(
-                      subtitle,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
+              width: double.infinity,
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
               ),
             ),
-
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
-                    style: textTheme.titleLarge?.copyWith(
-                      fontFamily: 'Inter',
-                      color: colorScheme.onSurface,
+                    subtitle,
+                    style: GoogleFonts.atkinsonHyperlegible(
+                      fontSize: 16,
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
+                  Text(
+                    title,
+                      style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     description,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: GoogleFonts.atkinsonHyperlegible(
+                      fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
                       color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
                     ),
+                    textAlign: TextAlign.justify,
                   ),
                   const SizedBox(height: 16),
                   
@@ -245,7 +245,10 @@ class PreAssessmentArticleCard extends StatelessWidget {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        side: BorderSide(color: colorScheme.outline, width: 1),
+                        side: BorderSide(
+                          color: colorScheme.outline, 
+                          width: 1,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -257,12 +260,12 @@ class PreAssessmentArticleCard extends StatelessWidget {
                           Text(
                             'Read More',
                             style: TextStyle(
-                              fontFamily: 'AtkinsonHyperlegible',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Inter',
+                              fontSize: Responsive.font(context, base: 12, min: 10, max: 16),
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Icon(
+                          const Icon(
                             Icons.help_outline_rounded,
                             size: 18,
                           ),

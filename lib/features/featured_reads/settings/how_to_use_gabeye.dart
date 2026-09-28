@@ -253,12 +253,14 @@ class _StepCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 44,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 44,
+              child: Container(
                 color: colors.tertiary,
                 alignment: Alignment.center,
                 child: Text(
@@ -271,39 +273,39 @@ class _StepCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        text,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurface,
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 44 + 20,
+                right: 20,
+                top: 14,
+                bottom: 14,
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    text,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurface,
+                      fontSize: 16,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -409,9 +411,7 @@ class _TipsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final iconColor = Theme.of(context).brightness == Brightness.dark
-        ? AppColors.darkPrimaryButton
-        : AppColors.primaryColor;
+    final iconColor = context.semanticColors.success;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -433,7 +433,7 @@ class _TipsCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle_outline, color: iconColor, size: 20),
+                      Icon(Icons.check_circle, color: iconColor, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(

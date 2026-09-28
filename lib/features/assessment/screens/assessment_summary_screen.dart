@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
@@ -9,34 +10,44 @@ import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/features/assessment/screens/assessment_keyfindings_screen.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 
 /// Post-assessment 9: the plain-language summary shown right after the
 /// user finishes arranging the caps, before the technical breakdown on
 /// the next screen (post-assessment 8 / ResultsPage).
-class AssessmentSummaryScreen extends StatelessWidget {
+class AssessmentSummaryScreen extends StatefulWidget {
   final List<int> arrangedCaps;
 
   const AssessmentSummaryScreen({super.key, required this.arrangedCaps});
 
   @override
-  Widget build(BuildContext context) {
-    if (assessmentController.value != arrangedCaps) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        assessmentController.setArrangedCaps(arrangedCaps);
-      });
+  State<AssessmentSummaryScreen> createState() => _AssessmentSummaryScreenState();
+}
+
+class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
+  late final D15ScoreResult _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _result = ScoringService.calculateScore(widget.arrangedCaps);
+    if (assessmentController.value != widget.arrangedCaps) {
+      assessmentController.setArrangedCaps(widget.arrangedCaps);
     }
-
-    final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
-    final severityStyle = severityStyleFor(context, result.severity);
-    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (VisionProfileService.instance.value != result) {
-        VisionProfileService.instance.updateAssessmentResult(result, arrangedCaps: arrangedCaps);
+      if (VisionProfileService.instance.value != _result) {
+        VisionProfileService.instance.updateAssessmentResult(_result, arrangedCaps: widget.arrangedCaps);
       }
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final result = _result;
+    final severityStyle = severityStyleFor(context, result.severity);
+    final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
     return ProgressBarScaffold(
       currentStep: 1,
@@ -61,25 +72,83 @@ class AssessmentSummaryScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         _buildDiagnosisCard(context, colors, result, severityStyle, diagnosisStyle),
                         const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => _goToKeyfindings(context),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            minimumSize: const Size(double.infinity, 55),
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text('Next', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, size: 20),
-                              ],
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => _goToKeyfindings(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Next',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: Responsive.space(context, base: 10, min: 6, max: 14)),
+                        SizedBox(
+                          width: double.infinity,
+                          height: Responsive.space(context, base: 55, min: 48, max: 64),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 1,
+                              ),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.arrow_back_rounded,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Back',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -126,6 +195,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                 child: Text(
                   result.rangeHeadline,
                   style: TextStyle(
+                    fontFamily: 'Inter',
                     color: colors.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -138,7 +208,12 @@ class AssessmentSummaryScreen extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             result.rangeBody,
-            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 16, height: 1.5),
+            style: TextStyle(
+              fontFamily: 'Inter',
+              color: colors.onSurfaceVariant,
+              fontSize: 16,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -173,7 +248,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                   fontSize: 16,
                 ) ??
                 const TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   fontSize: 16,
                 ),
           ),
@@ -217,7 +292,7 @@ class AssessmentSummaryScreen extends StatelessWidget {
                   height: 1.5,
                 ) ??
                 TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   color: colors.onSurfaceVariant,
                   fontSize: 16,
                   height: 1.5,
@@ -284,12 +359,16 @@ class AssessmentSummaryScreen extends StatelessWidget {
   // -------------------- Description --------------------
   Widget _buildDescription(BuildContext context, ColorScheme colors, D15ScoreResult result, DiagnosisStyle style) {
     final textTheme = Theme.of(context).textTheme;
-    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final baseStyle = (textTheme.bodyMedium ??
+            GoogleFonts.atkinsonHyperlegible())
+        .copyWith(
       color: colors.onSurfaceVariant,
       fontSize: 16,
       height: 1.5,
     );
-    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final boldStyle = (textTheme.bodyLarge ??
+            GoogleFonts.atkinsonHyperlegible(fontWeight: FontWeight.bold))
+        .copyWith(
       color: colors.onSurface,
       fontSize: 16,
       fontWeight: FontWeight.bold,
@@ -389,21 +468,21 @@ class AssessmentSummaryScreen extends StatelessWidget {
   void _goToDetailedResult(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: arrangedCaps)),
+      MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: widget.arrangedCaps)),
     );
   }
 
   void _goToKeyfindings(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AssessmentKeyfindingsScreen(arrangedCaps: arrangedCaps)),
+      MaterialPageRoute(builder: (context) => AssessmentKeyfindingsScreen(arrangedCaps: widget.arrangedCaps)),
     );
   }
 
   void _exportAsPdf(BuildContext context) {
     PdfReportService.generateAndExportPdf(
       context,
-      arrangedCaps: arrangedCaps,
+      arrangedCaps: widget.arrangedCaps,
     );
   }
 }

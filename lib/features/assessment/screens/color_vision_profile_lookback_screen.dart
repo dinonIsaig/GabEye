@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
@@ -169,6 +170,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
                 child: Text(
                   result.rangeHeadline,
                   style: TextStyle(
+                    fontFamily: 'Inter',
                     color: colors.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -182,6 +184,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
           Text(
             result.rangeBody,
             style: TextStyle(
+              fontFamily: 'Inter',
               color: colors.onSurfaceVariant,
               fontSize: 16,
               height: 1.5,
@@ -222,7 +225,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
                   fontSize: 16,
                 ) ??
                 const TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   fontSize: 16,
                 ),
           ),
@@ -282,7 +285,7 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
                   height: 1.5,
                 ) ??
                 TextStyle(
-                  fontFamily: 'AtkinsonHyperlegible',
+                  fontFamily: 'Inter',
                   color: colors.onSurfaceVariant,
                   fontSize: 16,
                   height: 1.5,
@@ -361,12 +364,16 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
     DiagnosisStyle style,
   ) {
     final textTheme = Theme.of(context).textTheme;
-    final baseStyle = (textTheme.bodyMedium ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final baseStyle = (textTheme.bodyMedium ??
+            GoogleFonts.atkinsonHyperlegible())
+        .copyWith(
       color: colors.onSurfaceVariant,
       fontSize: 16,
       height: 1.5,
     );
-    final boldStyle = (textTheme.bodyLarge ?? const TextStyle(fontFamily: 'AtkinsonHyperlegible')).copyWith(
+    final boldStyle = (textTheme.bodyLarge ??
+            GoogleFonts.atkinsonHyperlegible(fontWeight: FontWeight.bold))
+        .copyWith(
       color: colors.onSurface,
       fontSize: 16,
       fontWeight: FontWeight.bold,

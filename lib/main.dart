@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/routing/app_routes.dart';
+import 'core/theme/cvd_personalization_controller.dart';
 import 'core/theme/gabeye_theme.dart';
 import 'core/theme/theme_controller.dart';
 
@@ -13,17 +14,20 @@ class GabEye extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeController,
-      builder: (context, themeMode, child) => MaterialApp(
-        title: 'GabEye',
-        debugShowCheckedModeBanner: false,
-        theme: GabEyeTheme.lightTheme,
-        darkTheme: GabEyeTheme.darkTheme,
-        themeMode: themeMode,
-        initialRoute: AppRoutes.getStarted,
-        routes: AppRoutes.getRoutes(),
-      ),
+    return AnimatedBuilder(
+      animation: Listenable.merge([themeController, cvdPersonalizationController]),
+      builder: (context, child) {
+        final profile = cvdPersonalizationController.activeProfile;
+        return MaterialApp(
+          title: 'GabEye',
+          debugShowCheckedModeBanner: false,
+          theme: GabEyeTheme.themeFor(Brightness.light, profile),
+          darkTheme: GabEyeTheme.themeFor(Brightness.dark, profile),
+          themeMode: themeController.value,
+          initialRoute: AppRoutes.getStarted,
+          routes: AppRoutes.getRoutes(),
+        );
+      },
     );
   }
 }
