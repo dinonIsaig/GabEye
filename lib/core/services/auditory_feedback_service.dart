@@ -59,6 +59,24 @@ class AuditoryFeedbackService {
     }
   }
 
+  /// Speaks arbitrary text (e.g. for Object Labeling narration).
+  Future<void> speakText(String text) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    if (_isSpeaking) {
+      await _flutterTts.stop();
+    }
+
+    _isSpeaking = true;
+    try {
+      await _flutterTts.speak(text);
+    } catch (_) {
+      _isSpeaking = false;
+    }
+  }
+
   Future<void> stop() async {
     try {
       await _flutterTts.stop();
