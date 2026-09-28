@@ -51,7 +51,7 @@ class ConfusionDiagram extends StatelessWidget {
                   normalSegmentColor: colors.onSurfaceVariant.withOpacity(0.25),
                   labelColor: colors.onSurface,
                   labelShadowColor: colors.surface,
-                  minorErrorColor: semantic.success,
+                  minorErrorColor: semantic.success.withOpacity(0.4),
                   majorErrorColor: semantic.error,
                 ),
               ),
@@ -72,7 +72,7 @@ class ConfusionDiagram extends StatelessWidget {
       runSpacing: 6,
       alignment: WrapAlignment.center,
       children: [
-        _legendItem(colors, semantic.success, 'Minor swap'),
+        _legendItem(colors, semantic.success.withOpacity(0.4), 'Minor swap'),
         _legendItem(colors, semantic.error, 'Major crossover'),
         _legendItem(colors, colors.onSurfaceVariant.withOpacity(0.4), 'Confusion axis'),
       ],
@@ -115,36 +115,70 @@ class ConfusionDiagramPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width / 2) - 16;
     final fullList = [0, ...arrangedCaps];
+    final double cap0Angle = math.pi;
 
-    // Background circle
     final circlePaint = Paint()
       ..color = circleColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
     canvas.drawCircle(center, radius, circlePaint);
 
+    final double originalCode2Start = 135 * math.pi / 180;
+    final double rotationOffset = cap0Angle - originalCode2Start;
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotationOffset);
+    canvas.translate(-center.dx, -center.dy);
+
     void drawAxis(double angleRad, Color color, {Offset shift = Offset.zero}) {
       final axisPaint = Paint()
         ..color = color
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
-      final dx = radius * math.cos(angleRad);
-      final dy = radius * math.sin(angleRad);
-      canvas.drawLine(center + shift - Offset(dx, dy), center + shift + Offset(dx, dy), axisPaint);
+
+      final dx = math.cos(angleRad) * radius;
+      final dy = math.sin(angleRad) * radius;
+      const int dashCount = 15;
+      final axisCenter = center + shift;
+      final start = axisCenter - Offset(dx, dy);
+      final end = axisCenter + Offset(dx, dy);
+
+      for (int i = 0; i < dashCount; i++) {
+        if (i % 2 == 0) {
+          final tStart = i / dashCount;
+          final tEnd = (i + 1) / dashCount;
+          final pStart = Offset(
+            start.dx + (end.dx - start.dx) * tStart,
+            start.dy + (end.dy - start.dy) * tStart,
+          );
+          final pEnd = Offset(
+            start.dx + (end.dx - start.dx) * tEnd,
+            start.dy + (end.dy - start.dy) * tEnd,
+          );
+          canvas.drawLine(pStart, pEnd, axisPaint);
+        }
+      }
     }
 
-    drawAxis(math.pi * 0.44, AppSemanticColors.salmon.withOpacity(0.35));
-    drawAxis(math.pi * 0.54, AppSemanticColors.murky.withOpacity(0.35));
-    drawAxis(math.pi * 0.05, AppSemanticColors.tritan.withOpacity(0.35), shift: const Offset(0, 10));
+    drawAxis(-124 * math.pi / 180, AppSemanticColors.murky.withOpacity(0.35), shift: const Offset(-40, 25)); // Deutan
+    drawAxis(-146 * math.pi / 180, AppSemanticColors.salmon.withOpacity(0.35), shift: const Offset(-23, 30)); // Protan
+    drawAxis(-62 * math.pi / 180, AppSemanticColors.tritan.withOpacity(0.35), shift: const Offset(13, 0)); // Tritan
+    
+    canvas.restore(); 
 
-    // Outer caps + labels
     for (int i = 0; i < 16; i++) {
-      final angle = (i / 16.0) * 2 * math.pi - math.pi / 2;
+      final angle = cap0Angle + (i / 16.0) * 2 * math.pi;
       final x = center.dx + radius * math.cos(angle);
       final y = center.dy + radius * math.sin(angle);
+      final pos = Offset(x, y);
+
+      if (i == 0) {
+        canvas.drawCircle(pos, 10.0, Paint()..color = labelColor);
+      }
 
       final capPaint = Paint()..color = ColorCap.getVisualColor(i);
-      canvas.drawCircle(Offset(x, y), 8, capPaint);
+      canvas.drawCircle(pos, 8, capPaint);
 
       final labelRadius = radius + 11;
       final lx = center.dx + labelRadius * math.cos(angle);
@@ -167,13 +201,12 @@ class ConfusionDiagramPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(lx - textPainter.width / 2, ly - textPainter.height / 2));
     }
 
-    // Arrangement line segments
     for (int i = 0; i < fullList.length - 1; i++) {
       final capA = fullList[i];
       final capB = fullList[i + 1];
 
-      final angleA = (capA / 16.0) * 2 * math.pi - math.pi / 2;
-      final angleB = (capB / 16.0) * 2 * math.pi - math.pi / 2;
+      final angleA = cap0Angle + (capA / 16.0) * 2 * math.pi;
+      final angleB = cap0Angle + (capB / 16.0) * 2 * math.pi;
 
       final pA = Offset(center.dx + radius * math.cos(angleA), center.dy + radius * math.sin(angleA));
       final pB = Offset(center.dx + radius * math.cos(angleB), center.dy + radius * math.sin(angleB));
