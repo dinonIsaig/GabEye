@@ -41,11 +41,10 @@ class LearnMoreScreen extends StatelessWidget {
                     ),
                     Expanded(
                       flex: isShort ? 8 : 6,
-                      child: Padding(
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(horizontal: 40.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Text(
                               'GabEye can help you understand your',
@@ -77,9 +76,18 @@ class LearnMoreScreen extends StatelessWidget {
                               textAlign: TextAlign.justify,
                             ),
                             SizedBox(height: Responsive.space(context, base: 24, min: 10, max: 24)),
-
-                            const Spacer(),
-                            Text(
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                            child: Text(
                               'This is an initial assessment designed for guidance and app personalization. It is not a medical diagnosis or a substitute for professional evaluation.',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.atkinsonHyperlegible(
@@ -89,8 +97,12 @@ class LearnMoreScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
-                            SizedBox(height: Responsive.space(context, base: 16, min: 10, max: 16)),
-                            ElevatedButton(
+                          ),
+                          SizedBox(height: Responsive.space(context, base: 16, min: 10, max: 16)),
+                          SizedBox(
+                            width: double.infinity,
+                            height: Responsive.space(context, base: 55, min: 48, max: 64),
+                            child: ElevatedButton(
                               onPressed: () {
                                 Navigator.pushReplacementNamed(context, AppRoutes.preAssessmentIntro);
                               },
@@ -99,10 +111,6 @@ class LearnMoreScreen extends StatelessWidget {
                                 shadowColor: Colors.black.withValues(alpha: 0.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
-                                ),
-                                minimumSize: Size(
-                                  double.infinity,
-                                  Responsive.space(context, base: 55, min: 48, max: 64),
                                 ),
                               ),
                               child: FittedBox(
@@ -113,6 +121,7 @@ class LearnMoreScreen extends StatelessWidget {
                                     Text(
                                       'Learn More',
                                       style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -123,9 +132,9 @@ class LearnMoreScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            SizedBox(height: Responsive.space(context, base: 30, min: 12, max: 30)),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 40.0), 
+                        ],
                       ),
                     ),
                   ],

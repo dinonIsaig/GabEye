@@ -57,21 +57,19 @@ class AssessmentIntroModal extends StatelessWidget {
                   const SizedBox(height: 24),
                   OutlinedButton(
                     onPressed: () {
-                      Navigator.popAndPushNamed(
-                          context, AppRoutes.preAssessmentIntro);
+                      Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isDark ? Colors.white : colors.onSurface,
                       backgroundColor: Colors.transparent,
                       side: BorderSide(
-                        color: isDark 
-                            ? Colors.white 
-                            : colors.onSurfaceVariant.withOpacity(0.4), 
+                        color: isDark ? Colors.white : colors.onSurfaceVariant.withOpacity(0.4), 
+                        width: 1,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(24), 
                       ),
-                      minimumSize: const Size(double.infinity, 55), // Matched button sizing
+                      minimumSize: const Size(double.infinity, 55), 
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                     child: Row(
@@ -141,7 +139,6 @@ class AssessmentIntroModal extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      // assessment flow
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDark ? AppColors.darkPrimaryButton : AppColors.lightPrimaryButton,
@@ -149,7 +146,7 @@ class AssessmentIntroModal extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      minimumSize: const Size(double.infinity, 55), // Matched button sizing
+                      minimumSize: const Size(double.infinity, 55), 
                     ),
                     child: const Text(
                       'Start Now',
@@ -162,20 +159,18 @@ class AssessmentIntroModal extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.preAssessmentIntro),
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.preAssessmentIntro),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isDark ? Colors.white : colors.onSurface,
                       backgroundColor: Colors.transparent,
                       side: BorderSide(
-                        color: isDark 
-                            ? Colors.white 
-                            : colors.onSurfaceVariant.withOpacity(0.4), 
+                        color: isDark ? Colors.white : colors.onSurfaceVariant.withOpacity(0.4), 
+                        width: 1,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12), 
                       ),
-                      minimumSize: const Size(double.infinity, 55), // Matched button sizing
+                      minimumSize: const Size(double.infinity, 55), 
                     ),
                     child: const Text(
                       'Not Ready',

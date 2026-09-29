@@ -67,120 +67,109 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
             Expanded(
               child: Stack(
                 children: [
-            Positioned.fill(
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  scrollbarTheme: ScrollbarThemeData(
-                    thumbColor: WidgetStateProperty.all(
-                      Theme.of(context).colorScheme.onPrimary,
-                    ),
-                    thickness: WidgetStateProperty.all(8),
-                    radius: const Radius.circular(8),
-                    mainAxisMargin: 20.0,
-                  ),
-                ),
-                child: Scrollbar(
-                  controller: _scrollController,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: Responsive.only(
-                      context,
-                      left: 24.0,
-                      right: 24.0,
-                      top: 10.0,
-                      bottom: 120.0,
-                    ),
-                    child: _buildTermsTextContent(context),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: Responsive.only(
-                  context,
-                  left: 36.0,
-                  right: 36.0,
-                  top: 14.0,
-                  bottom: 24.0,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
-                        child: ElevatedButton(
-                          onPressed: _hasScrolledToBottom
-                              ? () {
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    AppRoutes.preAssessmenLearnMoreScreen,
-                                    (route) => false,
-                                  );
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onPrimary,
-                            disabledBackgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surface.withValues(alpha: 0.3),
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surface,
-                            disabledForegroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              side: BorderSide(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant
-                                    .withValues(alpha: 0.6),
-                                width: 1.5,
-                              ),
-                            ),
-                            minimumSize: Size(
-                              double.infinity,
-                              Responsive.space(context, base: 55, min: 48, max: 64),
-                            ),
+                  Positioned.fill(
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        scrollbarTheme: ScrollbarThemeData(
+                          thumbColor: WidgetStateProperty.all(
+                            Theme.of(context).colorScheme.onPrimary,
                           ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              _hasScrolledToBottom
-                                  ? 'I Accept'
-                                  : 'Scroll to See More  ↓',
-                              style: TextStyle(
-                                fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Inter',
+                          thickness: WidgetStateProperty.all(8),
+                          radius: const Radius.circular(8),
+                          mainAxisMargin: 20.0,
+                        ),
+                      ),
+                      child: Scrollbar(
+                        controller: _scrollController,
+                        thumbVisibility: true,
+                        child: SingleChildScrollView(
+                          controller: _scrollController,
+                          padding: Responsive.only(
+                            context,
+                            left: 24.0,
+                            right: 24.0,
+                            top: 10.0,
+                            bottom: 120.0,
+                          ),
+                          child: _buildTermsTextContent(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                      Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.only(
+                      left: 20.0,
+                      right: 20.0,
+                      top: 14.0,
+                      bottom: 40.0,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: Responsive.space(context, base: 55, min: 48, max: 64),
+                              child: ElevatedButton(
+                                onPressed: _hasScrolledToBottom
+                                    ? () {
+                                        Navigator.pushNamedAndRemoveUntil(
+                                          context,
+                                          AppRoutes.preAssessmenLearnMoreScreen,
+                                          (route) => false,
+                                        );
+                                      }
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  elevation: 0,
+                                  backgroundColor: Theme.of(context).colorScheme.onPrimary,
+                                  disabledBackgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
+                                  foregroundColor: Theme.of(context).colorScheme.surface,
+                                  disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  padding: EdgeInsets.zero, 
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                    side: BorderSide(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    _hasScrolledToBottom
+                                        ? 'I Accept'
+                                        : 'Scroll to See More  ↓',
+                                    style: TextStyle(
+                                      fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Inter',
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
+                ],
               ),
             ),
           ],
         ),
       ),
-    ],
-  ),
-),
-);
+    );
   }
 
   Widget _buildTermsTextContent(BuildContext context) {

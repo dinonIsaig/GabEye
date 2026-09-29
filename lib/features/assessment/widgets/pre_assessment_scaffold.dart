@@ -194,7 +194,7 @@ class PreAssessmentScaffold extends StatelessWidget {
                                       color: onBack == null
                                       ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
                                       : Theme.of(context).colorScheme.onSurface,
-                                ),
+                                 ),
                               ),
                             ],
                           ),

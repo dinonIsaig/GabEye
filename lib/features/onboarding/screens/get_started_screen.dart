@@ -90,33 +90,38 @@ class _GetStartedScreenState extends State<GetStartedScreen> {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(
-                      left: 60.0,
-                      right: 60.0,
+                      left: 20.0,
+                      right: 20.0,
                       bottom: 40.0,
                     ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        showTermsAndConditionsModal(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        elevation: 4,
-                        shadowColor: Colors.black.withValues(alpha: 0.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: Responsive.space(context, base: 55, min: 48, max: 64),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          showTermsAndConditionsModal(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          elevation: 4,
+                          shadowColor: Colors.black.withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
                         ),
-                        minimumSize: Size(
-                          double.infinity,
-                          Responsive.space(context, base: 55, min: 48, max: 64),
-                        ),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          'Get Started',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
-                            fontWeight: FontWeight.bold,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Get Started',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

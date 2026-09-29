@@ -31,6 +31,7 @@ class CvdPersonalizationController extends ChangeNotifier {
   }
 
   bool _enabled = false;
+  bool _testInProgress = false;
 
   /// The current diagnosis, or null if no assessment has been taken yet
   /// this session.
@@ -38,10 +39,7 @@ class CvdPersonalizationController extends ChangeNotifier {
       ? assessmentController.currentResult.diagnosisType
       : null;
 
-  /// Whether personalization is usable right now: an assessment must have
-  /// been taken, and its diagnosis must map to a supported [CvdProfile].
-  /// Normal vision, unclassified, and random results are excluded.
-  bool get isSupported => diagnosisType?.personalizableProfile != null;
+  bool get isSupported => !_testInProgress && diagnosisType?.personalizableProfile != null;
 
   /// Whether the user has switched personalization on. Always `false` when
   /// [isSupported] is `false`, no matter what was set before.
@@ -49,7 +47,6 @@ class CvdPersonalizationController extends ChangeNotifier {
 
   CvdProfile get activeProfile =>
       isEnabled ? diagnosisType!.personalizableProfile! : CvdProfile.none;
-
 
   void setEnabled(bool enabled) {
     if (!isSupported) return;
@@ -59,6 +56,14 @@ class CvdPersonalizationController extends ChangeNotifier {
 
   void resetForNewAttempt() {
     _enabled = false;
+    notifyListeners();
+  }
+
+  /// Locks personalization off while the assessment (cap-sorting) screen
+  /// is on screen. Call with `true` from its `initState`.
+  void setTestInProgress(bool inProgress) {
+    _testInProgress = inProgress;
+    if (_testInProgress) _enabled = false;
     notifyListeners();
   }
 

@@ -2,15 +2,16 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
-import 'package:gabeye/components/menu_button.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/cvd_personalization_controller.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
 import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 
 class CapDragData {
   final int capNum;
@@ -32,10 +33,17 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   @override
   void initState() {
     super.initState();
+    cvdPersonalizationController.setTestInProgress(true);
     _resetTest();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showAssessmentIntroModal(context);
     });
+  }
+
+  @override
+  void dispose() {
+    cvdPersonalizationController.setTestInProgress(false);
+    super.dispose();
   }
 
   void _resetTest() {
@@ -126,7 +134,6 @@ void _applyDebugProfile(List<int> caps) {
               preferredSize: const Size.fromHeight(64),
               child: GabEyeHomeNavbar(
                 onBack: () => Navigator.pop(context),
-                menuOptions: MenuButton.assessmentOptions,
               ),
             ),
             body: SafeArea(
@@ -139,7 +146,7 @@ void _applyDebugProfile(List<int> caps) {
                     const SizedBox(height: 20),
                     _buildAssessmentCard(colors, textTheme),
                     const SizedBox(height: 20),
-                    _buildFooterButtons(colors),
+                    _buildFooterButtons(context, colors),
                     const SizedBox(height: 12),
                   ],
                 ),
@@ -398,52 +405,95 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildFooterButtons(ColorScheme colors) {
+  Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
     return Column(
       children: [
-        ElevatedButton(
-          onPressed: _isTestComplete
-          ? () {
-              final caps = _arrangedCaps.cast<int>();
-              assessmentController.setArrangedCaps(caps);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AssessmentSummaryScreen(
-                    arrangedCaps: caps,
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: Responsive.space(context, base: 55, min: 48, max: 64),
+          child: ElevatedButton(
+            onPressed: _isTestComplete
+            ? () {
+                final caps = _arrangedCaps.cast<int>();
+                assessmentController.setArrangedCaps(caps);
+                cvdPersonalizationController.setTestInProgress(false);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AssessmentSummaryScreen(
+                      arrangedCaps: caps,
+                    ),
                   ),
-                ),
-              );
-            }
-          : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor:  AppColors.darkPrimaryButton,
-            foregroundColor:  AppColors.darkSurface ,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 55),
-            elevation: _isTestComplete ? 4 : 0,
-          ),
-          child: const Text(
-            'Finish Assessment', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'),
+                );
+              }
+            : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.darkPrimaryButton,
+              foregroundColor: AppColors.darkSurface,
+              side: BorderSide(
+                color: colors.outline,
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              elevation: _isTestComplete ? 4 : 0,
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Finish Assessment',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: _resetTest,
-          style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: Colors.transparent,
-          side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 55),
-          ),
-          child: const Text(
-            'Start Over', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'), 
+        SizedBox(height: Responsive.space(context, base: 10, min: 6, max: 14)),
+        SizedBox(
+          width: double.infinity,
+          height: Responsive.space(context, base: 55, min: 48, max: 64),
+          child: OutlinedButton(
+            onPressed: _resetTest,
+            style: OutlinedButton.styleFrom(
+              backgroundColor: colors.surfaceContainer,
+              side: BorderSide(
+                color: colors.outline,
+                width: 1,
+              ),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Start Over',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
+                      fontWeight: FontWeight.bold,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-        
       ],
     );
   }

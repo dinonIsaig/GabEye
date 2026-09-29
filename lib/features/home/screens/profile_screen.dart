@@ -249,8 +249,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: colors.primary,
-                              side: BorderSide(color: colors.primary.withValues(alpha: 0.6)),
+                              foregroundColor: context.semanticColors.primaryButton,
+                              side: BorderSide(
+                                color: context.semanticColors.primaryButton.withValues(alpha: 0.6),
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
