@@ -104,4 +104,13 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
 
   /// Whether the user has completed a D-15 assessment
   bool get hasCompletedAssessment => value != null;
+
+  /// Clears the stored result and returns calibration to the unassessed
+  /// default. Call this whenever a new assessment attempt starts (e.g.
+  /// "Take Assessment", "Retake D-15")
+  void clearAssessmentResult() {
+    _arrangedCaps = List.generate(15, (i) => i + 1);
+    _customIntensityOverride = null;
+    value = null;
+  }
 }
