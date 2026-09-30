@@ -222,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           // Tab 1: Vision Lens (Live Camera / Daltonization Processing)
-          const VisionLensScreen(),
+          VisionLensScreen(isActive: _selectedIndex == 1),
           // Tab 2: Vision Profile & Assessment Summary
           const ProfileScreen(),
         ],
