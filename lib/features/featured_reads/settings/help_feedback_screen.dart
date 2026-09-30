@@ -264,7 +264,7 @@ class _QuickHelpTile extends StatelessWidget {
                 content: Text(
                   item.text,
                   style: TextStyle(
-                    fontFamily: 'AtkinsonHyperlegible',
+                    fontFamily: 'Inter',
                     fontSize: 16,
                     height: 1.5,
                     color: colors.onSurfaceVariant,

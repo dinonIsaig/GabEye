@@ -21,12 +21,14 @@ class GabEyeProgressNavbar extends StatelessWidget {
     required this.totalSteps,
     this.onBack,
     this.onMenuSelected,
+    this.menuOptions,
   });
 
   final int step;
   final int totalSteps;
   final VoidCallback? onBack;
   final ValueChanged<MenuButtonOption>? onMenuSelected;
+  final List<MenuButtonOption>? menuOptions;
 
   double get _progressPercent =>
       totalSteps <= 0 ? 0 : (step / totalSteps).clamp(0.0, 1.0);
@@ -125,7 +127,10 @@ class GabEyeProgressNavbar extends StatelessWidget {
                     ),
                   ),
                   // No onPressed passed -> renders as PopupMenuButton.
-                  MenuButton(onSelected: onMenuSelected),
+                  MenuButton(
+                    options: menuOptions ?? MenuButton.defaultOptions,
+                    onSelected: onMenuSelected,
+                  ),
                 ],
               ),
             ),

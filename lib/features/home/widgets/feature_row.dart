@@ -96,6 +96,7 @@ class FeatureRow extends StatelessWidget {
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
                       fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                      fontFamily: 'Inter',
                     ),
                   ),
                   Expanded(
@@ -103,12 +104,13 @@ class FeatureRow extends StatelessWidget {
                       b,
                       style: (theme.textTheme.bodyLarge ??
                               const TextStyle(
-                                fontFamily: 'AtkinsonHyperlegible',
+                                fontFamily: 'Inter',
                               ))
                           .copyWith(
                             color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.normal,
                             fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                            fontFamily: 'Inter',
                           ),
                     ),
                   ),

@@ -8,6 +8,7 @@ import 'package:gabeye/features/home/widgets/featured_reads_section.dart';
 import 'package:gabeye/features/home/widgets/gabeye_bottom_nav.dart';
 import 'package:gabeye/features/home/widgets/hero_section.dart';
 import 'package:gabeye/features/assessment/screens/assessment_keyfindings_screen.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/intro_screen.dart';
 import 'package:gabeye/features/home/widgets/vision_profile_card.dart';
 
 void main() {
@@ -262,13 +263,23 @@ void main() {
     expect(find.text('Back'), findsOneWidget);
     expect(find.text('Go to Home'), findsOneWidget);
 
-    // Tap 'Back' on Recommendations -> returns to Step 2/3
-    await tester.tap(find.text('Back'));
+    // Tap top navbar back arrow on Step 3/3 -> returns to Step 2/3
+    await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
     expect(find.text('Step 2/3'), findsOneWidget);
     expect(find.text('Key Findings'), findsOneWidget);
 
-    // Tap 'Next' again to return to Recommendations
+    // Tap 'Next' to return to Step 3/3
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 3/3'), findsOneWidget);
+
+    // Tap bottom 'Back' on Recommendations -> returns to Step 2/3
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 2/3'), findsOneWidget);
+
+    // Tap 'Next' to return to Recommendations
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
     expect(find.text('Step 3/3'), findsOneWidget);
@@ -280,6 +291,87 @@ void main() {
     // Verify now on Home screen
     expect(find.text('Core Features'), findsOneWidget);
     expect(find.text('Featured Reads'), findsOneWidget);
+  });
+
+  testWidgets('Pre-assessment and Post-assessment kebab menu does NOT show Settings',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final testRoutes = Map<String, WidgetBuilder>.from(AppRoutes.getRoutes())
+      ..remove(AppRoutes.getStarted);
+
+    // 1. Pre-Assessment
+    await tester.pumpWidget(MaterialApp(
+      theme: GabEyeTheme.lightTheme,
+      routes: testRoutes,
+      home: const PreAssessmentIntroScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    // Tap kebab menu button
+    await tester.tap(find.byTooltip('Open menu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dark Mode'), findsOneWidget);
+    expect(find.text('About GabEye'), findsOneWidget);
+    expect(find.text('Help & Feedback'), findsNothing);
+    expect(find.text('Settings'), findsNothing);
+
+    // Close menu by tapping barrier
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    // 2. Post-Assessment Keyfindings
+    await tester.pumpWidget(MaterialApp(
+      theme: GabEyeTheme.lightTheme,
+      routes: testRoutes,
+      home: const AssessmentKeyfindingsScreen(
+        arrangedCaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Open menu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dark Mode'), findsOneWidget);
+    expect(find.text('About GabEye'), findsOneWidget);
+    expect(find.text('Help & Feedback'), findsNothing);
+    expect(find.text('Settings'), findsNothing);
+  });
+
+  testWidgets('Assessment Key Findings Read More button navigates to article',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final testRoutes = Map<String, WidgetBuilder>.from(AppRoutes.getRoutes())
+      ..remove(AppRoutes.getStarted);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: GabEyeTheme.lightTheme,
+      routes: testRoutes,
+      home: const AssessmentKeyfindingsScreen(
+        arrangedCaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Tap 'Read More' inside Key Findings card
+    await tester.tap(find.text('Read More'));
+    await tester.pumpAndSettle();
+
+    // Verify article screen is opened
+    expect(find.text('About the Farnsworth D-15'), findsOneWidget);
   });
 }
 

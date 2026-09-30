@@ -216,7 +216,9 @@ class _ChecklistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final accent = isPositive ? Colors.green.shade600 : Colors.red.shade600;
+    final accent = isPositive
+        ? context.semanticColors.success
+        : context.semanticColors.error;
     final icon = isPositive ? Icons.check_circle : Icons.cancel;
 
     return DecoratedBox(

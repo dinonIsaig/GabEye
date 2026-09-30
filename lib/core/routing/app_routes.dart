@@ -14,6 +14,7 @@ import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
 import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
 import 'package:gabeye/features/featured_reads/settings/how_to_use_gabeye.dart';
 import 'package:gabeye/features/featured_reads/settings/real_time_mode_safety.dart';
+import 'package:gabeye/features/assessment/screens/pre_assessment/learnmore_screen.dart';
 
 class AppRoutes {
   // Define strict string constants for route names
@@ -21,6 +22,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String assessment = '/assessment';
   static const String article = '/article';
+  static const String preAssessmenLearnMoreScreen = '/pre-assessment/learnmore';
   static const String preAssessmentIntro = '/pre-assessment/intro';
   static const String preAssessmentHowItWorks = '/pre-assessment/how-it-works';
   static const String preAssessmentWhatToMind = '/pre-assessment/what-to-mind';
@@ -42,6 +44,7 @@ class AppRoutes {
       home: (context) => const HomeScreen(),
       assessment: (context) => const AssessmentScreen(),
       article: (context) => const GabEyeArticleScreen(),
+      preAssessmenLearnMoreScreen:(context) => const LearnMoreScreen(),
       preAssessmentIntro: (context) => const PreAssessmentIntroScreen(),
       preAssessmentHowItWorks: (context) => const HowItWorksScreen(),
       preAssessmentWhatToMind: (context) => const WhatToMindScreen(),
