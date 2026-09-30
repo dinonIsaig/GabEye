@@ -26,7 +26,8 @@ enum PresetMode { customized, protan, deutan, tritan, off }
 enum CameraRealtimeMode { daltonization, knn }
 
 class VisionLensScreen extends StatefulWidget {
-  const VisionLensScreen({super.key});
+  final bool isActive;
+  const VisionLensScreen({super.key, this.isActive = true});
 
   /// Global notifier to tell HomeScreen to expand viewport & hide headers/footers in full/split-screen mode
   static final ValueNotifier<bool> isFullScreenNotifier = ValueNotifier<bool>(false);
@@ -41,7 +42,8 @@ class VisionLensScreen extends StatefulWidget {
   State<VisionLensScreen> createState() => _VisionLensScreenState();
 }
 
-class _VisionLensScreenState extends State<VisionLensScreen> with TickerProviderStateMixin {
+class _VisionLensScreenState extends State<VisionLensScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   PresetMode _selectedPreset = PresetMode.customized;
   bool _isRemapActive = true;
   bool _isCameraPermissionGranted = false;
@@ -265,8 +267,17 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   Future<void> _captureLiveDaltonizedPhoto(BuildContext context) async {
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
+        final bool wasStreaming = _isKnnStreamActive || (_cameraController?.value.isStreamingImages ?? false);
+        if (wasStreaming) {
+          await _stopKnnFrameStream();
+        }
+
         final XFile photo = await _cameraController!.takePicture();
         final rawBytes = await photo.readAsBytes();
+
+        if (wasStreaming && mounted && (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn)) {
+          await _startKnnFrameStream();
+        }
 
         final type = _getEffectiveShaderType();
         final intensity = _getEffectiveShaderIntensity();
@@ -319,7 +330,46 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initKnnServices();
+  }
+
+  @override
+  void didUpdateWidget(covariant VisionLensScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (!widget.isActive) {
+        // Paused because user switched to another tab (e.g. Home or Profile)
+        _stopKnnFrameStream();
+        AuditoryFeedbackService.instance.stop();
+        ObjectDetectionService.instance.resetBusyState();
+      } else {
+        // Resumed because user switched back to the Camera tab
+        if (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn) {
+          if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) {
+            _startKnnFrameStream();
+          }
+        }
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      _stopKnnFrameStream();
+      AuditoryFeedbackService.instance.stop();
+      ObjectDetectionService.instance.resetBusyState();
+    } else if (state == AppLifecycleState.resumed) {
+      if (widget.isActive && (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn)) {
+        if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) {
+          _startKnnFrameStream();
+        }
+      }
+    }
   }
 
   Future<void> _initKnnServices() async {
@@ -352,6 +402,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _isKnnStreamActive = false;
     _delayAnimationController?.dispose();
     _stopKnnFrameStream();
@@ -367,11 +418,20 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     super.dispose();
   }
 
+  bool _isStreamTransitionInProgress = false;
+
   Future<void> _startKnnFrameStream() async {
-    if (_cameraController != null && _cameraController!.value.isInitialized && !_isKnnStreamActive) {
-      try {
-        _isKnnStreamActive = true;
-        await _cameraController!.startImageStream((CameraImage image) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    if (_cameraController!.value.isStreamingImages) {
+      _isKnnStreamActive = true;
+      return;
+    }
+    if (_isKnnStreamActive || _isStreamTransitionInProgress) return;
+    _isStreamTransitionInProgress = true;
+    try {
+      _isKnnStreamActive = true;
+      ObjectDetectionService.instance.resetBusyState();
+      await _cameraController!.startImageStream((CameraImage image) async {
           if (!mounted || _isDisplayingUploadedImage || _isFreezeFrameActive || !_isKnnStreamActive) return;
 
           // 1. Isolated Object Detection Mode (KNN isolate completely bypassed)
@@ -425,19 +485,24 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       } catch (e) {
         _isKnnStreamActive = false;
         debugPrint('[VisionLensScreen] Error starting camera stream: $e');
+      } finally {
+        _isStreamTransitionInProgress = false;
       }
-    }
   }
 
   Future<void> _stopKnnFrameStream() async {
     _isKnnStreamActive = false;
+    ObjectDetectionService.instance.resetBusyState();
     if (_cameraController != null && _cameraController!.value.isInitialized) {
-      try {
-        if (_cameraController!.value.isStreamingImages) {
+      if (_cameraController!.value.isStreamingImages) {
+        _isStreamTransitionInProgress = true;
+        try {
           await _cameraController!.stopImageStream();
+        } catch (e) {
+          debugPrint('[VisionLensScreen] Error stopping camera stream: $e');
+        } finally {
+          _isStreamTransitionInProgress = false;
         }
-      } catch (e) {
-        debugPrint('[VisionLensScreen] Error stopping camera stream: $e');
       }
     }
   }
@@ -464,8 +529,12 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     });
 
     if (willBeActive) {
-      if (!_isKnnStreamActive) {
+      if (_cameraController != null &&
+          _cameraController!.value.isInitialized &&
+          !_cameraController!.value.isStreamingImages) {
         await _startKnnFrameStream();
+      } else {
+        _isKnnStreamActive = true;
       }
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
@@ -507,12 +576,12 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     if (_cameraController == null || !_cameraController!.value.isInitialized) return;
 
     try {
-      // Step 1: Capture still JPEG from the live feed.
+      // Step 1: Stop live stream first so AVCaptureSession does not conflict during still capture.
+      await _stopKnnFrameStream();
+
+      // Step 2: Capture still JPEG from the live feed.
       final XFile photo = await _cameraController!.takePicture();
       final Uint8List rawBytes = await photo.readAsBytes();
-
-      // Step 2: Stop the live KNN stream — we no longer need frame callbacks.
-      await _stopKnnFrameStream();
 
       // Step 2b: Automatically turn off torch/flash if active, saving previous state.
       if (_isTorchOn) {
@@ -780,6 +849,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
         final controller = CameraController(
           cameras.first,
           ResolutionPreset.medium,
+          imageFormatGroup: Platform.isIOS ? ImageFormatGroup.bgra8888 : ImageFormatGroup.nv21,
           enableAudio: false,
         );
         await controller.initialize();
@@ -1012,14 +1082,24 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
     }
   }
 
-  void _switchToRealtimeCameraRemapping() {
+  Future<void> _switchToRealtimeCameraRemapping() async {
     _uploadedNotificationTimer?.cancel();
     _crosshairObjectDetectionTimer?.cancel();
-    _stopKnnFrameStream();
-    if (_capturedUiImage != null && _capturedUiImage != _uploadedUiImage) {
-      _capturedUiImage?.dispose();
+    _crosshairObjectDetectionTimer = null;
+    await _stopKnnFrameStream();
+    ObjectDetectionService.instance.resetBusyState();
+
+    final oldCaptured = _capturedUiImage;
+    final oldUploaded = _uploadedUiImage;
+    _capturedUiImage = null;
+    _uploadedUiImage = null;
+
+    if (oldCaptured != null && oldCaptured != oldUploaded) {
+      try { oldCaptured.dispose(); } catch (_) {}
     }
-    _uploadedUiImage?.dispose();
+    if (oldUploaded != null) {
+      try { oldUploaded.dispose(); } catch (_) {}
+    }
 
     setState(() {
       _uploadedImageBytes = null;
@@ -1049,6 +1129,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
       VisionLensScreen.isFullScreenNotifier.value = false;
     });
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Cleared image. Active real-time LMS Daltonization enabled.'),
@@ -2469,7 +2550,7 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
                           // Already in freeze-frame inspection: tapping shutter again
                           // exits inspection mode or returns to live scanning / clears photo.
                           if (_isDisplayingUploadedImage) {
-                            _switchToRealtimeCameraRemapping();
+                            unawaited(_switchToRealtimeCameraRemapping());
                           } else {
                             _resumeLiveKnnScan();
                           }
@@ -2537,8 +2618,10 @@ class _VisionLensScreenState extends State<VisionLensScreen> with TickerProvider
                 onTap: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   if (_isDisplayingUploadedImage) {
-                    await _startDelayPage();
-                    _switchToRealtimeCameraRemapping();
+                    await _switchToRealtimeCameraRemapping();
+                    if (_isCameraPermissionGranted) {
+                      await _startDelayPage();
+                    }
                   } else {
                     final nextMode = _activeCameraMode == CameraRealtimeMode.daltonization
                         ? CameraRealtimeMode.knn

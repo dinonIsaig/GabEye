@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_tts/flutter_tts.dart';
 
 /// Service interfacing with flutter_tts for on-demand offline spoken narration feedback.
@@ -16,6 +17,21 @@ class AuditoryFeedbackService {
       await _flutterTts.setSpeechRate(0.48);
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
+
+      // On iOS, configure audio session to ambient with mixWithOthers so TTS
+      // does not interrupt, pause, or invalidate the active AVCaptureSession (camera).
+      if (Platform.isIOS) {
+        try {
+          await _flutterTts.setIosAudioCategory(
+            IosTextToSpeechAudioCategory.ambient,
+            [
+              IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+              IosTextToSpeechAudioCategoryOptions.duckOthers,
+            ],
+            IosTextToSpeechAudioMode.defaultMode,
+          );
+        } catch (_) {}
+      }
 
       _flutterTts.setCompletionHandler(() {
         _isSpeaking = false;

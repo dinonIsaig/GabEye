@@ -25,6 +25,7 @@ class ObjectDetectionService {
   bool get isCustomModelLoaded => _isCustomModelLoaded;
 
   bool _isProcessingLiveFrame = false;
+  bool _isDetectorBusy = false;
 
   /// Candidate asset paths for custom fine-grained .tflite object detection models.
   static const List<String> candidateModelAssets = [
@@ -219,8 +220,10 @@ class ObjectDetectionService {
     }
 
     try {
+      if (_isDetectorBusy) return null;
       final double imgW = image.width.toDouble();
       final double imgH = image.height.toDouble();
+      if (imgW <= 0 || imgH <= 0) return null;
 
       final double shortest = imgW < imgH ? imgW : imgH;
       final double boxSize = (shortest * roiFactor).clamp(224.0, shortest);
@@ -260,7 +263,8 @@ class ObjectDetectionService {
 
       final inputImage = InputImage.fromFilePath(tempFile.path);
       return await _processInputImage(inputImage);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[ObjectDetectionService] Error in detectObjectInImageRoi: $e');
       return null;
     }
   }
@@ -365,6 +369,8 @@ class ObjectDetectionService {
     if (!_isInitialized) {
       await initialize();
     }
+    if (_isDetectorBusy) return [];
+    _isDetectorBusy = true;
 
     try {
       final inputImage = InputImage.fromFilePath(filePath);
@@ -410,6 +416,8 @@ class ObjectDetectionService {
     } catch (e) {
       debugPrint('[ObjectDetectionService] Error in detectObjectsInFilePath: $e');
       return [];
+    } finally {
+      _isDetectorBusy = false;
     }
   }
 
@@ -430,31 +438,39 @@ class ObjectDetectionService {
 
   /// Unified processor prioritizing granular [ImageLabeler] over coarse [ObjectDetector].
   Future<String?> _processInputImage(InputImage inputImage) async {
-    // Priority 1: Fine-grained ImageLabeler (Custom TFLite or 400+ label set)
-    if (_imageLabeler != null) {
-      try {
-        final labels = await _imageLabeler!.processImage(inputImage);
-        if (labels.isNotEmpty) {
-          return _cleanObjectLabel(labels.first.label);
-        }
-      } catch (_) {}
-    }
+    if (_isDetectorBusy) return null;
+    _isDetectorBusy = true;
 
-    // Priority 2: Fallback to ObjectDetector
-    if (_objectDetector != null) {
-      try {
-        final objects = await _objectDetector!.processImage(inputImage);
-        if (objects.isNotEmpty) {
-          final firstObj = objects.first;
-          if (firstObj.labels.isNotEmpty) {
-            final topLabel = firstObj.labels.first.text;
-            return _cleanObjectLabel(topLabel);
+    try {
+      // Priority 1: Fine-grained ImageLabeler (Custom TFLite or 400+ label set)
+      if (_imageLabeler != null) {
+        try {
+          final labels = await _imageLabeler!.processImage(inputImage);
+          if (labels.isNotEmpty) {
+            return _cleanObjectLabel(labels.first.label);
           }
-        }
-      } catch (_) {}
-    }
+        } catch (_) {}
+      }
 
-    return null;
+      // Priority 2: Fallback to static ObjectDetector (preserves stream detector state)
+      final detector = _staticObjectDetector ?? _objectDetector;
+      if (detector != null) {
+        try {
+          final objects = await detector.processImage(inputImage);
+          if (objects.isNotEmpty) {
+            final firstObj = objects.first;
+            if (firstObj.labels.isNotEmpty) {
+              final topLabel = firstObj.labels.first.text;
+              return _cleanObjectLabel(topLabel);
+            }
+          }
+        } catch (_) {}
+      }
+
+      return null;
+    } finally {
+      _isDetectorBusy = false;
+    }
   }
 
   /// Formats raw model labels (e.g., "laptop" -> "Laptop", "cell phone" -> "Cell Phone").
@@ -777,19 +793,22 @@ class ObjectDetectionService {
     if (!_isInitialized) {
       await initialize();
     }
-    if (_objectDetector == null || _isProcessingLiveFrame) {
+    if (_objectDetector == null || _isProcessingLiveFrame || _isDetectorBusy) {
       return [];
     }
 
     _isProcessingLiveFrame = true;
+    _isDetectorBusy = true;
     try {
       final inputImage = _convertCameraImageToInputImage(image, camera);
       if (inputImage == null) {
         _isProcessingLiveFrame = false;
+        _isDetectorBusy = false;
         return [];
       }
 
       final rawObjects = await _objectDetector!.processImage(inputImage);
+      _isDetectorBusy = false;
       _isProcessingLiveFrame = false;
 
       final prominent = filterProminentObjects(
@@ -801,6 +820,7 @@ class ObjectDetectionService {
       return prominent;
     } catch (e) {
       debugPrint('[ObjectDetectionService] Exception in processLiveFrame: $e');
+      _isDetectorBusy = false;
       _isProcessingLiveFrame = false;
       return [];
     }
@@ -813,6 +833,15 @@ class ObjectDetectionService {
 
   InputImage? _convertCameraImageToInputImage(CameraImage image, [CameraDescription? camera]) {
     try {
+      if (Platform.isIOS) {
+        // ML Kit iOS natively processes fromBytes exclusively using 32BGRA single-plane buffers.
+        // Passing non-BGRA or multi-plane YUV buffers causes native EXC_BAD_ACCESS in CoreVideo.
+        final format = InputImageFormatValue.fromRawValue(image.format.raw);
+        if (format != InputImageFormat.bgra8888 || image.planes.length != 1) {
+          return null;
+        }
+      }
+
       final Uint8List bytes;
       if (image.planes.length == 1) {
         bytes = image.planes.first.bytes;
@@ -845,6 +874,19 @@ class ObjectDetectionService {
   }
 
   Uint8List _yuv420ToNv21(CameraImage image) {
+    if (image.planes.length < 3) {
+      if (image.planes.length == 2) {
+        // iOS BiPlanar (420v / NV12: Plane 0 is Y, Plane 1 is UV interleaved)
+        final yPlane = image.planes[0];
+        final uvPlane = image.planes[1];
+        final total = Uint8List(yPlane.bytes.length + uvPlane.bytes.length);
+        total.setRange(0, yPlane.bytes.length, yPlane.bytes);
+        total.setRange(yPlane.bytes.length, total.length, uvPlane.bytes);
+        return total;
+      }
+      return image.planes.isNotEmpty ? image.planes.first.bytes : Uint8List(0);
+    }
+
     final width = image.width;
     final height = image.height;
 
@@ -890,7 +932,17 @@ class ObjectDetectionService {
     return nv21;
   }
 
+  /// Resets internal busy and live-frame processing flags.
+  ///
+  /// Call this when stopping camera streams or switching modes to guarantee
+  /// the detector never deadlocks from an interrupted async cycle.
+  void resetBusyState() {
+    _isProcessingLiveFrame = false;
+    _isDetectorBusy = false;
+  }
+
   void dispose() {
+    resetBusyState();
     _objectDetector?.close();
     _objectDetector = null;
     _staticObjectDetector?.close();
