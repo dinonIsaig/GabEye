@@ -1,37 +1,55 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
-/// Item model representing a single step in the floating toolbar tutorial.
-class TutorialStepItem {
+/// Item model for Identify (KNN) Mode tutorial steps.
+class IdentifyTutorialStep {
   final String title;
   final String description;
   final IconData icon;
-  final String buttonTooltip;
 
-  const TutorialStepItem({
+  const IdentifyTutorialStep({
     required this.title,
     required this.description,
     required this.icon,
-    required this.buttonTooltip,
   });
 }
 
-/// A modular floating modal overlay for Vision Lens right-side toolbar buttons.
-class FloatingToolbarTutorialOverlay extends StatelessWidget {
-  final int currentStepIndex;
-  final int totalSteps;
-  final TutorialStepItem stepItem;
-  final double targetButtonBottomOffset;
+/// A dedicated floating tutorial overlay widget for Identify (KNN Color Identification) mode.
+/// Uses exact [Rect] target positions derived from GlobalKeys for pixel-perfect placement.
+class IdentifyToolbarTutorialOverlay extends StatelessWidget {
+  final int stepIndex;
+  final Rect? targetRect;
   final VoidCallback onNext;
   final VoidCallback onSkip;
   final VoidCallback onComplete;
 
-  const FloatingToolbarTutorialOverlay({
+  static const List<IdentifyTutorialStep> steps = [
+    IdentifyTutorialStep(
+      title: 'Object Labeling (ML Kit)',
+      description: 'Identifies objects in live camera view with real-time bounding boxes & labels.',
+      icon: Icons.category_rounded,
+    ),
+    IdentifyTutorialStep(
+      title: 'Zoom Control',
+      description: 'Adjust camera magnification from 1.0x to 5.0x for detailed color inspection.',
+      icon: Icons.zoom_in_rounded,
+    ),
+    IdentifyTutorialStep(
+      title: 'Split Screen View',
+      description: 'Side-by-side comparison (Top = Color Identification / Bottom = CVD Simulation).',
+      icon: Icons.splitscreen_rounded,
+    ),
+    IdentifyTutorialStep(
+      title: 'Voice Narration',
+      description: 'Tap to hear spoken audio feedback of current identified colors or detected objects.',
+      icon: Icons.volume_up_rounded,
+    ),
+  ];
+
+  const IdentifyToolbarTutorialOverlay({
     super.key,
-    required this.currentStepIndex,
-    required this.totalSteps,
-    required this.stepItem,
-    required this.targetButtonBottomOffset,
+    required this.stepIndex,
+    required this.targetRect,
     required this.onNext,
     required this.onSkip,
     required this.onComplete,
@@ -40,7 +58,19 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final isLastStep = currentStepIndex >= totalSteps - 1;
+    final isLastStep = stepIndex >= steps.length - 1;
+    final step = steps[stepIndex.clamp(0, steps.length - 1)];
+
+    final Rect target = targetRect ??
+        Rect.fromLTWH(
+          MediaQuery.of(context).size.width - 60,
+          MediaQuery.of(context).size.height / 2,
+          48,
+          48,
+        );
+
+    final double modalTop = (target.top + (target.height / 2) - 80)
+        .clamp(80.0, MediaQuery.of(context).size.height - 240);
 
     return Stack(
       children: [
@@ -54,14 +84,14 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
           ),
         ),
 
-        // Floating Target Pulse Ring over right-side button
+        // Pixel-perfect Target Pulse Ring around floating button
         Positioned(
-          right: 18,
-          bottom: targetButtonBottomOffset - 3,
+          left: target.left - 4,
+          top: target.top - 4,
+          width: target.width + 8,
+          height: target.height + 8,
           child: IgnorePointer(
             child: Container(
-              width: 54,
-              height: 54,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -70,8 +100,8 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.primary.withValues(alpha: 0.6),
-                    blurRadius: 16,
+                    color: colors.primary.withValues(alpha: 0.65),
+                    blurRadius: 18,
                     spreadRadius: 4,
                   ),
                 ],
@@ -80,33 +110,33 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
           ),
         ),
 
-        // Floating Tutorial Card Modal (Positioned left of the toolbar)
+        // Floating Glassmorphic Modal Card & Pointer Arrow
         Positioned(
-          right: 84,
-          bottom: (targetButtonBottomOffset - 25).clamp(100.0, MediaQuery.of(context).size.height - 250),
+          right: (MediaQuery.of(context).size.width - target.left + 8).clamp(60.0, MediaQuery.of(context).size.width - 270),
+          top: modalTop,
           child: Material(
             color: Colors.transparent,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Tooltip Glassmorphic Box
+                // Modal Card
                 ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                     child: Container(
-                      width: 260,
+                      width: 250,
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.88),
+                        color: Colors.black.withValues(alpha: 0.90),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: colors.primary.withValues(alpha: 0.6),
+                          color: colors.primary.withValues(alpha: 0.65),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.35),
+                            color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -130,7 +160,7 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  'Step ${currentStepIndex + 1} of $totalSteps',
+                                  'Identify Step ${stepIndex + 1} of ${steps.length}',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -138,18 +168,14 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              Icon(
-                                stepItem.icon,
-                                size: 20,
-                                color: colors.primary,
-                              ),
+                              Icon(step.icon, size: 20, color: colors.primary),
                             ],
                           ),
                           const SizedBox(height: 8),
 
                           // Title
                           Text(
-                            stepItem.title,
+                            step.title,
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -160,7 +186,7 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
 
                           // Description
                           Text(
-                            stepItem.description,
+                            step.description,
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.white70,
@@ -169,7 +195,7 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          // Actions: Skip vs Next/Got it!
+                          // Controls
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -182,10 +208,7 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
                                 ),
                                 child: const Text(
                                   'Skip',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white54,
-                                  ),
+                                  style: TextStyle(fontSize: 12, color: Colors.white54),
                                 ),
                               ),
                               ElevatedButton.icon(
@@ -221,7 +244,7 @@ class FloatingToolbarTutorialOverlay extends StatelessWidget {
                   ),
                 ),
 
-                // Right Arrow Pointer pointing toward target button
+                // Arrow Pointer pointing to the target button
                 Icon(
                   Icons.arrow_right_rounded,
                   size: 32,

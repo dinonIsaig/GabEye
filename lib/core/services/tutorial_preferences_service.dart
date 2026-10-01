@@ -1,34 +1,54 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Service for managing one-time tutorial persistence across Vision Lens features.
+/// Service for managing mode-specific one-time tutorial persistence across Vision Lens features.
 class TutorialPreferencesService {
-  static const String _toolbarTutorialKey = 'has_seen_vision_lens_toolbar_tutorial';
+  static const String _remapTutorialKey = 'has_seen_remap_toolbar_tutorial';
+  static const String _knnTutorialKey = 'has_seen_knn_toolbar_tutorial';
 
   TutorialPreferencesService._();
 
-  /// Returns true if the user has already seen/completed the floating toolbar tutorial.
-  static Future<bool> hasSeenToolbarTutorial() async {
+  /// Returns true if the user has already seen the Remap mode floating toolbar tutorial.
+  static Future<bool> hasSeenRemapTutorial() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_toolbarTutorialKey) ?? false;
+      return prefs.getBool(_remapTutorialKey) ?? false;
     } catch (_) {
       return false;
     }
   }
 
-  /// Marks the floating toolbar tutorial as completed so it won't show automatically again.
-  static Future<void> markToolbarTutorialAsSeen() async {
+  /// Returns true if the user has already seen the KNN mode floating toolbar tutorial.
+  static Future<bool> hasSeenKnnTutorial() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_toolbarTutorialKey, true);
+      return prefs.getBool(_knnTutorialKey) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Marks the Remap mode toolbar tutorial as completed.
+  static Future<void> markRemapTutorialAsSeen() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_remapTutorialKey, true);
     } catch (_) {}
   }
 
-  /// Resets the tutorial status allowing manual re-plays.
-  static Future<void> resetToolbarTutorial() async {
+  /// Marks the KNN mode toolbar tutorial as completed.
+  static Future<void> markKnnTutorialAsSeen() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_toolbarTutorialKey);
+      await prefs.setBool(_knnTutorialKey, true);
+    } catch (_) {}
+  }
+
+  /// Resets all tutorial statuses allowing manual re-plays.
+  static Future<void> resetAllTutorials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_remapTutorialKey);
+      await prefs.remove(_knnTutorialKey);
     } catch (_) {}
   }
 }

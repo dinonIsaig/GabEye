@@ -16,7 +16,8 @@ import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
 import 'package:gabeye/core/widgets/cvd_simulation_shader_widget.dart';
 import 'package:gabeye/core/services/tutorial_preferences_service.dart';
-import 'package:gabeye/features/home/widgets/floating_toolbar_tutorial_overlay.dart';
+import 'package:gabeye/features/home/widgets/remap_toolbar_tutorial_overlay.dart';
+import 'package:gabeye/features/home/widgets/identify_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
@@ -79,48 +80,16 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   bool _isSplitScreenView = false;
   bool _isCvdPerceptionSplitActive = false;
 
-  // Floating Toolbar Tutorial State & Step Items
+  // Floating Toolbar Tutorial Keys & State
+  final GlobalKey _viewportKey = GlobalKey();
+  final GlobalKey _mlKitButtonKey = GlobalKey();
+  final GlobalKey _zoomButtonKey = GlobalKey();
+  final GlobalKey _torchButtonKey = GlobalKey();
+  final GlobalKey _splitButtonKey = GlobalKey();
+  final GlobalKey _audioButtonKey = GlobalKey();
+
   bool _isTutorialActive = false;
   int _currentTutorialStepIndex = 0;
-
-  final List<TutorialStepItem> _tutorialSteps = const [
-    TutorialStepItem(
-      title: 'Object Labeling',
-      description: 'Identifies objects in live camera view with real-time bounding boxes & labels (available in KNN mode).',
-      icon: Icons.category_rounded,
-      buttonTooltip: 'Object Labeling',
-    ),
-    TutorialStepItem(
-      title: 'Zoom Control',
-      description: 'Adjust camera magnification from 1.0x to 5.0x for detailed pixel color inspection.',
-      icon: Icons.zoom_in_rounded,
-      buttonTooltip: 'Zoom Control',
-    ),
-    TutorialStepItem(
-      title: 'Flashlight Torch',
-      description: 'Toggle device torch to illuminate dark scenes for accurate Daltonization and color detection.',
-      icon: Icons.flash_on_rounded,
-      buttonTooltip: 'Flashlight',
-    ),
-    TutorialStepItem(
-      title: 'Split Screen View',
-      description: 'Side-by-side comparison (Top = Original / Bottom = Filtered) to instantly view color enhancements.',
-      icon: Icons.splitscreen_rounded,
-      buttonTooltip: 'Split Screen Comparison',
-    ),
-    TutorialStepItem(
-      title: 'CVD Perception View',
-      description: 'Switch split view to display pure CVD Simulation vs how a color-blind viewer actually perceives the Daltonized scene.',
-      icon: Icons.visibility_rounded,
-      buttonTooltip: 'CVD Perception Split View',
-    ),
-    TutorialStepItem(
-      title: 'Voice Narration',
-      description: 'Tap to hear spoken audio feedback of current identified colors or detected objects.',
-      icon: Icons.volume_up_rounded,
-      buttonTooltip: 'Voice Narration',
-    ),
-  ];
 
   // Camera Realtime Mode (Daltonization vs. KNN Color Identification)
   CameraRealtimeMode _activeCameraMode = CameraRealtimeMode.daltonization;
@@ -384,24 +353,99 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     _checkToolbarTutorialStatus();
   }
 
-  Future<void> _checkToolbarTutorialStatus() async {
-    final hasSeen = await TutorialPreferencesService.hasSeenToolbarTutorial();
-    if (!hasSeen && mounted) {
-      Future.delayed(const Duration(milliseconds: 900), () {
-        if (mounted) {
+  Rect? _getWidgetRect(GlobalKey buttonKey) {
+    final buttonBox = buttonKey.currentContext?.findRenderObject() as RenderBox?;
+    final viewportBox = _viewportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (buttonBox == null || !buttonBox.hasSize || viewportBox == null || !viewportBox.hasSize) {
+      return null;
+    }
+    final buttonGlobal = buttonBox.localToGlobal(Offset.zero);
+    final viewportGlobal = viewportBox.localToGlobal(Offset.zero);
+    final relativeOffset = buttonGlobal - viewportGlobal;
+    return relativeOffset & buttonBox.size;
+  }
+
+  Rect? _getRemapTutorialTargetRect(int stepIndex) {
+    switch (stepIndex) {
+      case 0:
+        return _getWidgetRect(_zoomButtonKey);
+      case 1:
+        return _getWidgetRect(_torchButtonKey);
+      case 2:
+        return _getWidgetRect(_splitButtonKey);
+      default:
+        return null;
+    }
+  }
+
+  Rect? _getIdentifyTutorialTargetRect(int stepIndex) {
+    switch (stepIndex) {
+      case 0:
+        return _getWidgetRect(_mlKitButtonKey);
+      case 1:
+        return _getWidgetRect(_zoomButtonKey);
+      case 2:
+        return _getWidgetRect(_splitButtonKey);
+      case 3:
+        return _getWidgetRect(_audioButtonKey);
+      default:
+        return null;
+    }
+  }
+
+  Future<void> _checkToolbarTutorialStatus({bool forceReplay = false}) async {
+    if (!_isCameraPermissionGranted || _cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    final bool hasSeen = forceReplay
+        ? false
+        : (isKnn
+            ? await TutorialPreferencesService.hasSeenKnnTutorial()
+            : await TutorialPreferencesService.hasSeenRemapTutorial());
+
+    if (!hasSeen && mounted && widget.isActive) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted && widget.isActive && _isCameraPermissionGranted && !_isTutorialActive) {
           setState(() {
             _isTutorialActive = true;
             _currentTutorialStepIndex = 0;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _isTutorialActive) {
+              setState(() {});
+            }
           });
         }
       });
     }
   }
 
+  /// Manually re-triggers the floating toolbar tutorial overlay.
+  Future<void> replayToolbarTutorial() async {
+    final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    if (isKnn) {
+      await TutorialPreferencesService.resetAllTutorials();
+    } else {
+      await TutorialPreferencesService.resetAllTutorials();
+    }
+    if (mounted) {
+      _checkToolbarTutorialStatus(forceReplay: true);
+    }
+  }
+
   void _nextTutorialStep() {
-    if (_currentTutorialStepIndex < _tutorialSteps.length - 1) {
+    final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    final int maxSteps = isKnn ? 4 : 3;
+    if (_currentTutorialStepIndex < maxSteps - 1) {
       setState(() {
         _currentTutorialStepIndex++;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _isTutorialActive) {
+          setState(() {});
+        }
       });
     } else {
       _completeTutorial();
@@ -409,26 +453,14 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   }
 
   void _completeTutorial() {
+    final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
     setState(() {
       _isTutorialActive = false;
     });
-    TutorialPreferencesService.markToolbarTutorialAsSeen();
-  }
-
-  double _getTutorialTargetBottomOffset(int stepIndex) {
-    switch (stepIndex) {
-      case 0:
-        return 330.0;
-      case 1:
-        return 275.0;
-      case 2:
-        return 220.0;
-      case 3:
-      case 4:
-        return 165.0;
-      case 5:
-      default:
-        return 110.0;
+    if (isKnn) {
+      TutorialPreferencesService.markKnnTutorialAsSeen();
+    } else {
+      TutorialPreferencesService.markRemapTutorialAsSeen();
     }
   }
 
@@ -448,6 +480,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             _startKnnFrameStream();
           }
         }
+        _checkToolbarTutorialStatus();
       }
     }
   }
@@ -467,6 +500,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           _startKnnFrameStream();
         }
       }
+      _checkToolbarTutorialStatus();
     }
   }
 
@@ -955,7 +989,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           setState(() {
             _cameraController = controller;
             _isCameraInitializing = false;
+            _isCameraPermissionGranted = true;
           });
+          _checkToolbarTutorialStatus();
         }
       } else {
         if (mounted) setState(() => _isCameraInitializing = false);
@@ -1849,6 +1885,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                   ))));
 
     return Stack(
+      key: _viewportKey,
       children: [
         // Viewport: Uploaded photo or Realtime Hardware Camera Feed through GLSL LMS Daltonization Shader
         Positioned.fill(child: viewportContent),
@@ -2196,19 +2233,29 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             child: _buildTransparentFloatingActionCard(context),
           ),
 
-        // One-time Floating Toolbar Tutorial Overlay
-        if (_isTutorialActive)
-          Positioned.fill(
-            child: FloatingToolbarTutorialOverlay(
-              currentStepIndex: _currentTutorialStepIndex,
-              totalSteps: _tutorialSteps.length,
-              stepItem: _tutorialSteps[_currentTutorialStepIndex],
-              targetButtonBottomOffset: _getTutorialTargetBottomOffset(_currentTutorialStepIndex),
-              onNext: _nextTutorialStep,
-              onSkip: _completeTutorial,
-              onComplete: _completeTutorial,
+        // One-time Floating Toolbar Tutorial Overlay (Shown ONLY when camera is allowed & ready)
+        if (_isTutorialActive && _isCameraPermissionGranted) ...[
+          if (_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode)
+            Positioned.fill(
+              child: IdentifyToolbarTutorialOverlay(
+                stepIndex: _currentTutorialStepIndex,
+                targetRect: _getIdentifyTutorialTargetRect(_currentTutorialStepIndex),
+                onNext: _nextTutorialStep,
+                onSkip: _completeTutorial,
+                onComplete: _completeTutorial,
+              ),
+            )
+          else
+            Positioned.fill(
+              child: RemapToolbarTutorialOverlay(
+                stepIndex: _currentTutorialStepIndex,
+                targetRect: _getRemapTutorialTargetRect(_currentTutorialStepIndex),
+                onNext: _nextTutorialStep,
+                onSkip: _completeTutorial,
+                onComplete: _completeTutorial,
+              ),
             ),
-          ),
+        ],
       ],
     );
   }
@@ -2679,6 +2726,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                     } else {
                       _stopKnnFrameStream();
                     }
+                    _checkToolbarTutorialStatus();
                     messenger.hideCurrentSnackBar();
                     messenger.showSnackBar(
                       SnackBar(
@@ -2753,6 +2801,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         // Object Labeling Mode Toggle Button (Accessible ONLY in KNN mode live feeds)
         if (isKnnMode && !_isDisplayingUploadedImage && !_isFreezeFrameActive) ...[
           _buildFloatingCircleButton(
+            key: _mlKitButtonKey,
             icon: Icons.category_rounded,
             isActive: _isObjectDetectionMode,
             onTap: _toggleObjectDetectionMode,
@@ -2767,6 +2816,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         // Zoom Toggle Button (Live camera feed only; hidden when viewing an uploaded photo)
         if (!_isDisplayingUploadedImage) ...[
           _buildFloatingCircleButton(
+            key: _zoomButtonKey,
             icon: Icons.zoom_in_rounded,
             isActive: _showZoomSlider,
             onTap: () {
@@ -2785,6 +2835,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         // Flashlight Torch Toggle Button (Live Daltonization mode only; hidden in Identify mode, Freeze-Frame & Uploads)
         if (isLiveDaltonization) ...[
           _buildFloatingCircleButton(
+            key: _torchButtonKey,
             icon: _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
             isActive: _isTorchOn,
             onTap: _toggleTorch,
@@ -2828,6 +2879,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         // Split Screen View Comparison Toggle Button (Live camera feeds only — both Daltonization & Identify mode; hidden in Object Detection mode, Freeze-Frame & Uploads)
         if (isLiveCamera && !_isObjectDetectionMode) ...[
           _buildFloatingCircleButton(
+            key: _splitButtonKey,
             icon: _isSplitScreenView ? Icons.compare_rounded : Icons.splitscreen_rounded,
             isActive: _isSplitScreenView,
             onTap: () {
@@ -2861,6 +2913,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         // On-Demand Audio Narration Speak Button (Available in Identify / KNN mode, Object Labeling mode & Freeze-Frame)
         if (isKnnMode || canSpeakObjectDetection) ...[
           _buildFloatingCircleButton(
+            key: _audioButtonKey,
             icon: Icons.volume_up_rounded,
             isActive: false,
             onTap: () {
@@ -2907,6 +2960,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   }
 
   Widget _buildFloatingCircleButton({
+    Key? key,
     required IconData icon,
     required bool isActive,
     VoidCallback? onTap,
@@ -2916,6 +2970,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     required String tooltip,
   }) {
     return Container(
+      key: key,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
