@@ -15,6 +15,8 @@ import 'package:gabeye/core/services/object_detection_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
 import 'package:gabeye/core/widgets/cvd_simulation_shader_widget.dart';
+import 'package:gabeye/core/services/tutorial_preferences_service.dart';
+import 'package:gabeye/features/home/widgets/floating_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
@@ -76,6 +78,49 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   bool _showZoomSlider = false;
   bool _isSplitScreenView = false;
   bool _isCvdPerceptionSplitActive = false;
+
+  // Floating Toolbar Tutorial State & Step Items
+  bool _isTutorialActive = false;
+  int _currentTutorialStepIndex = 0;
+
+  final List<TutorialStepItem> _tutorialSteps = const [
+    TutorialStepItem(
+      title: 'Object Labeling',
+      description: 'Identifies objects in live camera view with real-time bounding boxes & labels (available in KNN mode).',
+      icon: Icons.category_rounded,
+      buttonTooltip: 'Object Labeling',
+    ),
+    TutorialStepItem(
+      title: 'Zoom Control',
+      description: 'Adjust camera magnification from 1.0x to 5.0x for detailed pixel color inspection.',
+      icon: Icons.zoom_in_rounded,
+      buttonTooltip: 'Zoom Control',
+    ),
+    TutorialStepItem(
+      title: 'Flashlight Torch',
+      description: 'Toggle device torch to illuminate dark scenes for accurate Daltonization and color detection.',
+      icon: Icons.flash_on_rounded,
+      buttonTooltip: 'Flashlight',
+    ),
+    TutorialStepItem(
+      title: 'Split Screen View',
+      description: 'Side-by-side comparison (Top = Original / Bottom = Filtered) to instantly view color enhancements.',
+      icon: Icons.splitscreen_rounded,
+      buttonTooltip: 'Split Screen Comparison',
+    ),
+    TutorialStepItem(
+      title: 'CVD Perception View',
+      description: 'Switch split view to display pure CVD Simulation vs how a color-blind viewer actually perceives the Daltonized scene.',
+      icon: Icons.visibility_rounded,
+      buttonTooltip: 'CVD Perception Split View',
+    ),
+    TutorialStepItem(
+      title: 'Voice Narration',
+      description: 'Tap to hear spoken audio feedback of current identified colors or detected objects.',
+      icon: Icons.volume_up_rounded,
+      buttonTooltip: 'Voice Narration',
+    ),
+  ];
 
   // Camera Realtime Mode (Daltonization vs. KNN Color Identification)
   CameraRealtimeMode _activeCameraMode = CameraRealtimeMode.daltonization;
@@ -336,6 +381,55 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initKnnServices();
+    _checkToolbarTutorialStatus();
+  }
+
+  Future<void> _checkToolbarTutorialStatus() async {
+    final hasSeen = await TutorialPreferencesService.hasSeenToolbarTutorial();
+    if (!hasSeen && mounted) {
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) {
+          setState(() {
+            _isTutorialActive = true;
+            _currentTutorialStepIndex = 0;
+          });
+        }
+      });
+    }
+  }
+
+  void _nextTutorialStep() {
+    if (_currentTutorialStepIndex < _tutorialSteps.length - 1) {
+      setState(() {
+        _currentTutorialStepIndex++;
+      });
+    } else {
+      _completeTutorial();
+    }
+  }
+
+  void _completeTutorial() {
+    setState(() {
+      _isTutorialActive = false;
+    });
+    TutorialPreferencesService.markToolbarTutorialAsSeen();
+  }
+
+  double _getTutorialTargetBottomOffset(int stepIndex) {
+    switch (stepIndex) {
+      case 0:
+        return 330.0;
+      case 1:
+        return 275.0;
+      case 2:
+        return 220.0;
+      case 3:
+      case 4:
+        return 165.0;
+      case 5:
+      default:
+        return 110.0;
+    }
   }
 
   @override
@@ -2100,6 +2194,20 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             right: 20,
             bottom: 16,
             child: _buildTransparentFloatingActionCard(context),
+          ),
+
+        // One-time Floating Toolbar Tutorial Overlay
+        if (_isTutorialActive)
+          Positioned.fill(
+            child: FloatingToolbarTutorialOverlay(
+              currentStepIndex: _currentTutorialStepIndex,
+              totalSteps: _tutorialSteps.length,
+              stepItem: _tutorialSteps[_currentTutorialStepIndex],
+              targetButtonBottomOffset: _getTutorialTargetBottomOffset(_currentTutorialStepIndex),
+              onNext: _nextTutorialStep,
+              onSkip: _completeTutorial,
+              onComplete: _completeTutorial,
+            ),
           ),
       ],
     );
