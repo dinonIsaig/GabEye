@@ -75,6 +75,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   final double _maxZoom = 5.0;
   bool _showZoomSlider = false;
   bool _isSplitScreenView = false;
+  bool _isCvdPerceptionSplitActive = false;
 
   // Camera Realtime Mode (Daltonization vs. KNN Color Identification)
   CameraRealtimeMode _activeCameraMode = CameraRealtimeMode.daltonization;
@@ -1203,11 +1204,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         0.0,      0.0,       0.0,      1.0, 0.0,
       ];
     } else if (shaderType < 1.5) {
-      // Deuteranopia: Shift lost green into Red (1.0x) & Blue (0.7x)
+      // Deuteranopia: Shift lost green into Red (2.5x) & Blue (4.0x) matching daltonization.frag
       target = [
-        0.717721,  0.322233, -0.039954, 0.0, 0.0,
+        0.294303,  0.805583, -0.099885, 0.0, 0.0,
         0.0,       1.0,       0.0,      0.0, 0.0,
-       -0.197595,  0.225563,  0.972032, 0.0, 0.0,
+       -1.129116,  1.288932,  0.840184, 0.0, 0.0,
         0.0,       0.0,       0.0,      1.0, 0.0,
       ];
     } else {
@@ -2641,8 +2642,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Object Labeling Mode Toggle Button (Accessible in live feeds for both Daltonization & KNN)
-        if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) ...[
+        // Object Labeling Mode Toggle Button (Accessible ONLY in KNN mode live feeds)
+        if (isKnnMode && !_isDisplayingUploadedImage && !_isFreezeFrameActive) ...[
           _buildFloatingCircleButton(
             icon: Icons.category_rounded,
             isActive: _isObjectDetectionMode,
@@ -2687,6 +2688,35 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           const SizedBox(height: 12),
         ],
 
+        // CVD Perception Split Mode Toggle Button (Appears in Remapping mode ONLY when Split Screen is ENABLED)
+        if (!isKnnMode && _isSplitScreenView) ...[
+          _buildFloatingCircleButton(
+            icon: _isCvdPerceptionSplitActive ? Icons.visibility_rounded : Icons.visibility_outlined,
+            isActive: _isCvdPerceptionSplitActive,
+            onTap: () {
+              setState(() {
+                _isCvdPerceptionSplitActive = !_isCvdPerceptionSplitActive;
+              });
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _isCvdPerceptionSplitActive
+                        ? 'CVD Perception View: Top = CVD Simulation, Bottom = Perceived Daltonization'
+                        : 'Standard Remapping View: Top = Original, Bottom = Daltonization',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: _isCvdPerceptionSplitActive ? Colors.white : iconColor,
+            tooltip: _isCvdPerceptionSplitActive ? 'Standard Split View' : 'CVD Perception Split View',
+          ),
+          const SizedBox(height: 12),
+        ],
+
         // Split Screen View Comparison Toggle Button (Live camera feeds only — both Daltonization & Identify mode; hidden in Object Detection mode, Freeze-Frame & Uploads)
         if (isLiveCamera && !_isObjectDetectionMode) ...[
           _buildFloatingCircleButton(
@@ -2695,6 +2725,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             onTap: () {
               setState(() {
                 _isSplitScreenView = !_isSplitScreenView;
+                if (!_isSplitScreenView) {
+                  _isCvdPerceptionSplitActive = false;
+                }
               });
               VisionLensScreen.isFullScreenNotifier.value = _isSplitScreenView;
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -2702,7 +2735,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 SnackBar(
                   content: Text(
                     _isSplitScreenView
-                        ? 'Split Screen View & Full Screen enabled (Original vs Daltonized)'
+                        ? 'Split Screen View & Full Screen enabled'
                         : 'Standard View restored',
                   ),
                   duration: const Duration(seconds: 1),
@@ -3169,12 +3202,58 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       );
     }
 
-    // ── Daltonization Mode: Horizontal Split Screen View (Top = Original, Bottom = Daltonized) ──
+    Widget topHalfWidget = leftOriginal;
+    Widget bottomHalfWidget = rightFiltered;
+    String topLabelText = 'Color Remapping (Original)';
+    String bottomLabelText = 'Daltonization (${_selectedPreset.name.toUpperCase()})';
+
+    if (_isCvdPerceptionSplitActive) {
+      topLabelText = 'CVD Simulation (${_selectedPreset.name.toUpperCase()})';
+      bottomLabelText = 'CVD Perception (${_selectedPreset.name.toUpperCase()} + Daltonized)';
+
+      if (_isDisplayingUploadedImage && _uploadedUiImage != null) {
+        topHalfWidget = CvdSimulationShaderWidget(
+          image: _uploadedUiImage!,
+          shaderType: shaderType,
+          intensity: intensity,
+        );
+        bottomHalfWidget = ColorFiltered(
+          colorFilter: ColorFilter.matrix(
+            _buildCvdSimulationMatrix(shaderType, intensity),
+          ),
+          child: DaltonizationShaderWidget(
+            customType: shaderType,
+            intensity: intensity,
+            image: _uploadedUiImage!,
+          ),
+        );
+      } else if (_isCameraPermissionGranted) {
+        topHalfWidget = ColorFiltered(
+          colorFilter: ColorFilter.matrix(
+            _buildCvdSimulationMatrix(shaderType, intensity),
+          ),
+          child: _buildCameraPreviewWidget(colors),
+        );
+        bottomHalfWidget = ColorFiltered(
+          colorFilter: ColorFilter.matrix(
+            _buildCvdSimulationMatrix(shaderType, intensity),
+          ),
+          child: ColorFiltered(
+            colorFilter: ColorFilter.matrix(
+              _buildCameraColorMatrix(shaderType, intensity),
+            ),
+            child: _buildCameraPreviewWidget(colors),
+          ),
+        );
+      }
+    }
+
+    // ── Daltonization Mode: Horizontal Split Screen View ──
     return Stack(
       children: [
         Column(
           children: [
-            // Upper Half: Original Un-filtered View
+            // Upper Half
             Expanded(
               child: Stack(
                 children: [
@@ -3185,7 +3264,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         child: SizedBox(
                           width: 1000,
                           height: 1000,
-                          child: leftOriginal,
+                          child: topHalfWidget,
                         ),
                       ),
                     ),
@@ -3201,9 +3280,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.white30, width: 1),
                       ),
-                      child: const Text(
-                        'Color Remapping (Original)',
-                        style: TextStyle(
+                      child: Text(
+                        topLabelText,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -3215,7 +3294,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
               ),
             ),
 
-            // Lower Half: Daltonized Color-Remapped View
+            // Lower Half
             Expanded(
               child: Stack(
                 children: [
@@ -3226,7 +3305,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         child: SizedBox(
                           width: 1000,
                           height: 1000,
-                          child: rightFiltered,
+                          child: bottomHalfWidget,
                         ),
                       ),
                     ),
@@ -3243,7 +3322,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         border: Border.all(color: Colors.white38, width: 1),
                       ),
                       child: Text(
-                        'Daltonization (${_selectedPreset.name.toUpperCase()})',
+                        bottomLabelText,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
