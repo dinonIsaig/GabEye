@@ -6,6 +6,8 @@ import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/core/theme/cvd_personalization_controller.dart';
 import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
+import 'package:gabeye/features/assessment/services/assessment_controller.dart';
+import 'package:gabeye/core/services/vision_profile_service.dart';
 import '../settings/help_feedback_screen.dart';
 import '../settings/gabeye_settings.dart';
 
@@ -366,12 +368,19 @@ class FarnsworthD15ArticleScreen extends StatelessWidget {
       heroTitle: 'About the Farnsworth D-15',
       content: ArticleContent.farnsworthD15Content(),
       actionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24.0,
+          vertical: 16.0,
+        ),
         child: ElevatedButton(
           onPressed: () {
             assessmentController.reset();
+            VisionProfileService.instance.clearAssessmentResult();
             cvdPersonalizationController.resetForNewAttempt();
-            Navigator.pushNamed(context, AppRoutes.preAssessmentHowItWorks);
+            Navigator.pushNamed(
+              context,
+              AppRoutes.preAssessmentIntro,
+            );
           },
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 55),
@@ -381,7 +390,10 @@ class FarnsworthD15ArticleScreen extends StatelessWidget {
           ),
           child: const Text(
             'Take Assessment',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),

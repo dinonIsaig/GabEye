@@ -76,7 +76,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                                 width: 1,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
                             onPressed: () => _goHome(context),
@@ -89,7 +89,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                                     'Go to Home',
                                     style: TextStyle(
                                       fontFamily: 'Inter',
-                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -113,7 +113,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                               ),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
                             onPressed: () => Navigator.pop(context),
@@ -132,7 +132,7 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                                     'Back',
                                     style: TextStyle(
                                       fontFamily: 'Inter',
-                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                       fontWeight: FontWeight.bold,
                                       color: Theme.of(context).colorScheme.onSurface,
                                     ),

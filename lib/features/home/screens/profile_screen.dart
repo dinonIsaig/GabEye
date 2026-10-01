@@ -4,10 +4,12 @@ import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/pdf_report_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/cvd_personalization_controller.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/config/diagnosis_presentation.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
+import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -241,6 +243,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
+                              // Same reset as the "Take Assessment" button
+                              // on the D-15 article screen: clears the
+                              // stored result in VisionProfileService (what
+                              // the Personalize UI toggle actually reads
+                              // from) so it disables and the theme falls
+                              // back to default immediately, before the
+                              // new attempt even starts.
+                              assessmentController.reset();
+                              VisionProfileService.instance.clearAssessmentResult();
+                              cvdPersonalizationController.resetForNewAttempt();
                               Navigator.pushNamed(context, AppRoutes.preAssessmentIntro);
                             },
                             icon: const Icon(Icons.refresh_rounded, size: 16),
@@ -249,8 +261,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: colors.primary,
-                              side: BorderSide(color: colors.primary.withValues(alpha: 0.6)),
+                              foregroundColor: context.semanticColors.primaryButton,
+                              side: BorderSide(
+                                color: context.semanticColors.primaryButton.withValues(alpha: 0.6),
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 /// Which color-vision-deficiency lens the UI's color cues should be tuned
 /// for. `none` is the default (unmodified) palette; the other three mirror
@@ -74,32 +75,32 @@ class CvdColorTokens {
       warning: Color(0xFFD39201),
       error: Color(0xFFA33612),
       info: Color(0xFF1D4E82),
-      border: Color(0xFF8A8BA2),
-      primaryButton: Color(0xFFB0C6D9),
+      border:AppColors.darkTextPrimary,
+      primaryButton: AppColors.darkPrimaryButton,
     ),
     CvdProfile.protan: CvdColorSet(
       success: Color(0xFF12879A),
       warning: Color(0xFFD39201),
       error: Color(0xFFC81E62),
       info: Color(0xFF14395F),
-      border: Color(0xFF8A8BA2),
-      primaryButton: Color(0xFF6E93B8),
+      border: AppColors.darkTextPrimary,
+      primaryButton: AppColors.darkPrimaryButton, 
     ),
     CvdProfile.deutan: CvdColorSet(
       success: Color(0xFF12879A),
       warning: Color(0xFFE69F00),
       error: Color(0xFFC81E62),
       info: Color(0xFF14395F),
-      border: Color(0xFF384250),
-      primaryButton: Color(0xFF6E93B8),
+      border:AppColors.darkTextPrimary,
+      primaryButton: AppColors.darkPrimaryButton, 
     ),
     CvdProfile.tritan: CvdColorSet(
       success: Color(0xFF009E73),
       warning: Color(0xFFD39201),
       error: Color(0xFFA33612),
       info: Color(0xFF14395F),
-      border: Color(0xFF384250),
-      primaryButton: Color(0xFF6E93B8),
+      border: AppColors.darkTextPrimary,
+      primaryButton: AppColors.darkPrimaryButton,
     ),
   };
 

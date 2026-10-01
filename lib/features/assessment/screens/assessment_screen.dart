@@ -2,15 +2,18 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
-import 'package:gabeye/components/menu_button.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
+import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/cvd_personalization_controller.dart';
 import 'package:gabeye/core/theme/gabeye_theme.dart';
 import 'package:gabeye/features/assessment/models/cap.dart';
 import 'package:gabeye/features/assessment/screens/assessment_summary_screen.dart';
 import 'package:gabeye/features/assessment/services/assessment_controller.dart';
+import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 
 class CapDragData {
   final int capNum;
@@ -32,10 +35,17 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   @override
   void initState() {
     super.initState();
+    cvdPersonalizationController.setTestInProgress(true);
     _resetTest();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showAssessmentIntroModal(context);
     });
+  }
+
+  @override
+  void dispose() {
+    cvdPersonalizationController.setTestInProgress(false);
+    super.dispose();
   }
 
   void _resetTest() {
@@ -56,12 +66,12 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   }
 
 // Debugging/Testing. Wired to the floating testing-panel button below.
-void _applyDebugProfile(List<int> caps) {
-  setState(() {
-    _arrangedCaps = List<int?>.from(caps);
-    _poolCaps = [];
-  });
-}
+  void _applyDebugProfile(List<int> caps) {
+    setState(() {
+      _arrangedCaps = List<int?>.from(caps);
+      _poolCaps = [];
+    });
+  }
 
 // Tapping a cap in the pool
   void _placeNextCap(int capNum) {
@@ -110,7 +120,7 @@ void _applyDebugProfile(List<int> caps) {
 
   bool get _isTestComplete => !_arrangedCaps.contains(null);
 
-@override
+  @override
   Widget build(BuildContext context) {
     // wraps screen to make assessment in dark mode
     return Theme(
@@ -118,7 +128,7 @@ void _applyDebugProfile(List<int> caps) {
       child: Builder(
         builder: (context) {
           final colors = Theme.of(context).colorScheme;
-          final textTheme = Theme.of(context).textTheme; 
+          final textTheme = Theme.of(context).textTheme;
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -126,12 +136,14 @@ void _applyDebugProfile(List<int> caps) {
               preferredSize: const Size.fromHeight(64),
               child: GabEyeHomeNavbar(
                 onBack: () => Navigator.pop(context),
-                menuOptions: MenuButton.assessmentOptions,
               ),
             ),
             body: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 12.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -139,18 +151,21 @@ void _applyDebugProfile(List<int> caps) {
                     const SizedBox(height: 20),
                     _buildAssessmentCard(colors, textTheme),
                     const SizedBox(height: 20),
-                    _buildFooterButtons(colors),
+                    _buildFooterButtons(context, colors),
                     const SizedBox(height: 12),
                   ],
                 ),
               ),
             ),
-              floatingActionButton: kDebugMode
-                  ? FloatingActionButton(
-                    onPressed: () => showDebugTestPanel(context, onProfileSelected: _applyDebugProfile),
+            floatingActionButton: kDebugMode
+                ? FloatingActionButton(
+                    onPressed: () => showDebugTestPanel(
+                      context,
+                      onProfileSelected: _applyDebugProfile,
+                    ),
                     child: const Icon(Icons.bug_report),
                   )
-              : null,
+                : null,
           );
         },
       ),
@@ -183,20 +198,32 @@ void _applyDebugProfile(List<int> caps) {
 
   Widget _buildHowItWorksPill(ColorScheme colors) {
     return OutlinedButton.icon(
-      onPressed: () {Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);}, 
+      onPressed: () {
+        Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);
+      },
       icon: const Icon(Icons.help_outline, size: 16),
-      label: const Text('How it works?', style: TextStyle(fontWeight: FontWeight.bold)),
+      label: const Text(
+        'How it works?',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       style: OutlinedButton.styleFrom(
         foregroundColor: Colors.white,
         backgroundColor: Colors.transparent,
-        side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        side: BorderSide(
+          color: colors.onSurfaceVariant.withOpacity(0.3),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
         padding: const EdgeInsets.symmetric(vertical: 14),
       ),
     );
   }
 
-  Widget _buildAssessmentCard(ColorScheme colors, TextTheme textTheme) {
+  Widget _buildAssessmentCard(
+    ColorScheme colors,
+    TextTheme textTheme,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -235,10 +262,11 @@ void _applyDebugProfile(List<int> caps) {
 
   Widget _buildStartGrid(ColorScheme colors) {
     final nextEmptyIdx = _arrangedCaps.indexOf(null);
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: 16, // 1 fixed pilot cell + 15 arrangement slots
+      itemCount: 16,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         mainAxisSpacing: 10,
@@ -249,8 +277,14 @@ void _applyDebugProfile(List<int> caps) {
         if (index == 0) {
           return _buildPilotCell(colors);
         }
+
         final slotIdx = index - 1;
-        return _buildTargetSlotCell(slotIdx, colors, isNextEmpty: slotIdx == nextEmptyIdx);
+
+        return _buildTargetSlotCell(
+          slotIdx,
+          colors,
+          isNextEmpty: slotIdx == nextEmptyIdx,
+        );
       },
     );
   }
@@ -260,7 +294,10 @@ void _applyDebugProfile(List<int> caps) {
       decoration: BoxDecoration(
         color: ColorCap.getVisualColor(0),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(
+          color: Colors.white,
+          width: 2,
+        ),
       ),
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -279,25 +316,27 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildTargetSlotCell(int slotIdx, ColorScheme colors, {required bool isNextEmpty}) {
+  Widget _buildTargetSlotCell(
+    int slotIdx,
+    ColorScheme colors, {
+    required bool isNextEmpty,
+  }) {
     return DragTarget<CapDragData>(
-      onAcceptWithDetails: (details) => _handleDrop(details.data, slotIdx),
+      onAcceptWithDetails: (details) =>
+          _handleDrop(details.data, slotIdx),
       builder: (context, candidateData, rejectedData) {
         final isHovered = candidateData.isNotEmpty;
         final capNum = _arrangedCaps[slotIdx];
 
-        // Empty slot placeholder
         if (capNum == null) {
           return Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               color: isHovered
-                  ? colors.primary.withOpacity(0.2) // Highlight on drag hover
+                  ? colors.primary.withOpacity(0.2)
                   : colors.onSurfaceVariant.withOpacity(0.05),
               border: Border.all(
-                color: isHovered
-                    ? colors.primary
-                    : Colors.white,
+                color: isHovered ? colors.primary : Colors.white,
                 width: isHovered ? 2 : 1,
               ),
             ),
@@ -312,23 +351,33 @@ void _applyDebugProfile(List<int> caps) {
           );
         }
 
-        // Occupied Slot -> Allow dragging out, or tapping to remove
         return Draggable<CapDragData>(
-          data: CapDragData(capNum: capNum, sourceSlotIdx: slotIdx),
+          data: CapDragData(
+            capNum: capNum,
+            sourceSlotIdx: slotIdx,
+          ),
           feedback: Material(
             color: Colors.transparent,
-            child: _buildVisualCap(capNum, size: 65),
+            child: _buildVisualCap(
+              capNum,
+              size: 65,
+            ),
           ),
           childWhenDragging: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               color: colors.onSurfaceVariant.withOpacity(0.05),
-              border: Border.all(color: colors.onSurfaceVariant.withOpacity(0.3)),
+              border: Border.all(
+                color: colors.onSurfaceVariant.withOpacity(0.3),
+              ),
             ),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => _removeCapFromSlot(slotIdx, capNum),
+            onTap: () => _removeCapFromSlot(
+              slotIdx,
+              capNum,
+            ),
             child: _buildVisualCap(capNum),
           ),
         );
@@ -336,7 +385,10 @@ void _applyDebugProfile(List<int> caps) {
     );
   }
 
-  Widget _buildPoolGrid(ColorScheme colors, TextTheme textTheme) {
+  Widget _buildPoolGrid(
+    ColorScheme colors,
+    TextTheme textTheme,
+  ) {
     if (_poolCaps.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -364,86 +416,193 @@ void _applyDebugProfile(List<int> caps) {
         final capNum = _poolCaps[index];
 
         return Draggable<CapDragData>(
-          data: CapDragData(capNum: capNum, sourceSlotIdx: null),
+          data: CapDragData(
+            capNum: capNum,
+            sourceSlotIdx: null,
+          ),
           feedback: Material(
             color: Colors.transparent,
-            child: _buildVisualCap(capNum, size: 65, isPool: true),
+            child: _buildVisualCap(
+              capNum,
+              size: 65,
+              isPool: true,
+            ),
           ),
           childWhenDragging: Opacity(
             opacity: 0.3,
-            child: _buildVisualCap(capNum, isPool: true),
+            child: _buildVisualCap(
+              capNum,
+              isPool: true,
+            ),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: () => _placeNextCap(capNum),
-            child: _buildVisualCap(capNum, isPool: true),
+            child: _buildVisualCap(
+              capNum,
+              isPool: true,
+            ),
           ),
         );
       },
     );
   }
 
-  // Helper widget to render the actual colored square uniformly
-  Widget _buildVisualCap(int capNum, {double? size, bool isPool = false}) {
+  Widget _buildVisualCap(
+    int capNum, {
+    double? size,
+    bool isPool = false,
+  }) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         color: ColorCap.getVisualColor(capNum),
         borderRadius: BorderRadius.circular(14),
-        border: isPool ? Border.all(color: Colors.white) : null,
+        border: isPool
+            ? Border.all(color: Colors.white)
+            : null,
       ),
       alignment: Alignment.center,
-      child: isPool ? const Icon(Icons.open_with, size: 14, color: Colors.white70) : null,
+      child: isPool
+          ? const Icon(
+              Icons.open_with,
+              size: 14,
+              color: Colors.white70,
+            )
+          : null,
     );
   }
 
-  Widget _buildFooterButtons(ColorScheme colors) {
+  Widget _buildFooterButtons(
+    BuildContext context,
+    ColorScheme colors,
+  ) {
     return Column(
       children: [
-        ElevatedButton(
-          onPressed: _isTestComplete
-          ? () {
-              final caps = _arrangedCaps.cast<int>();
-              assessmentController.setArrangedCaps(caps);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AssessmentSummaryScreen(
-                    arrangedCaps: caps,
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: Responsive.space(
+            context,
+            base: 55,
+            min: 48,
+            max: 64,
+          ),
+          child: ElevatedButton(
+            onPressed: _isTestComplete
+                ? () {
+                    final caps = _arrangedCaps.cast<int>();
+
+                    assessmentController.setArrangedCaps(caps);
+
+                    VisionProfileService.instance.updateAssessmentResult(
+                      ScoringService.calculateScore(caps),
+                      arrangedCaps: caps,
+                    );
+
+                    cvdPersonalizationController
+                        .setTestInProgress(false);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AssessmentSummaryScreen(
+                          arrangedCaps: caps,
+                        ),
+                      ),
+                    );
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.darkPrimaryButton,
+              foregroundColor: AppColors.darkSurface,
+              side: BorderSide(
+                color: colors.outline,
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              elevation: _isTestComplete ? 4 : 0,
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Finish Assessment',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: Responsive.font(
+                        context,
+                        base: 18,
+                        min: 14,
+                        max: 22,
+                      ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              );
-            }
-          : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor:  AppColors.darkPrimaryButton,
-            foregroundColor:  AppColors.darkSurface ,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 55),
-            elevation: _isTestComplete ? 4 : 0,
-          ),
-          child: const Text(
-            'Finish Assessment', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'),
+                ],
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: _resetTest,
-          style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: Colors.transparent,
-          side: BorderSide(color: colors.onSurfaceVariant.withOpacity(0.3)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            minimumSize: const Size(double.infinity, 55),
-          ),
-          child: const Text(
-            'Start Over', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'), 
+        SizedBox(
+          height: Responsive.space(
+            context,
+            base: 10,
+            min: 6,
+            max: 14,
           ),
         ),
-        
+        SizedBox(
+          width: double.infinity,
+          height: Responsive.space(
+            context,
+            base: 55,
+            min: 48,
+            max: 64,
+          ),
+          child: OutlinedButton(
+            onPressed: _resetTest,
+            style: OutlinedButton.styleFrom(
+              backgroundColor: colors.surfaceContainer,
+              side: BorderSide(
+                color: colors.outline,
+                width: 1,
+              ),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Start Over',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: Responsive.font(
+                        context,
+                        base: 18,
+                        min: 14,
+                        max: 22,
+                      ),
+                      fontWeight: FontWeight.bold,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

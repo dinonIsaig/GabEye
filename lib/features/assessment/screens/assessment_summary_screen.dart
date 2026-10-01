@@ -49,7 +49,9 @@ class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
     final severityStyle = severityStyleFor(context, result.severity);
     final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
-    return ProgressBarScaffold(
+    return PopScope(
+      canPop: false,
+      child: ProgressBarScaffold(
       currentStep: 1,
       totalSteps: 3,
       child: SafeArea(
@@ -82,7 +84,7 @@ class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
                                 width: 1,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
                             onPressed: () => _goToKeyfindings(context),
@@ -95,7 +97,7 @@ class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
                                     'Next',
                                     style: TextStyle(
                                       fontFamily: 'Inter',
-                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -114,15 +116,15 @@ class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
                             style: OutlinedButton.styleFrom(
                               backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                               side: BorderSide(
-                                color: Theme.of(context).colorScheme.outline,
+                                color: Theme.of(context).colorScheme.outline.withOpacity(0.38),
                                 width: 1,
                               ),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: null,
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Row(
@@ -130,7 +132,7 @@ class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
                                 children: [
                                   Icon(
                                     Icons.arrow_back_rounded,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
@@ -138,9 +140,9 @@ class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
                                     'Back',
                                     style: TextStyle(
                                       fontFamily: 'Inter',
-                                      fontSize: Responsive.font(context, base: 16, min: 14, max: 20),
+                                      fontSize: Responsive.font(context, base: 18, min: 14, max: 22),
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
                                     ),
                                   ),
                                 ],
@@ -157,6 +159,7 @@ class _AssessmentSummaryScreenState extends State<AssessmentSummaryScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

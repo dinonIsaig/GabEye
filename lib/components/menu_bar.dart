@@ -56,7 +56,7 @@ class NavbarMenuPanel extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 4),
+              const Divider(height: 1),
               ValueListenableBuilder<ThemeMode>(
                 valueListenable: themeController,
                 builder: (context, themeMode, child) {
@@ -69,7 +69,7 @@ class NavbarMenuPanel extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
-                          vertical: 14,
+                          vertical: 10,
                         ),
                         child: Row(
                           children: [
@@ -98,6 +98,7 @@ class NavbarMenuPanel extends StatelessWidget {
                   );
                 },
               ),
+              const Divider(height: 1),
               AnimatedBuilder(
                 animation: cvdPersonalizationController,
                 builder: (context, child) {
@@ -154,9 +155,10 @@ class NavbarMenuPanel extends StatelessWidget {
                   );
                 },
               ),
+              const Divider(height: 1),
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 0),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 4),
                   itemBuilder: (context, index) {
