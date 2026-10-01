@@ -6,6 +6,8 @@ class CameraPermissionModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    const darkTargetColor = Color(0xFFB0C6D9);
 
     return Dialog(
       backgroundColor: colors.surface,
@@ -31,7 +33,7 @@ class CameraPermissionModal extends StatelessWidget {
               width: 88,
               height: 88,
               decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.15),
+                color: isDarkMode ? darkTargetColor : colors.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
                 border: Border.all(color: colors.primary, width: 2.5),
               ),
@@ -129,7 +131,7 @@ class CameraPermissionModal extends StatelessWidget {
                 Navigator.of(context).pop(true);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: colors.primary,
+                backgroundColor: isDarkMode ? darkTargetColor : colors.primary,
                 foregroundColor: colors.surface,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
