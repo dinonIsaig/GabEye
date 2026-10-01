@@ -1203,11 +1203,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         0.0,      0.0,       0.0,      1.0, 0.0,
       ];
     } else if (shaderType < 1.5) {
-      // Deuteranopia: Shift lost green into Red (1.0x) & Blue (0.7x)
+      // Deuteranopia: Shift lost green into Red (2.5x) & Blue (4.0x) matching daltonization.frag
       target = [
-        0.717721,  0.322233, -0.039954, 0.0, 0.0,
+        0.294303,  0.805583, -0.099885, 0.0, 0.0,
         0.0,       1.0,       0.0,      0.0, 0.0,
-       -0.197595,  0.225563,  0.972032, 0.0, 0.0,
+       -1.129116,  1.288932,  0.840184, 0.0, 0.0,
         0.0,       0.0,       0.0,      1.0, 0.0,
       ];
     } else {
