@@ -76,7 +76,7 @@ void main() {
     } else {
         // Tritanopia (S-cone): Shift lost blue into Red & Green 
         simMatrix = MACHADO_TRITAN;
-        shiftWeights = vec3(0.8, 0.7, 0.0);
+        shiftWeights = vec3(0.8, 1.7, 0.0);
     }
 
     vec3 simRgbLinear = simMatrix * rgbLinear;

@@ -87,6 +87,7 @@ flutter:
 
   shaders:
       - assets/shaders/daltonization.frag
+      - assets/shaders/cvd_simulation.frag
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

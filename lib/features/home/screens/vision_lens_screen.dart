@@ -14,6 +14,7 @@ import 'package:gabeye/core/services/gallery_service.dart';
 import 'package:gabeye/core/services/object_detection_service.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
+import 'package:gabeye/core/widgets/cvd_simulation_shader_widget.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
@@ -50,7 +51,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   bool _isCameraPermissionGranted = false;
   bool _showCalibrationSlider = false;
 
-  // Independent calibration values for CVD simulation modes in Identify Split Screen
+  // Independent calibration values for CVD presets and Recommended mode
+  double _recommendedCalibration = 1.0;
   double _protanCalibration = 1.0;
   double _deutanCalibration = 1.0;
   double _tritanCalibration = 1.0;
@@ -1163,7 +1165,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
     switch (_selectedPreset) {
       case PresetMode.customized:
-        return VisionProfileService.instance.shaderIntensity;
+        return (VisionProfileService.instance.shaderIntensity * _recommendedCalibration).clamp(0.0, 1.0);
       case PresetMode.protan:
         return _protanCalibration;
       case PresetMode.deutan:
@@ -1301,33 +1303,32 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       return const SizedBox.shrink();
     }
 
-    // In Identify mode: show top preset bar ONLY when Split Screen is active.
-    // In Daltonization mode: show top preset bar always (unless Split Screen is active).
-    if (isKnnMode) {
-      if (!_isSplitScreenView) return const SizedBox.shrink();
-    } else {
-      if (_isSplitScreenView) return const SizedBox.shrink();
+    // In Identify mode (non-split screen): hide top preset bar
+    if (isKnnMode && !_isSplitScreenView) {
+      return const SizedBox.shrink();
     }
 
     final colors = Theme.of(context).colorScheme;
 
-    // In Identify Split Screen, display ONLY the three CVD types: Protan, Deutan, Tritan + Calibration button
-    if (isKnnMode && _isSplitScreenView) {
-      if (_selectedPreset != PresetMode.protan &&
-          _selectedPreset != PresetMode.deutan &&
-          _selectedPreset != PresetMode.tritan) {
-        _selectedPreset = PresetMode.protan;
-      }
-
-      return Container(
-        color: colors.surfaceContainerHighest.withValues(alpha: 0.95),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+    return Container(
+      color: colors.surfaceContainerHighest.withValues(alpha: 0.95),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
               children: [
+                if (!isKnnMode) ...[
+                  _buildPresetChip(
+                    mode: PresetMode.customized,
+                    label: 'Recommended',
+                    colors: colors,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 _buildPresetChip(
                   mode: PresetMode.protan,
                   label: 'Protan',
@@ -1345,6 +1346,14 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                   label: 'Tritan',
                   colors: colors,
                 ),
+                if (!isKnnMode) ...[
+                  const SizedBox(width: 8),
+                  _buildPresetChip(
+                    mode: PresetMode.off,
+                    label: 'Off',
+                    colors: colors,
+                  ),
+                ],
                 const SizedBox(width: 12),
                 InkWell(
                   onTap: () {
@@ -1389,61 +1398,12 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 ),
               ],
             ),
-            if (_showCalibrationSlider) ...[
-              const SizedBox(height: 8),
-              _buildCvdCalibrationSlider(context, colors),
-            ],
+          ),
+          if (_showCalibrationSlider && _selectedPreset != PresetMode.off) ...[
+            const SizedBox(height: 8),
+            _buildCvdCalibrationSlider(context, colors),
           ],
-        ),
-      );
-    }
-
-    return Container(
-      color: colors.surfaceContainerHighest.withValues(alpha: 0.9),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ValueListenableBuilder(
-        valueListenable: VisionProfileService.instance,
-        builder: (context, result, _) {
-          const customLabel = 'Recommended';
-
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _buildPresetChip(
-                  mode: PresetMode.customized,
-                  label: customLabel,
-                  colors: colors,
-                ),
-                const SizedBox(width: 8),
-                _buildPresetChip(
-                  mode: PresetMode.protan,
-                  label: 'Protan',
-                  colors: colors,
-                ),
-                const SizedBox(width: 8),
-                _buildPresetChip(
-                  mode: PresetMode.deutan,
-                  label: 'Deutan',
-                  colors: colors,
-                ),
-                const SizedBox(width: 8),
-                _buildPresetChip(
-                  mode: PresetMode.tritan,
-                  label: 'Tritan',
-                  colors: colors,
-                ),
-                const SizedBox(width: 8),
-                _buildPresetChip(
-                  mode: PresetMode.off,
-                  label: 'Off',
-                  colors: colors,
-                ),
-              ],
-            ),
-          );
-        },
+        ],
       ),
     );
   }
@@ -1454,6 +1414,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     String modeName;
 
     switch (_selectedPreset) {
+      case PresetMode.customized:
+        currentVal = _recommendedCalibration;
+        onChanged = (val) => setState(() => _recommendedCalibration = val);
+        modeName = 'Recommended';
+        break;
       case PresetMode.protan:
         currentVal = _protanCalibration;
         onChanged = (val) => setState(() => _protanCalibration = val);
@@ -2051,70 +2016,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             ),
           ),
 
-        // Floating Calibration Slider Overlay & Triangle Button visibility check
-        if (_selectedPreset == PresetMode.customized &&
-            (!(_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode) || _isSplitScreenView) &&
-            !(_isDisplayingUploadedImage && (_isUploadedIdentifyMode || _isUploadedObjectLabelMode))) ...[
-          if (_showCalibrationSlider)
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: 140,
-              child: _buildCalibrationSliderOverlay(context),
-            ),
 
-          // Standalone Floating Open-Triangle Button (Sitting between bottom action bar and calibration container)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 82,
-            child: Center(
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _showCalibrationSlider = !_showCalibrationSlider;
-                  });
-                },
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.black.withValues(alpha: 0.65)
-                        : Colors.white.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.45),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: AnimatedRotation(
-                    turns: _showCalibrationSlider ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    child: SizedBox(
-                      width: 36,
-                      height: 20,
-                      child: CustomPaint(
-                        painter: OpenTrianglePainter(
-                          color: colors.primary,
-                          strokeWidth: 3.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
 
         // Floating Uploaded Object Labeling Sheet & Open-Triangle Toggle Button
         if (_isDisplayingUploadedImage && _isUploadedObjectLabelMode) ...[
@@ -2179,12 +2081,13 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         ],
 
         // Transparent Floating Action Card (Upload, Center Shutter Ring, Remap/Live Camera)
-        Positioned(
-          left: 20,
-          right: 20,
-          bottom: 16,
-          child: _buildTransparentFloatingActionCard(context),
-        ),
+        if (!_isSplitScreenView)
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 16,
+            child: _buildTransparentFloatingActionCard(context),
+          ),
       ],
     );
   }
@@ -2707,126 +2610,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     );
   }
 
-  Widget _buildCalibrationSliderOverlay(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cardBgColor = isDark
-        ? Colors.black.withValues(alpha: 0.85)
-        : Colors.white.withValues(alpha: 0.90);
-
-    final double recIntensity = VisionProfileService.instance.recommendedIntensity;
-    final int currentPercent = (VisionProfileService.instance.customIntensityOverride * 100).round();
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: cardBgColor,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.4),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(Icons.change_history_rounded, size: 18, color: colors.onSurfaceVariant),
-                        const SizedBox(width: 6),
-                        Text(
-                          'LMS Shift Calibration',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: colors.onSurface,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        InkWell(
-                          onTap: () {
-                            VisionProfileService.instance.setCustomIntensityOverride(recIntensity);
-                          },
-                          splashColor: colors.primary.withValues(alpha: 0.15),
-                          highlightColor: colors.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: colors.onSurfaceVariant.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: colors.onSurfaceVariant.withValues(alpha: 0.4), width: 1),
-                            ),
-                            child: Text(
-                              'Rec: ${VisionProfileService.instance.recommendedRangeLabel}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: colors.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        '$currentPercent%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _showCalibrationSlider = false;
-                          });
-                        },
-                        child: Icon(Icons.close, size: 18, color: colors.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Slider(
-                value: VisionProfileService.instance.customIntensityOverride.clamp(0.0, 1.0),
-                min: 0.0,
-                max: 1.0,
-                divisions: 20, // 5% per slide step increment
-                activeColor: colors.onSurfaceVariant,
-                inactiveColor: colors.onSurfaceVariant.withValues(alpha: 0.25),
-                onChanged: (val) {
-                  final roundedVal = (val * 20).round() / 20.0;
-                  VisionProfileService.instance.setCustomIntensityOverride(roundedVal);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildRightSideFloatingToolbar(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -3117,11 +2901,19 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
     if (_isDisplayingUploadedImage && _uploadedUiImage != null) {
       leftOriginal = RawImage(image: _uploadedUiImage, fit: BoxFit.cover);
-      rightFiltered = DaltonizationShaderWidget(
-        customType: shaderType,
-        intensity: intensity,
-        image: _uploadedUiImage!,
-      );
+      if (isKnnMode) {
+        rightFiltered = CvdSimulationShaderWidget(
+          shaderType: shaderType,
+          intensity: intensity,
+          image: _uploadedUiImage!,
+        );
+      } else {
+        rightFiltered = DaltonizationShaderWidget(
+          customType: shaderType,
+          intensity: intensity,
+          image: _uploadedUiImage!,
+        );
+      }
     } else if (_isCameraPermissionGranted) {
       leftOriginal = _buildCameraPreviewWidget(colors);
       rightFiltered = ColorFiltered(
@@ -3365,44 +3157,96 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       );
     }
 
-    // ── Daltonization Mode: Vertical Split Screen View ──
+    // ── Daltonization Mode: Horizontal Split Screen View (Top = Original, Bottom = Daltonized) ──
     return Stack(
       children: [
-        Row(
+        Column(
           children: [
-            // Left Half: Original Un-filtered View
+            // Upper Half: Original Un-filtered View
             Expanded(
-              child: ClipRect(
-                child: SizedBox.expand(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: 1000,
-                      height: 1000,
-                      child: leftOriginal,
+              child: Stack(
+                children: [
+                  ClipRect(
+                    child: SizedBox.expand(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: 1000,
+                          height: 1000,
+                          child: leftOriginal,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // Upper View Label Badge
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white30, width: 1),
+                      ),
+                      child: const Text(
+                        'Color Remapping (Original)',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Right Half: Daltonized Color-Remapped View
+
+            // Lower Half: Daltonized Color-Remapped View
             Expanded(
-              child: ClipRect(
-                child: SizedBox.expand(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: 1000,
-                      height: 1000,
-                      child: rightFiltered,
+              child: Stack(
+                children: [
+                  ClipRect(
+                    child: SizedBox.expand(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: 1000,
+                          height: 1000,
+                          child: rightFiltered,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // Lower View Label Badge
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white38, width: 1),
+                      ),
+                      child: Text(
+                        'Daltonization (${_selectedPreset.name.toUpperCase()})',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        // Center Accent Split Line
+
+        // Center Horizontal Split Line
         Positioned(
           top: 0,
           bottom: 0,
@@ -3410,12 +3254,12 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           right: 0,
           child: Center(
             child: Container(
-              width: 3.0,
+              height: 3.0,
               color: colors.primary.withValues(alpha: 0.85),
             ),
           ),
         ),
-        // Center Divider Compare Icon Handle
+        // Center Compare Handle Icon
         Positioned(
           top: 0,
           bottom: 0,
@@ -3435,51 +3279,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 ],
               ),
               child: const Icon(
-                Icons.compare_arrows_rounded,
+                Icons.unfold_more_rounded,
                 color: Colors.white,
                 size: 22,
-              ),
-            ),
-          ),
-        ),
-        // Left Label Badge: Original
-        Positioned(
-          top: 20,
-          left: 20,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white30, width: 1),
-            ),
-            child: const Text(
-              'Original',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        // Right Label Badge: Daltonized
-        Positioned(
-          top: 20,
-          right: 80,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white38, width: 1),
-            ),
-            child: const Text(
-              'Daltonized',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ),
