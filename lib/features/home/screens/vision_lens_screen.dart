@@ -1648,6 +1648,16 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       return _buildDelayPage(context);
     }
     final colors = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final chipBgColor = isDarkMode
+        ? Colors.black.withValues(alpha: 0.75)
+        : Colors.white.withValues(alpha: 0.85);
+    final chipAccentColor = isDarkMode
+        ? const Color(0xFFB0C6D9)
+        : colors.primary;
+    final chipTextColor = isDarkMode
+        ? Colors.white
+        : colors.primary;
 
     Widget viewportContent = _isFreezeFrameActive && _capturedFrameBytes != null
         // ── Freeze-Frame Inspection Mode ──────────────────────────────────────
@@ -1759,9 +1769,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
+                  color: isDarkMode
+                      ? Colors.black.withValues(alpha: 0.7)
+                      : Colors.white.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: colors.primary, width: 1.5),
+                  border: Border.all(color: chipAccentColor, width: 1.5),
                 ),
                 child: Row(
                   children: [
@@ -1770,7 +1782,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                           ? Icons.category_rounded
                           : (_isUploadedIdentifyMode ? Icons.palette_outlined : Icons.image),
                       size: 14,
-                      color: colors.primary,
+                      color: chipAccentColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1779,8 +1791,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                           : (_isUploadedIdentifyMode
                               ? 'Identify Color Mode (${_uploadedFileName ?? "Selected Image"})'
                               : 'Remap Color Mode (${_uploadedFileName ?? "Selected Image"})'),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: chipTextColor,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1818,18 +1830,18 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.75),
+                color: chipBgColor,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colors.primary, width: 1.5),
+                border: Border.all(color: chipAccentColor, width: 1.5),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.category_rounded, size: 14, color: colors.primary),
+                  Icon(Icons.category_rounded, size: 14, color: chipAccentColor),
                   const SizedBox(width: 6),
                   Text(
                     'Object Labeling',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: chipTextColor,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'AtkinsonHyperlegible',
@@ -1851,18 +1863,18 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.75),
+                color: chipBgColor,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colors.primary, width: 1.5),
+                border: Border.all(color: chipAccentColor, width: 1.5),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.palette_outlined, size: 14, color: colors.primary),
+                  Icon(Icons.palette_outlined, size: 14, color: chipAccentColor),
                   const SizedBox(width: 6),
-                  const Text(
+                  Text(
                     'KNN Color Identification (Active)',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: chipTextColor,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
