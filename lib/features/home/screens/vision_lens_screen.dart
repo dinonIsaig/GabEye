@@ -714,6 +714,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       localPosition: localPosition,
       renderBoxSize: renderBoxSize,
       imagePixelSize: imageSize,
+      isUploadedImage: _isDisplayingUploadedImage,
     );
 
     setState(() {
@@ -748,6 +749,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     required Offset localPosition,
     required Size renderBoxSize,
     required Size imagePixelSize,
+    bool isUploadedImage = false,
   }) {
     if (imagePixelSize.isEmpty || renderBoxSize.isEmpty) {
       return const Offset(0.5, 0.5);
@@ -758,14 +760,18 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     final double imageW = imagePixelSize.width;
     final double imageH = imagePixelSize.height;
 
-    // Scale factor for BoxFit.cover (the larger axis drives the scale so it covers the viewport).
-    final double scale = (containerW / imageW) > (containerH / imageH)
-        ? (containerW / imageW)
-        : (containerH / imageH);
+    // Scale factor for BoxFit.contain when uploaded image, or BoxFit.cover for live camera freeze frame.
+    final double scale = isUploadedImage
+        ? ((containerW / imageW) < (containerH / imageH)
+            ? (containerW / imageW)
+            : (containerH / imageH))
+        : ((containerW / imageW) > (containerH / imageH)
+            ? (containerW / imageW)
+            : (containerH / imageH));
     final double renderedW = imageW * scale;
     final double renderedH = imageH * scale;
 
-    // Center-crop offsets (negative or zero, as rendered dimension >= container dimension).
+    // Center-crop offsets or pillarbox/letterbox padding offsets.
     final double offsetX = (containerW - renderedW) / 2.0;
     final double offsetY = (containerH - renderedH) / 2.0;
 
@@ -872,7 +878,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   }
 
   Future<void> _pickUploadedPhoto() async {
-    // 1. Instantly stop live frame streaming and wipe all detected objects state to prevent state bleed
+    // 1. Instantly stop live frame streaming and wipe all detected objects state and previous uploaded image state to prevent state bleed
     await _stopKnnFrameStream();
     if (mounted) {
       setState(() {
@@ -881,6 +887,15 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         _isObjectDetectionProcessing = false;
         _isUploadedObjectLabelingProcessing = false;
         _currentIdentifiedObject = null;
+        _uploadedImageBytes = null;
+        _uploadedUiImage = null;
+        _uploadedFileName = null;
+        _isDisplayingUploadedImage = false;
+        _isFreezeFrameActive = false;
+        _capturedFrameBytes = null;
+        _capturedUiImage = null;
+        _capturedImageSize = Size.zero;
+        _freezeFrameColorResult = null;
       });
     }
 
@@ -902,6 +917,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         if (!mounted) return;
 
         setState(() {
+          _isFreezeFrameActive = false;
+          _capturedFrameBytes = null;
+          _capturedUiImage = null;
+          _capturedImageSize = Size.zero;
+          _freezeFrameColorResult = null;
           _uploadedImageBytes = bytes;
           _uploadedPhotoExifOrientation = orientation;
           _uploadedUiImage = null; // will be set after decode
@@ -974,6 +994,13 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         if (!mounted) return;
 
         setState(() {
+          _isFreezeFrameActive = false;
+          _capturedFrameBytes = null;
+          _capturedUiImage = null;
+          _capturedImageSize = Size.zero;
+          _freezeFrameColorResult = null;
+          _uploadedImageBytes = null;
+          _uploadedUiImage = null;
           _isDisplayingUploadedImage = true;
           _showUploadedNotification = true;
           _showZoomSlider = false;
@@ -1660,7 +1687,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         ? Colors.white
         : colors.primary;
 
-    Widget viewportContent = _isFreezeFrameActive && _capturedFrameBytes != null
+    Widget viewportContent = (!_isDisplayingUploadedImage && _isFreezeFrameActive && _capturedFrameBytes != null)
         // ── Freeze-Frame Inspection Mode ──────────────────────────────────────
         // Displayed when the user taps the shutter in KNN mode. Shows the still
         // captured image with a draggable crosshair overlay.
@@ -1674,10 +1701,17 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         ? _buildUploadedImageInspectionView(context, colors)
                         : (_isUploadedObjectLabelMode
                             ? _buildUploadedObjectLabelingView(context, colors)
-                            : DaltonizationShaderWidget(
-                                customType: _getEffectiveShaderType(),
-                                intensity: _getEffectiveShaderIntensity(),
-                                image: _uploadedUiImage!,
+                            : FittedBox(
+                                fit: BoxFit.contain,
+                                child: SizedBox(
+                                  width: _uploadedUiImage!.width.toDouble(),
+                                  height: _uploadedUiImage!.height.toDouble(),
+                                  child: DaltonizationShaderWidget(
+                                    customType: _getEffectiveShaderType(),
+                                    intensity: _getEffectiveShaderIntensity(),
+                                    image: _uploadedUiImage!,
+                                  ),
+                                ),
                               )))
                     : const Center(child: CircularProgressIndicator()))
                 : (_isCameraPermissionGranted
@@ -2268,13 +2302,13 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             Positioned.fill(
               child: ClipRect(
                 child: FittedBox(
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   child: SizedBox(
                     width: imageSize.width > 0 ? imageSize.width : containerSize.width,
                     height: imageSize.height > 0 ? imageSize.height : containerSize.height,
                     child: Image.memory(
                       bytes,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       gaplessPlayback: true,
                     ),
                   ),
@@ -2306,6 +2340,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                     containerSize: containerSize,
                     colorResult: _freezeFrameColorResult,
                     accentColor: colors.primary,
+                    fit: BoxFit.contain,
                   ),
                   size: containerSize,
                 ),
@@ -3578,6 +3613,7 @@ class FreezeFrameCrosshairPainter extends CustomPainter {
   final Size containerSize;        // Rendered size of the widget container
   final KnnIsolateResult? colorResult; // Latest classification result (may be null while sampling)
   final Color accentColor;         // Theme primary color for crosshair ring
+  final BoxFit fit;
 
   FreezeFrameCrosshairPainter({
     required this.normPosition,
@@ -3585,21 +3621,22 @@ class FreezeFrameCrosshairPainter extends CustomPainter {
     required this.containerSize,
     required this.colorResult,
     required this.accentColor,
+    this.fit = BoxFit.cover,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (imageSize.isEmpty || containerSize.isEmpty) return;
 
-    // ── Step 1: Compute the rendered image rect (BoxFit.cover) ────────────
-    // Mirror the same math as _screenTouchToNormalisedImageCoord so the
-    // crosshair is always pixel-accurate relative to what the user sees.
+    // ── Step 1: Compute the rendered image rect (BoxFit.contain or BoxFit.cover) ────
     final double cW = containerSize.width;
     final double cH = containerSize.height;
     final double iW = imageSize.width;
     final double iH = imageSize.height;
 
-    final double scale = (cW / iW) > (cH / iH) ? (cW / iW) : (cH / iH);
+    final double scale = fit == BoxFit.contain
+        ? ((cW / iW) < (cH / iH) ? (cW / iW) : (cH / iH))
+        : ((cW / iW) > (cH / iH) ? (cW / iW) : (cH / iH));
     final double renderedW = iW * scale;
     final double renderedH = iH * scale;
     final double offsetX = (cW - renderedW) / 2.0;
@@ -3783,7 +3820,8 @@ class FreezeFrameCrosshairPainter extends CustomPainter {
     return old.normPosition != normPosition ||
         old.colorResult != colorResult ||
         old.accentColor != accentColor ||
-        old.containerSize != containerSize;
+        old.containerSize != containerSize ||
+        old.fit != fit;
   }
 }
 
