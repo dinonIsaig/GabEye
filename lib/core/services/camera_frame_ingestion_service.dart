@@ -56,7 +56,7 @@ class CameraFrameIngestionService {
     final int height = image.height;
     final int centerX = width ~/ 2;
     final int centerY = height ~/ 2;
-    const int roiRadius = 12; // 24x24 pixel center area
+    const int roiRadius = 3; // 7x7 pixel center micro-sample (reticle precision matching static mode)
 
     final int startX = (centerX - roiRadius).clamp(0, width - 1);
     final int endX = (centerX + roiRadius).clamp(startX + 1, width);
@@ -77,29 +77,28 @@ class CameraFrameIngestionService {
       final uBytes = uPlane.bytes;
       final vBytes = vPlane.bytes;
 
-      final yRowStride = yPlane.bytesPerRow;
-      final uRowStride = uPlane.bytesPerRow;
-      final vRowStride = vPlane.bytesPerRow;
-
-      final int uPixelStride = uPlane.bytesPerPixel ?? 1;
-      final int vPixelStride = vPlane.bytesPerPixel ?? 1;
+      final int yRowStride = yPlane.bytesPerRow;
+      final int uvRowStride = uPlane.bytesPerRow;
+      final int uvPixelStride = uPlane.bytesPerPixel ?? 2;
 
       for (int y = startY; y < endY; y++) {
+        final int yRowOffset = y * yRowStride;
+        final int uvRowOffset = (y >> 1) * uvRowStride;
+
         for (int x = startX; x < endX; x++) {
-          final int yIdx = y * yRowStride + x;
-          final int uvY = y ~/ 2;
-          final int uvX = x ~/ 2;
-          final int uIdx = uvY * uRowStride + uvX * uPixelStride;
-          final int vIdx = uvY * vRowStride + uvX * vPixelStride;
+          final int yIdx = yRowOffset + x;
+          final int uvIdx = uvRowOffset + ((x >> 1) * uvPixelStride);
 
-          if (yIdx < yBytes.length && uIdx < uBytes.length && vIdx < vBytes.length) {
+          if (yIdx < yBytes.length && uvIdx < uBytes.length && uvIdx < vBytes.length) {
             final int yVal = yBytes[yIdx];
-            final int uVal = uBytes[uIdx] - 128;
-            final int vVal = vBytes[vIdx] - 128;
+            final int uVal = uBytes[uvIdx] - 128;
+            final int vVal = vBytes[uvIdx] - 128;
 
-            int r = (yVal + 1.402 * vVal).round().clamp(0, 255);
-            int g = (yVal - 0.344136 * uVal - 0.714136 * vVal).round().clamp(0, 255);
-            int b = (yVal + 1.772 * uVal).round().clamp(0, 255);
+            // Full-Range YUV (0-255) to RGB conversion for Android Camera2 API
+            final double yD = yVal.toDouble();
+            final int r = (yD + 1.402 * vVal).round().clamp(0, 255);
+            final int g = (yD - 0.344136 * uVal - 0.714136 * vVal).round().clamp(0, 255);
+            final int b = (yD + 1.772 * uVal).round().clamp(0, 255);
 
             rgbBytes[outIdx++] = r;
             rgbBytes[outIdx++] = g;

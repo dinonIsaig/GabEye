@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:gabeye/features/knn/models/iscc_nbs_color_dataset.dart';
 import 'package:gabeye/features/knn/services/knn_color_classifier.dart';
@@ -43,32 +44,56 @@ class KnnIsolateWorker {
   }
 
   static KnnIsolateResult _executeIsolateClassification(KnnIsolateRequest req) {
-    double totalR = 0;
-    double totalG = 0;
-    double totalB = 0;
-    int sampleCount = 0;
-
     final bytes = req.pixelBuffer;
     final len = bytes.length;
 
+    double sumSinH = 0.0;
+    double sumCosH = 0.0;
+    double sumS = 0.0;
+    double sumV = 0.0;
+    int pixelCount = 0;
+
+    double maxS = -1.0;
+    double maxSHue = 0.0;
+    double maxSSat = 0.0;
+
     for (int i = 0; i + 2 < len; i += 3) {
-      totalR += bytes[i];
-      totalG += bytes[i + 1];
-      totalB += bytes[i + 2];
-      sampleCount++;
+      final int r = bytes[i];
+      final int g = bytes[i + 1];
+      final int b = bytes[i + 2];
+
+      final hsv = _rgbToHsv(r.toDouble(), g.toDouble(), b.toDouble());
+      final double h = hsv[0];
+      final double s = hsv[1];
+      final double v = hsv[2];
+
+      final double rad = h * (math.pi / 180.0);
+      sumSinH += math.sin(rad);
+      sumCosH += math.cos(rad);
+      sumS += s;
+      sumV += v;
+      pixelCount++;
+
+      if (s > maxS) {
+        maxS = s;
+        maxSHue = h;
+        maxSSat = s;
+      }
     }
 
-    if (sampleCount == 0) sampleCount = 1;
+    final double avgS = pixelCount > 0 ? (sumS / pixelCount) : 0.0;
+    final double avgV = pixelCount > 0 ? (sumV / pixelCount) : 0.0;
 
-    double avgR = (totalR / sampleCount).clamp(0.0, 255.0);
-    double avgG = (totalG / sampleCount).clamp(0.0, 255.0);
-    double avgB = (totalB / sampleCount).clamp(0.0, 255.0);
+    double avgH = 0.0;
+    if (pixelCount > 0 && (sumSinH.abs() > 0.0001 || sumCosH.abs() > 0.0001)) {
+      avgH = math.atan2(sumSinH, sumCosH) * (180.0 / math.pi);
+      if (avgH < 0.0) avgH += 360.0;
+    }
 
-    // RGB to HSV conversion
-    final hsv = _rgbToHsv(avgR, avgG, avgB);
-    final double h = hsv[0];
-    final double s = hsv[1];
-    final double v = hsv[2];
+    // If the region has prominent color saturation (> 0.08), favor the peak chromatic pixel/hue
+    final double finalH = avgS > 0.08 ? (maxS > 0.15 ? maxSHue : avgH) : avgH;
+    final double finalS = avgS > 0.08 ? math.max(avgS, maxSSat) : avgS;
+    final double finalV = avgV; // Real luminance value (preserves true dark/black V ~ 0.0)
 
     // Reconstruct dataset entries in isolate
     final dataset = req.rawDatasetJson
@@ -76,14 +101,14 @@ class KnnIsolateWorker {
         .toList();
 
     final classifier = KnnColorClassifier(dataset: dataset, k: 1);
-    final matched = classifier.classify(h, s, v);
+    final matched = classifier.classify(finalH, finalS, finalV);
 
     return KnnIsolateResult(
       colorName: matched.name,
       hexColor: matched.hex,
-      averageH: h,
-      averageS: s,
-      averageV: v,
+      averageH: finalH,
+      averageS: finalS,
+      averageV: finalV,
     );
   }
 
@@ -104,13 +129,13 @@ class KnnIsolateWorker {
       if (maxC == rNorm) {
         h = 60.0 * (((gNorm - bNorm) / delta) % 6);
       } else if (maxC == gNorm) {
-        h = 60.0 * (((bNorm - rNorm) / delta) + 2);
+        h = 60.0 * (((bNorm - rNorm) / delta) + 2.0);
       } else {
-        h = 60.0 * (((rNorm - gNorm) / delta) + 4);
+        h = 60.0 * (((rNorm - gNorm) / delta) + 4.0);
       }
     }
 
-    if (h < 0) h += 360.0;
+    if (h < 0.0) h += 360.0;
 
     return [h, s, v];
   }

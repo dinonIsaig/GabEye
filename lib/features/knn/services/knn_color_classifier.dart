@@ -36,9 +36,9 @@ class KnnColorClassifier {
     // on V do not alter the detected color category.
     // For achromatic targets (near-zero saturation or extremely dark), prioritize V so
     // whites, grays, and blacks separate reliably without hue sensor noise.
-    final bool isChromatic = targetS > 0.12 && targetV > 0.15;
-    final double wC = isChromatic ? 3.0 : 1.0;
-    final double wV = isChromatic ? 1.2 : 3.0;
+    final bool isChromatic = targetS > 0.05 && targetV > 0.10;
+    final double wC = isChromatic ? 3.0 : 1.2;
+    final double wV = isChromatic ? 1.0 : 2.0;
 
     // Fast-path: Nearest Centroid (K=1) runs in O(N) without list allocation or sorting
     if (k <= 1) {

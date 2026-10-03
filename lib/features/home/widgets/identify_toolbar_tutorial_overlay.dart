@@ -72,14 +72,21 @@ class IdentifyToolbarTutorialOverlay extends StatelessWidget {
     final double modalTop = (target.top + (target.height / 2) - 80)
         .clamp(80.0, MediaQuery.of(context).size.height - 240);
 
+    final Size screenSize = MediaQuery.of(context).size;
+    final Offset centerReticle = Offset(screenSize.width / 2, screenSize.height / 2);
+
     return Stack(
       children: [
-        // Semi-transparent backdrop
+        // Semi-transparent backdrop with clear holes cut out over reticle center & target button
         Positioned.fill(
           child: GestureDetector(
             onTap: isLastStep ? onComplete : onNext,
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.45),
+            child: CustomPaint(
+              painter: _TutorialHolePainter(
+                targetRect: target,
+                centerReticle: centerReticle,
+                overlayColor: Colors.black.withValues(alpha: 0.35),
+              ),
             ),
           ),
         ),
@@ -257,4 +264,38 @@ class IdentifyToolbarTutorialOverlay extends StatelessWidget {
       ],
     );
   }
+}
+
+class _TutorialHolePainter extends CustomPainter {
+  final Rect targetRect;
+  final Offset centerReticle;
+  final Color overlayColor;
+
+  _TutorialHolePainter({
+    required this.targetRect,
+    required this.centerReticle,
+    required this.overlayColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final backgroundPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final targetHole = Path()..addOval(targetRect.inflate(8));
+    final reticleHole = Path()..addOval(Rect.fromCircle(center: centerReticle, radius: 50));
+
+    Path combined = Path.combine(PathOperation.difference, backgroundPath, targetHole);
+    combined = Path.combine(PathOperation.difference, combined, reticleHole);
+
+    final paint = Paint()
+      ..color = overlayColor
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(combined, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TutorialHolePainter oldDelegate) =>
+      oldDelegate.targetRect != targetRect ||
+      oldDelegate.centerReticle != centerReticle ||
+      oldDelegate.overlayColor != overlayColor;
 }
