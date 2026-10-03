@@ -1,30 +1,40 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:gabeye/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('GabEye app smoke test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const GabEye());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify initial onboarding screen loads with welcome message
+    expect(find.text('Welcome to'), findsOneWidget);
+    expect(find.text('GabEye!'), findsOneWidget);
+    expect(find.text('Get Started'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Tap Get Started button to open Terms and Conditions modal
+    await tester.tap(find.text('Get Started'));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Accept Terms & Conditions to enter main HomeScreen dashboard
+    final agreeButton = find.text('I Agree & Continue');
+    if (agreeButton.evaluate().isNotEmpty) {
+      await tester.tap(agreeButton);
+      await tester.pumpAndSettle();
+
+      // Verify that home screen loads with Core Features and Featured Reads
+      expect(find.text('Core Features'), findsOneWidget);
+      expect(find.text('Featured Reads'), findsOneWidget);
+    }
   });
 }
+

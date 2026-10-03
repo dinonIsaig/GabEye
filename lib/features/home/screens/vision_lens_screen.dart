@@ -1,0 +1,3927 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:gabeye/core/services/auditory_feedback_service.dart';
+import 'package:gabeye/core/services/camera_frame_ingestion_service.dart';
+import 'package:gabeye/core/services/capture_pixel_sampler_service.dart';
+import 'package:gabeye/core/services/gallery_service.dart';
+import 'package:gabeye/core/services/object_detection_service.dart';
+import 'package:gabeye/core/services/vision_profile_service.dart';
+import 'package:gabeye/core/widgets/daltonization_shader_widget.dart';
+import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/features/home/screens/delay_screen.dart';
+import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
+import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
+import 'package:gabeye/features/knn/models/iscc_nbs_color_dataset.dart';
+import 'package:gabeye/features/knn/services/knn_isolate_worker.dart';
+import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
+import 'package:gabeye/features/home/widgets/object_detection_overlay.dart';
+
+enum PresetMode { customized, protan, deutan, tritan, off }
+enum CameraRealtimeMode { daltonization, knn }
+
+class VisionLensScreen extends StatefulWidget {
+  final bool isActive;
+  const VisionLensScreen({super.key, this.isActive = true});
+
+  /// Global notifier to tell HomeScreen to expand viewport & hide headers/footers in full/split-screen mode
+  static final ValueNotifier<bool> isFullScreenNotifier = ValueNotifier<bool>(false);
+
+  /// Global notifier to show Delay Page overlay
+  static final ValueNotifier<bool> isDelayingNotifier = ValueNotifier<bool>(false);
+
+  /// Global notifier for smooth animated delay progress bar (0.0 to 1.0)
+  static final ValueNotifier<double> delayProgressNotifier = ValueNotifier<double>(0.0);
+
+  @override
+  State<VisionLensScreen> createState() => _VisionLensScreenState();
+}
+
+class _VisionLensScreenState extends State<VisionLensScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  PresetMode _selectedPreset = PresetMode.customized;
+  bool _isRemapActive = true;
+  bool _isCameraPermissionGranted = false;
+  bool _showCalibrationSlider = false;
+
+  // Independent calibration values for CVD simulation modes in Identify Split Screen
+  double _protanCalibration = 1.0;
+  double _deutanCalibration = 1.0;
+  double _tritanCalibration = 1.0;
+
+  // ---------------------------------------------------------------------------
+  // Delay Page Overlay State
+  // ---------------------------------------------------------------------------
+  bool _isDelaying = false;
+  AnimationController? _delayAnimationController;
+  double _delayProgress = 0.0;
+
+  CameraController? _cameraController;
+  bool _isCameraInitializing = false;
+
+  // Flashlight Torch, Zoom, & Split Screen Full View state
+  bool _isTorchOn = false;
+  bool _wasTorchOnBeforeFreeze = false;
+  double _currentZoomLevel = 1.0;
+  final double _minZoom = 1.0;
+  final double _maxZoom = 5.0;
+  bool _showZoomSlider = false;
+  bool _isSplitScreenView = false;
+
+  // Camera Realtime Mode (Daltonization vs. KNN Color Identification)
+  CameraRealtimeMode _activeCameraMode = CameraRealtimeMode.daltonization;
+  bool _isUploadedIdentifyMode = false;
+
+  // KNN & ML Kit Object Classification State
+  List<IsccNbsColorEntry> _isccDataset = [];
+  String _currentIdentifiedColor = 'Vivid Red';
+  String? _currentIdentifiedObject;
+  bool _isKnnStreamActive = false;
+  Timer? _crosshairObjectDetectionTimer;
+
+  // Real-Time Object Detection Mode State
+  bool _isObjectDetectionMode = false;
+  List<DetectedObject> _detectedObjects = [];
+  Size _cameraFrameSize = Size.zero;
+  DateTime _lastObjectDetectionTimestamp = DateTime.now();
+  bool _isObjectDetectionProcessing = false;
+
+  // ---------------------------------------------------------------------------
+  // Freeze-Frame Capture Inspection Mode State
+  // ---------------------------------------------------------------------------
+  // Set to true when the shutter is tapped in KNN mode; false while live scan.
+  bool _isFreezeFrameActive = false;
+
+  // Raw JPEG bytes and decoded dart:ui.Image of the captured still frame.
+  Uint8List? _capturedFrameBytes;
+  ui.Image? _capturedUiImage;
+
+  // Actual pixel dimensions of the captured image (used for coordinate mapping).
+  Size _capturedImageSize = Size.zero;
+
+  // Crosshair position in normalised image-space coordinates ([0,1] × [0,1]).
+  // (0.5, 0.5) = image centre.  Updated on every tap/drag inside the viewport.
+  Offset _crosshairNorm = const Offset(0.5, 0.5);
+
+  // Latest KNN result from crosshair pixel sampling.
+  KnnIsolateResult? _freezeFrameColorResult;
+
+  bool _isSamplingPixel = false; // guard against overlapping async sample calls
+
+  // Uploaded photo state, decoded ui.Image, & notification timer
+  Uint8List? _uploadedImageBytes;
+  ui.Image? _uploadedUiImage;
+  String? _uploadedFileName;
+  bool _isDisplayingUploadedImage = false;
+  bool _isUploadedObjectLabelMode = false;
+  bool _isUploadedObjectLabelingProcessing = false;
+  List<DetectedObject> _uploadedDetectedObjects = [];
+  bool _showUploadedObjectsSheet = true;
+  bool _showUploadedNotification = false;
+  Timer? _uploadedNotificationTimer;
+  int _uploadedPhotoExifOrientation = 1;
+
+  bool get _isTorchDisabled =>
+      _isFreezeFrameActive ||
+      (_isDisplayingUploadedImage &&
+          (_isUploadedIdentifyMode || _activeCameraMode == CameraRealtimeMode.knn));
+
+  Future<void> _toggleTorch() async {
+    if (_isTorchDisabled) return;
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      try {
+        final newMode = _isTorchOn ? FlashMode.off : FlashMode.torch;
+        await _cameraController!.setFlashMode(newMode);
+        setState(() {
+          _isTorchOn = !_isTorchOn;
+          if (_isFreezeFrameActive) {
+            _wasTorchOnBeforeFreeze = _isTorchOn;
+          }
+        });
+      } catch (_) {
+        setState(() {
+          _isTorchOn = !_isTorchOn;
+          if (_isFreezeFrameActive) {
+            _wasTorchOnBeforeFreeze = _isTorchOn;
+          }
+        });
+      }
+    } else {
+      setState(() {
+        _isTorchOn = !_isTorchOn;
+        if (_isFreezeFrameActive) {
+          _wasTorchOnBeforeFreeze = _isTorchOn;
+        }
+      });
+    }
+  }
+
+  Future<void> _setZoomLevel(double level) async {
+    setState(() {
+      _currentZoomLevel = level;
+    });
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      try {
+        await _cameraController!.setZoomLevel(level);
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _handleUploadedPhotoSavePrompt(BuildContext context) async {
+    final colors = Theme.of(context).colorScheme;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.save_alt_rounded, color: colors.primary),
+            const SizedBox(width: 8),
+            const Text('Save Photo?'),
+          ],
+        ),
+        content: const Text(
+          'Would you like to save this color-enhanced Daltonized photo to your device gallery?',
+          textAlign: TextAlign.center,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  bool success = false;
+                  if (_uploadedImageBytes != null) {
+                    final type = _getEffectiveShaderType();
+                    final intensity = _getEffectiveShaderIntensity();
+                    final fallbackMatrix = _buildCameraColorMatrix(type, intensity);
+
+                    // Apply offscreen Daltonization filter so the saved image matches what the user sees on screen
+                    final filteredBytes = await GalleryService.applyDaltonizationShaderToImageBytes(
+                      _uploadedImageBytes!,
+                      shaderType: type,
+                      intensity: intensity,
+                      fallbackMatrix: fallbackMatrix,
+                    );
+
+                    success = await GalleryService.saveImageToGallery(
+                      filteredBytes,
+                      filename: _uploadedFileName,
+                    );
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Saved color-enhanced Daltonized photo to device Gallery.'
+                              : 'Failed to save photo to Gallery.',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text(
+                  'Save to Gallery',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  foregroundColor: colors.onSurfaceVariant,
+                  side: BorderSide(color: colors.outline.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text(
+                  'Just View Result',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _captureLiveDaltonizedPhoto(BuildContext context) async {
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      try {
+        final bool wasStreaming = _isKnnStreamActive || (_cameraController?.value.isStreamingImages ?? false);
+        if (wasStreaming) {
+          await _stopKnnFrameStream();
+        }
+
+        final XFile photo = await _cameraController!.takePicture();
+        final rawBytes = await photo.readAsBytes();
+
+        if (wasStreaming && mounted && (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn)) {
+          await _startKnnFrameStream();
+        }
+
+        final type = _getEffectiveShaderType();
+        final intensity = _getEffectiveShaderIntensity();
+        final matrix = _buildCameraColorMatrix(type, intensity);
+
+        // Apply Daltonization filter to captured camera frame bytes before saving to device gallery
+        final filteredBytes = await GalleryService.applyDaltonizationShaderToImageBytes(
+          rawBytes,
+          shaderType: type,
+          intensity: intensity,
+          fallbackMatrix: matrix,
+        );
+
+        final success = await GalleryService.saveImageToGallery(
+          filteredBytes,
+          filename: photo.name,
+        );
+
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Captured & saved Daltonized photo with filter applied!'
+                  : 'Failed to save captured photo to Gallery.',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving photo to gallery: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Camera is not initialized.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initKnnServices();
+  }
+
+  @override
+  void didUpdateWidget(covariant VisionLensScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (!widget.isActive) {
+        // Paused because user switched to another tab (e.g. Home or Profile)
+        _stopKnnFrameStream();
+        AuditoryFeedbackService.instance.stop();
+        ObjectDetectionService.instance.resetBusyState();
+      } else {
+        // Resumed because user switched back to the Camera tab
+        if (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn) {
+          if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) {
+            _startKnnFrameStream();
+          }
+        }
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      _stopKnnFrameStream();
+      AuditoryFeedbackService.instance.stop();
+      ObjectDetectionService.instance.resetBusyState();
+    } else if (state == AppLifecycleState.resumed) {
+      if (widget.isActive && (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn)) {
+        if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) {
+          _startKnnFrameStream();
+        }
+      }
+    }
+  }
+
+  Future<void> _initKnnServices() async {
+    final dataset = await IsccNbsColorDataset.loadDataset();
+    await AuditoryFeedbackService.instance.initialize();
+    ObjectDetectionService.instance.initialize();
+    if (mounted) {
+      setState(() {
+        _isccDataset = dataset;
+      });
+    }
+  }
+
+  Future<void> _startDelayPage({Duration duration = const Duration(milliseconds: 2500)}) async {
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 250),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return DelayScreen(duration: duration);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _isKnnStreamActive = false;
+    _delayAnimationController?.dispose();
+    _stopKnnFrameStream();
+    _crosshairObjectDetectionTimer?.cancel();
+    ObjectDetectionService.instance.dispose();
+    AuditoryFeedbackService.instance.stop();
+    _cameraController?.dispose();
+    _uploadedNotificationTimer?.cancel();
+    if (_capturedUiImage != null && _capturedUiImage != _uploadedUiImage) {
+      _capturedUiImage?.dispose();
+    }
+    _uploadedUiImage?.dispose();
+    super.dispose();
+  }
+
+  bool _isStreamTransitionInProgress = false;
+
+  Future<void> _startKnnFrameStream() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    if (_cameraController!.value.isStreamingImages) {
+      _isKnnStreamActive = true;
+      return;
+    }
+    if (_isKnnStreamActive || _isStreamTransitionInProgress) return;
+    _isStreamTransitionInProgress = true;
+    try {
+      _isKnnStreamActive = true;
+      ObjectDetectionService.instance.resetBusyState();
+      await _cameraController!.startImageStream((CameraImage image) async {
+          if (!mounted || _isDisplayingUploadedImage || _isFreezeFrameActive || !_isKnnStreamActive) return;
+
+          // 1. Isolated Object Detection Mode (KNN isolate completely bypassed)
+          if (_isObjectDetectionMode) {
+            final now = DateTime.now();
+            if (_isObjectDetectionProcessing ||
+                now.difference(_lastObjectDetectionTimestamp) < const Duration(milliseconds: 150)) {
+              return;
+            }
+            _isObjectDetectionProcessing = true;
+            _lastObjectDetectionTimestamp = now;
+
+            try {
+              final objects = await ObjectDetectionService.instance.processLiveFrame(
+                image: image,
+                camera: _cameraController!.description,
+              );
+              if (mounted && _isObjectDetectionMode && !_isDisplayingUploadedImage && _isKnnStreamActive) {
+                setState(() {
+                  _detectedObjects = objects;
+                  _cameraFrameSize = Size(image.width.toDouble(), image.height.toDouble());
+                });
+              }
+            } catch (e) {
+              debugPrint('[VisionLensScreen] Live frame object detection error: $e');
+            } finally {
+              _isObjectDetectionProcessing = false;
+            }
+            return;
+          }
+
+          // 2. Isolated KNN Color Identification Mode (ML Kit completely bypassed)
+          if (_activeCameraMode == CameraRealtimeMode.knn) {
+            final result = await CameraFrameIngestionService.instance.processCameraFrame(
+              image: image,
+              dataset: _isccDataset,
+            );
+            if (result != null &&
+                mounted &&
+                _activeCameraMode == CameraRealtimeMode.knn &&
+                !_isObjectDetectionMode &&
+                !_isDisplayingUploadedImage &&
+                _isKnnStreamActive) {
+              setState(() {
+                _currentIdentifiedColor = result.colorName;
+              });
+            }
+            return;
+          }
+        });
+      } catch (e) {
+        _isKnnStreamActive = false;
+        debugPrint('[VisionLensScreen] Error starting camera stream: $e');
+      } finally {
+        _isStreamTransitionInProgress = false;
+      }
+  }
+
+  Future<void> _stopKnnFrameStream() async {
+    _isKnnStreamActive = false;
+    ObjectDetectionService.instance.resetBusyState();
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      if (_cameraController!.value.isStreamingImages) {
+        _isStreamTransitionInProgress = true;
+        try {
+          await _cameraController!.stopImageStream();
+        } catch (e) {
+          debugPrint('[VisionLensScreen] Error stopping camera stream: $e');
+        } finally {
+          _isStreamTransitionInProgress = false;
+        }
+      }
+    }
+  }
+
+  Future<void> _toggleObjectDetectionMode() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    if (_isDisplayingUploadedImage || _isFreezeFrameActive) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final willBeActive = !_isObjectDetectionMode;
+
+    // Conditionally close split screen if toggling object detection mode ON
+    if (willBeActive && _isSplitScreenView) {
+      _isSplitScreenView = false;
+      VisionLensScreen.isFullScreenNotifier.value = false;
+    }
+
+    setState(() {
+      _isObjectDetectionMode = willBeActive;
+      if (!willBeActive) {
+        _detectedObjects = [];
+      }
+      _showZoomSlider = false;
+    });
+
+    if (willBeActive) {
+      if (_cameraController != null &&
+          _cameraController!.value.isInitialized &&
+          !_cameraController!.value.isStreamingImages) {
+        await _startKnnFrameStream();
+      } else {
+        _isKnnStreamActive = true;
+      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Object Labeling Mode enabled (KNN paused)'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else {
+      if (_activeCameraMode == CameraRealtimeMode.daltonization) {
+        await _stopKnnFrameStream();
+      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            _activeCameraMode == CameraRealtimeMode.knn
+                ? 'Resumed KNN Color Identification Mode'
+                : 'Resumed LMS Daltonization Mode',
+          ),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Freeze-Frame Capture Methods
+  // ---------------------------------------------------------------------------
+
+  /// Called when the user taps the shutter button **while in KNN live-scan mode**.
+  ///
+  /// 1. Takes a still JPEG from the camera controller.
+  /// 2. Stops the KNN frame stream to release GPU/CPU load.
+  /// 3. Decodes the JPEG into a [ui.Image] for per-pixel access.
+  /// 4. Transitions the UI to freeze-frame inspection mode.
+  /// 5. Samples the centre pixel strictly for visual UI overlay (no automatic TTS).
+  Future<void> _captureKnnFreezeFrame(BuildContext context) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+
+    try {
+      // Step 1: Stop live stream first so AVCaptureSession does not conflict during still capture.
+      await _stopKnnFrameStream();
+
+      // Step 2: Capture still JPEG from the live feed.
+      final XFile photo = await _cameraController!.takePicture();
+      final Uint8List rawBytes = await photo.readAsBytes();
+
+      // Step 2b: Automatically turn off torch/flash if active, saving previous state.
+      if (_isTorchOn) {
+        _wasTorchOnBeforeFreeze = true;
+        try {
+          await _cameraController!.setFlashMode(FlashMode.off);
+        } catch (_) {}
+        if (mounted) {
+          setState(() {
+            _isTorchOn = false;
+          });
+        }
+      } else {
+        _wasTorchOnBeforeFreeze = false;
+      }
+
+      // Step 3: Decode JPEG bytes into a dart:ui.Image for O(1) pixel access.
+      final ui.Codec codec = await ui.instantiateImageCodec(rawBytes);
+      final ui.FrameInfo frame = await codec.getNextFrame();
+      final ui.Image decodedImage = frame.image;
+
+      if (!mounted) return;
+
+      // Step 4: Transition to freeze-frame inspection mode.
+      setState(() {
+        _capturedFrameBytes = rawBytes;
+        _capturedUiImage = decodedImage;
+        _capturedImageSize = Size(
+          decodedImage.width.toDouble(),
+          decodedImage.height.toDouble(),
+        );
+        // Reset crosshair to image centre on every new capture.
+        _crosshairNorm = const Offset(0.5, 0.5);
+        _isFreezeFrameActive = true;
+        _isSplitScreenView = false;
+        VisionLensScreen.isFullScreenNotifier.value = false;
+      });
+
+      // Step 5: Sample the centre pixel strictly for visual UI overlay (no automatic TTS).
+      await _sampleCrosshairPixel();
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not capture frame: $e'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// Activates interactive freeze-frame color inspection for an uploaded photo.
+  Future<void> _captureUploadedPhotoFreezeFrame() async {
+    if (_uploadedImageBytes == null || _uploadedUiImage == null) return;
+    setState(() {
+      _capturedFrameBytes = _uploadedImageBytes;
+      _capturedUiImage = _uploadedUiImage;
+      _capturedImageSize = Size(
+        _uploadedUiImage!.width.toDouble(),
+        _uploadedUiImage!.height.toDouble(),
+      );
+      _crosshairNorm = const Offset(0.5, 0.5);
+      _isFreezeFrameActive = true;
+      _isSplitScreenView = false;
+      VisionLensScreen.isFullScreenNotifier.value = false;
+    });
+    await _sampleCrosshairPixel();
+  }
+
+  /// Discards the frozen frame and resumes live camera scan or resets uploaded inspection.
+  ///
+  /// Safe to call even if [_isFreezeFrameActive] is already false.
+  Future<void> _resumeLiveKnnScan() async {
+    // Free the decoded ui.Image if it was created dynamically for live camera capture.
+    if (_capturedUiImage != null && _capturedUiImage != _uploadedUiImage) {
+      _capturedUiImage?.dispose();
+    }
+
+    _crosshairObjectDetectionTimer?.cancel();
+    setState(() {
+      _isFreezeFrameActive = false;
+      _capturedFrameBytes = null;
+      _capturedUiImage = null;
+      _capturedImageSize = Size.zero;
+      _freezeFrameColorResult = null;
+      _currentIdentifiedObject = null;
+      _isSamplingPixel = false;
+    });
+
+    if (!_isDisplayingUploadedImage) {
+      if (_wasTorchOnBeforeFreeze) {
+        if (_cameraController != null && _cameraController!.value.isInitialized) {
+          try {
+            await _cameraController!.setFlashMode(FlashMode.torch);
+            if (mounted) setState(() => _isTorchOn = true);
+          } catch (_) {}
+        }
+        _wasTorchOnBeforeFreeze = false;
+      }
+      await _startKnnFrameStream();
+    }
+  }
+
+  /// Called on every tap or drag update inside the freeze-frame viewport.
+  ///
+  /// [localPosition] is the touch point in the **render box's local coordinates**
+  /// (i.e. relative to the top-left of the image display area).
+  /// [renderBoxSize] is the actual rendered size of the image container widget.
+  ///
+  /// The method:
+  ///   1. Maps screen coordinates → normalised image coordinates accounting for
+  ///      [BoxFit.contain] letterboxing / pillarboxing.
+  ///   2. Clamps the result to [0, 1].
+  ///   3. Triggers async pixel sampling for real-time visual UI update (no TTS).
+  void _onCrosshairInteraction({
+    required Offset localPosition,
+    required Size renderBoxSize,
+  }) {
+    final Size imageSize = _isDisplayingUploadedImage
+        ? (_uploadedUiImage != null
+            ? Size(_uploadedUiImage!.width.toDouble(), _uploadedUiImage!.height.toDouble())
+            : Size.zero)
+        : _capturedImageSize;
+
+    final Offset norm = _screenTouchToNormalisedImageCoord(
+      localPosition: localPosition,
+      renderBoxSize: renderBoxSize,
+      imagePixelSize: imageSize,
+    );
+
+    setState(() {
+      _crosshairNorm = norm;
+    });
+
+    // Sample pixel strictly for real-time visual readout update (no TTS).
+    _sampleCrosshairPixel();
+  }
+
+  /// Converts a touch point inside the image container to a normalised
+  /// [0, 1] × [0, 1] coordinate within the **actual image content**,
+  /// accounting for [BoxFit.contain] letterboxing/pillarboxing.
+  ///
+  /// ### Coordinate Mapping Algorithm
+  /// BoxFit.contain scales the image uniformly so it fits within the container
+  /// while preserving aspect ratio. This creates empty bands on either the
+  /// horizontal (pillarbox) or vertical (letterbox) edges.
+  ///
+  ///   scaleX = containerW / imageW
+  ///   scaleY = containerH / imageH
+  ///   scale  = min(scaleX, scaleY)          ← the constraining axis
+  ///   renderedW = imageW * scale
+  ///   renderedH = imageH * scale
+  ///   offsetX = (containerW - renderedW) / 2  ← pillarbox band width
+  ///   offsetY = (containerH - renderedH) / 2  ← letterbox band height
+  ///
+  /// Touch point mapped to image-space:
+  ///   normX = (touchX - offsetX) / renderedW  → clamped [0, 1]
+  ///   normY = (touchY - offsetY) / renderedH  → clamped [0, 1]
+  static Offset _screenTouchToNormalisedImageCoord({
+    required Offset localPosition,
+    required Size renderBoxSize,
+    required Size imagePixelSize,
+  }) {
+    if (imagePixelSize.isEmpty || renderBoxSize.isEmpty) {
+      return const Offset(0.5, 0.5);
+    }
+
+    final double containerW = renderBoxSize.width;
+    final double containerH = renderBoxSize.height;
+    final double imageW = imagePixelSize.width;
+    final double imageH = imagePixelSize.height;
+
+    // Scale factor for BoxFit.cover (the larger axis drives the scale so it covers the viewport).
+    final double scale = (containerW / imageW) > (containerH / imageH)
+        ? (containerW / imageW)
+        : (containerH / imageH);
+    final double renderedW = imageW * scale;
+    final double renderedH = imageH * scale;
+
+    // Center-crop offsets (negative or zero, as rendered dimension >= container dimension).
+    final double offsetX = (containerW - renderedW) / 2.0;
+    final double offsetY = (containerH - renderedH) / 2.0;
+
+    // Map touch position into [0, 1] within the rendered image rect.
+    final double normX = ((localPosition.dx - offsetX) / renderedW).clamp(0.0, 1.0);
+    final double normY = ((localPosition.dy - offsetY) / renderedH).clamp(0.0, 1.0);
+
+    return Offset(normX, normY);
+  }
+
+  /// Samples the pixel at [_crosshairNorm] within [_uploadedUiImage] or [_capturedUiImage],
+  /// updating [_freezeFrameColorResult] and [_currentIdentifiedColor] strictly for
+  /// real-time visual UI overlay rendering without triggering TTS.
+  Future<void> _sampleCrosshairPixel() async {
+    final ui.Image? targetImage = _isDisplayingUploadedImage ? _uploadedUiImage : _capturedUiImage;
+    final Size targetSize = _isDisplayingUploadedImage
+        ? (_uploadedUiImage != null
+            ? Size(_uploadedUiImage!.width.toDouble(), _uploadedUiImage!.height.toDouble())
+            : Size.zero)
+        : _capturedImageSize;
+
+    if (targetImage == null || _isccDataset.isEmpty || _isSamplingPixel || targetSize.isEmpty) return;
+    _isSamplingPixel = true;
+
+    // Convert normalised coordinates to actual pixel indices.
+    final int px = (_crosshairNorm.dx * (targetSize.width - 1)).round();
+    final int py = (_crosshairNorm.dy * (targetSize.height - 1)).round();
+
+    try {
+      final KnnIsolateResult result = await CapturePixelSamplerService.samplePixelAt(
+        image: targetImage,
+        pixelX: px,
+        pixelY: py,
+        dataset: _isccDataset,
+      );
+
+      if (mounted) {
+        setState(() {
+          _freezeFrameColorResult = result;
+          _currentIdentifiedColor = result.colorName;
+        });
+      }
+    } finally {
+      _isSamplingPixel = false;
+    }
+
+    _triggerDebouncedCrosshairObjectDetection(targetImage, _crosshairNorm);
+  }
+
+  /// Debounces object detection (300ms) when moving the crosshair to ensure
+  /// smooth 60fps touch interactions while keeping the object label targeted.
+  void _triggerDebouncedCrosshairObjectDetection(ui.Image targetImage, Offset crosshairNorm) {
+    _crosshairObjectDetectionTimer?.cancel();
+    _crosshairObjectDetectionTimer = Timer(const Duration(milliseconds: 300), () async {
+      if (!mounted) return;
+      final label = await ObjectDetectionService.instance.detectObjectInImageRoi(
+        image: targetImage,
+        normalizedCrosshair: crosshairNorm,
+      );
+      if (mounted) {
+        setState(() {
+          _currentIdentifiedObject = label;
+        });
+      }
+    });
+  }
+
+  Future<void> _requestCameraPermission() async {
+    final granted = await showCameraPermissionModal(context);
+    if (granted == true && mounted) {
+      setState(() {
+        _isCameraPermissionGranted = true;
+      });
+      await _startDelayPage();
+      await _initializeCameraDevice();
+    }
+  }
+
+  Future<void> _initializeCameraDevice() async {
+    if (_isCameraInitializing) return;
+    setState(() => _isCameraInitializing = true);
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isNotEmpty && mounted) {
+        final controller = CameraController(
+          cameras.first,
+          ResolutionPreset.medium,
+          imageFormatGroup: Platform.isIOS ? ImageFormatGroup.bgra8888 : ImageFormatGroup.nv21,
+          enableAudio: false,
+        );
+        await controller.initialize();
+        if (mounted) {
+          setState(() {
+            _cameraController = controller;
+            _isCameraInitializing = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isCameraInitializing = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isCameraInitializing = false);
+    }
+  }
+
+  Future<void> _pickUploadedPhoto() async {
+    // 1. Instantly stop live frame streaming and wipe all detected objects state to prevent state bleed
+    await _stopKnnFrameStream();
+    if (mounted) {
+      setState(() {
+        _detectedObjects = [];
+        _uploadedDetectedObjects = [];
+        _isObjectDetectionProcessing = false;
+        _isUploadedObjectLabelingProcessing = false;
+        _currentIdentifiedObject = null;
+      });
+    }
+
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked != null && mounted) {
+        final mode = await showAssistanceModeModal(context);
+        if (mode == null || !mounted) return;
+
+        // Ensure stream remains stopped while viewing an uploaded photo.
+        await _stopKnnFrameStream();
+
+        final bytes = await picked.readAsBytes();
+        final orientation = ObjectDetectionService.extractExifOrientation(bytes);
+        _uploadedNotificationTimer?.cancel();
+
+        await _startDelayPage();
+        if (!mounted) return;
+
+        setState(() {
+          _uploadedImageBytes = bytes;
+          _uploadedPhotoExifOrientation = orientation;
+          _uploadedUiImage = null; // will be set after decode
+          _uploadedFileName = picked.name;
+          _isDisplayingUploadedImage = true;
+          _showUploadedNotification = true;
+          _showZoomSlider = false;
+          _isSplitScreenView = false;
+          VisionLensScreen.isFullScreenNotifier.value = false;
+          _currentIdentifiedObject = null;
+          _isObjectDetectionMode = false;
+          _detectedObjects = [];
+          _isObjectDetectionProcessing = false;
+          _uploadedDetectedObjects = [];
+          _showUploadedObjectsSheet = (mode == AssistanceMode.objectLabeling);
+          if (mode == AssistanceMode.remapColor) {
+            _isRemapActive = true;
+            _isUploadedIdentifyMode = false;
+            _isUploadedObjectLabelMode = false;
+          } else if (mode == AssistanceMode.identifyColor) {
+            _isRemapActive = false;
+            _isUploadedIdentifyMode = true;
+            _isUploadedObjectLabelMode = false;
+          } else if (mode == AssistanceMode.objectLabeling) {
+            _isRemapActive = false;
+            _isUploadedIdentifyMode = false;
+            _isUploadedObjectLabelMode = true;
+            _isUploadedObjectLabelingProcessing = true;
+            AuditoryFeedbackService.instance.stop();
+          }
+        });
+        if (mode != AssistanceMode.remapColor && _isTorchOn) {
+          if (_cameraController != null && _cameraController!.value.isInitialized) {
+            try {
+              await _cameraController!.setFlashMode(FlashMode.off);
+            } catch (_) {}
+          }
+          setState(() {
+            _isTorchOn = false;
+          });
+        }
+        await _decodeUploadedImage(bytes);
+        if (mode == AssistanceMode.objectLabeling) {
+          await _processUploadedPhotoForObjectLabeling(bytes, pickedFilePath: picked.path);
+        }
+        _uploadedNotificationTimer = Timer(const Duration(seconds: 4), () {
+          if (mounted) {
+            setState(() {
+              _showUploadedNotification = false;
+            });
+          }
+        });
+
+        if (mode == AssistanceMode.remapColor && mounted) {
+          await _handleUploadedPhotoSavePrompt(context);
+        }
+      }
+    } catch (e) {
+      // Fallback sample image if running in test environment or gallery picking is unavailable
+      if (mounted) {
+        final mode = await showAssistanceModeModal(context);
+        if (mode == null || !mounted) return;
+
+        // Stop the live KNN camera frame stream while viewing an uploaded photo.
+        await _stopKnnFrameStream();
+
+        _uploadedNotificationTimer?.cancel();
+
+        await _startDelayPage();
+        if (!mounted) return;
+
+        setState(() {
+          _isDisplayingUploadedImage = true;
+          _showUploadedNotification = true;
+          _showZoomSlider = false;
+          _isSplitScreenView = false;
+          VisionLensScreen.isFullScreenNotifier.value = false;
+          _currentIdentifiedObject = null;
+          _detectedObjects = [];
+          _uploadedDetectedObjects = [];
+          _showUploadedObjectsSheet = (mode == AssistanceMode.objectLabeling);
+          if (mode == AssistanceMode.remapColor) {
+            _isRemapActive = true;
+            _isUploadedIdentifyMode = false;
+            _isUploadedObjectLabelMode = false;
+          } else if (mode == AssistanceMode.identifyColor) {
+            _isRemapActive = false;
+            _isUploadedIdentifyMode = true;
+            _isUploadedObjectLabelMode = false;
+          } else if (mode == AssistanceMode.objectLabeling) {
+            _isRemapActive = false;
+            _isUploadedIdentifyMode = false;
+            _isUploadedObjectLabelMode = true;
+          }
+        });
+        if (mode != AssistanceMode.remapColor && _isTorchOn) {
+          if (_cameraController != null && _cameraController!.value.isInitialized) {
+            try {
+              await _cameraController!.setFlashMode(FlashMode.off);
+            } catch (_) {}
+          }
+          setState(() {
+            _isTorchOn = false;
+          });
+        }
+        _uploadedNotificationTimer = Timer(const Duration(seconds: 4), () {
+          if (mounted) {
+            setState(() {
+              _showUploadedNotification = false;
+            });
+          }
+        });
+        if (mode == AssistanceMode.remapColor && mounted) {
+          await _handleUploadedPhotoSavePrompt(context);
+        }
+      }
+    }
+  }
+
+  Future<void> _decodeUploadedImage(Uint8List bytes) async {
+    final image = await decodeImageFromList(bytes);
+    if (mounted) {
+      setState(() {
+        _uploadedUiImage = image;
+        _crosshairNorm = const Offset(0.5, 0.5);
+      });
+      if (_isUploadedIdentifyMode && _isccDataset.isNotEmpty) {
+        await _captureUploadedPhotoFreezeFrame();
+      }
+      if (_isUploadedIdentifyMode) {
+        final objectLabel = await ObjectDetectionService.instance.detectObjectInImageRoi(
+          image: image,
+          normalizedCrosshair: const Offset(0.5, 0.5),
+        );
+        if (mounted) {
+          setState(() {
+            _currentIdentifiedObject = objectLabel;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _processUploadedPhotoForObjectLabeling(
+    Uint8List bytes, {
+    String? pickedFilePath,
+  }) async {
+    if (mounted) {
+      setState(() {
+        _isUploadedObjectLabelingProcessing = true;
+        _uploadedDetectedObjects = [];
+      });
+    }
+    AuditoryFeedbackService.instance.stop();
+
+    try {
+      String targetPath;
+      if (pickedFilePath != null && pickedFilePath.isNotEmpty && await File(pickedFilePath).exists()) {
+        targetPath = pickedFilePath;
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/gabeye_uploaded_photo_${DateTime.now().millisecondsSinceEpoch}.png');
+        await tempFile.writeAsBytes(bytes, flush: true);
+        targetPath = tempFile.path;
+      }
+
+      final detected = await ObjectDetectionService.instance.detectObjectsInFilePath(targetPath);
+      if (mounted && _isUploadedObjectLabelMode && _isDisplayingUploadedImage) {
+        setState(() {
+          _uploadedDetectedObjects = detected;
+          _showUploadedObjectsSheet = true;
+          _isUploadedObjectLabelingProcessing = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('[VisionLensScreen] Error running object labeling on uploaded photo: $e');
+      if (mounted) {
+        setState(() {
+          _isUploadedObjectLabelingProcessing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _switchToRealtimeCameraRemapping() async {
+    _uploadedNotificationTimer?.cancel();
+    _crosshairObjectDetectionTimer?.cancel();
+    _crosshairObjectDetectionTimer = null;
+    await _stopKnnFrameStream();
+    ObjectDetectionService.instance.resetBusyState();
+
+    final oldCaptured = _capturedUiImage;
+    final oldUploaded = _uploadedUiImage;
+    _capturedUiImage = null;
+    _uploadedUiImage = null;
+
+    if (oldCaptured != null && oldCaptured != oldUploaded) {
+      try { oldCaptured.dispose(); } catch (_) {}
+    }
+    if (oldUploaded != null) {
+      try { oldUploaded.dispose(); } catch (_) {}
+    }
+
+    setState(() {
+      _uploadedImageBytes = null;
+      _uploadedUiImage = null;
+      _uploadedPhotoExifOrientation = 1;
+      _uploadedFileName = null;
+      _isDisplayingUploadedImage = false;
+      _showUploadedNotification = false;
+      _isUploadedIdentifyMode = false;
+      _isUploadedObjectLabelMode = false;
+      _uploadedDetectedObjects = [];
+      _showUploadedObjectsSheet = false;
+      _isUploadedObjectLabelingProcessing = false;
+      _isObjectDetectionMode = false;
+      _detectedObjects = [];
+      _isObjectDetectionProcessing = false;
+      _isFreezeFrameActive = false;
+      _capturedFrameBytes = null;
+      _capturedUiImage = null;
+      _capturedImageSize = Size.zero;
+      _freezeFrameColorResult = null;
+      _currentIdentifiedObject = null;
+      _isRemapActive = true;
+      _activeCameraMode = CameraRealtimeMode.daltonization;
+      _isSplitScreenView = false;
+      _showCalibrationSlider = false;
+      VisionLensScreen.isFullScreenNotifier.value = false;
+    });
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cleared image. Active real-time LMS Daltonization enabled.'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  double _getEffectiveShaderType() {
+    if (!_isRemapActive || _selectedPreset == PresetMode.off) {
+      return 3.0; // Normal pass-through
+    }
+    switch (_selectedPreset) {
+      case PresetMode.customized:
+        return VisionProfileService.instance.shaderType;
+      case PresetMode.protan:
+        return 0.0;
+      case PresetMode.deutan:
+        return 1.0;
+      case PresetMode.tritan:
+        return 2.0;
+      case PresetMode.off:
+        return 3.0;
+    }
+  }
+
+  double _getEffectiveShaderIntensity() {
+    if (!_isRemapActive && !_isSplitScreenView) {
+      if (_selectedPreset == PresetMode.off) return 0.0;
+    }
+    switch (_selectedPreset) {
+      case PresetMode.customized:
+        return VisionProfileService.instance.shaderIntensity;
+      case PresetMode.protan:
+        return _protanCalibration;
+      case PresetMode.deutan:
+        return _deutanCalibration;
+      case PresetMode.tritan:
+        return _tritanCalibration;
+      case PresetMode.off:
+        return 0.0;
+    }
+  }
+
+  /// Builds the 4×5 ColorFilter matrix for the live camera path.
+  /// Uses Machado (2009) daltonization projection targets,
+  /// interpolated by [intensity] toward the identity matrix.
+  List<double> _buildCameraColorMatrix(double shaderType, double intensity) {
+    // Identity matrix (pass-through)
+    const identity = <double>[
+      1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 0.0,
+    ];
+
+    if (shaderType >= 2.5 || intensity <= 0.01) return identity;
+
+    final double k = intensity.clamp(0.0, 1.0);
+    List<double> target;
+
+    if (shaderType < 0.5) {
+      // Protanopia: Shift lost red into Green (0.7x) & Blue (1.0x)
+      target = [
+        1.0,      0.0,       0.0,      0.0, 0.0,
+        0.593400, 0.263192,  0.143408, 0.0, 0.0,
+        0.847714, -1.052583, 1.204868, 0.0, 0.0,
+        0.0,      0.0,       0.0,      1.0, 0.0,
+      ];
+    } else if (shaderType < 1.5) {
+      // Deuteranopia: Shift lost green into Red (1.0x) & Blue (0.7x)
+      target = [
+        0.717721,  0.322233, -0.039954, 0.0, 0.0,
+        0.0,       1.0,       0.0,      0.0, 0.0,
+       -0.197595,  0.225563,  0.972032, 0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    } else {
+      // Tritanopia: Shift lost blue into Red (1.0x) & Green (0.7x)
+      target = [
+        0.995267, -0.691367,  0.696100, 0.0, 0.0,
+       -0.003313,  0.516043,  0.487270, 0.0, 0.0,
+        0.0,       0.0,       1.0,      0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    }
+
+    return List.generate(20, (i) {
+      final identityVal = (i % 6 == 0) ? 1.0 : 0.0;
+      return identityVal * (1.0 - k) + target[i] * k;
+    });
+  }
+
+  /// Builds the 4×5 ColorFilter matrix for CVD vision simulation (Protan, Deutan, Tritan).
+  /// Uses Machado (2009) dichromacy projection targets,
+  /// interpolated by [intensity] toward the identity matrix.
+  List<double> _buildCvdSimulationMatrix(double shaderType, double intensity) {
+    // Identity matrix (pass-through)
+    const identity = <double>[
+      1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 0.0,
+    ];
+
+    if (shaderType >= 2.5 || intensity <= 0.01) return identity;
+
+    final double k = intensity.clamp(0.0, 1.0);
+    List<double> target;
+
+    if (shaderType < 0.5) {
+      // Protanopia Simulation Matrix
+      target = [
+        0.152286,  1.052583, -0.204868, 0.0, 0.0,
+        0.114503,  0.786281,  0.099216, 0.0, 0.0,
+       -0.003882, -0.004616,  1.008498, 0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    } else if (shaderType < 1.5) {
+      // Deuteranopia Simulation Matrix
+      target = [
+        0.366474,  0.747833, -0.114307, 0.0, 0.0,
+        0.282279,  0.677767,  0.039954, 0.0, 0.0,
+       -0.013580,  0.016335,  0.997245, 0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    } else {
+      // Tritanopia Simulation Matrix
+      target = [
+        1.255528, -0.076749, -0.178779, 0.0, 0.0,
+       -0.078411,  0.930809,  0.147602, 0.0, 0.0,
+        0.004733,  0.691367,  0.303900, 0.0, 0.0,
+        0.0,       0.0,       0.0,      1.0, 0.0,
+      ];
+    }
+
+    return List.generate(20, (i) {
+      final identityVal = (i % 6 == 0) ? 1.0 : 0.0;
+      return identityVal * (1.0 - k) + target[i] * k;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: VisionProfileService.instance,
+      builder: (context, profile, _) {
+        return Column(
+          children: [
+            // Top Quick Preset Selector Bar
+            _buildTopPresetSelectorBar(context),
+
+            // Camera Viewport & Floating Control Bar
+            Expanded(
+              child: _buildCameraViewport(context),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTopPresetSelectorBar(BuildContext context) {
+    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+
+    // Hide top preset bar if displaying uploaded image in Identify or Object Labeling mode when NOT in split screen
+    if (_isDisplayingUploadedImage && (_isUploadedIdentifyMode || _isUploadedObjectLabelMode) && !_isSplitScreenView) {
+      return const SizedBox.shrink();
+    }
+
+    // In Identify mode: show top preset bar ONLY when Split Screen is active.
+    // In Daltonization mode: show top preset bar always (unless Split Screen is active).
+    if (isKnnMode) {
+      if (!_isSplitScreenView) return const SizedBox.shrink();
+    } else {
+      if (_isSplitScreenView) return const SizedBox.shrink();
+    }
+
+    final colors = Theme.of(context).colorScheme;
+
+    // In Identify Split Screen, display ONLY the three CVD types: Protan, Deutan, Tritan + Calibration button
+    if (isKnnMode && _isSplitScreenView) {
+      if (_selectedPreset != PresetMode.protan &&
+          _selectedPreset != PresetMode.deutan &&
+          _selectedPreset != PresetMode.tritan) {
+        _selectedPreset = PresetMode.protan;
+      }
+
+      return Container(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.95),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildPresetChip(
+                  mode: PresetMode.protan,
+                  label: 'Protan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.deutan,
+                  label: 'Deutan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.tritan,
+                  label: 'Tritan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 12),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _showCalibrationSlider = !_showCalibrationSlider;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _showCalibrationSlider
+                          ? colors.primary
+                          : colors.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _showCalibrationSlider
+                            ? colors.primary
+                            : colors.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 16,
+                          color: _showCalibrationSlider ? Colors.white : colors.onSurface,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Calibrate',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _showCalibrationSlider ? Colors.white : colors.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_showCalibrationSlider) ...[
+              const SizedBox(height: 8),
+              _buildCvdCalibrationSlider(context, colors),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      color: colors.surfaceContainerHighest.withValues(alpha: 0.9),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ValueListenableBuilder(
+        valueListenable: VisionProfileService.instance,
+        builder: (context, result, _) {
+          const customLabel = 'Recommended';
+
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _buildPresetChip(
+                  mode: PresetMode.customized,
+                  label: customLabel,
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.protan,
+                  label: 'Protan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.deutan,
+                  label: 'Deutan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.tritan,
+                  label: 'Tritan',
+                  colors: colors,
+                ),
+                const SizedBox(width: 8),
+                _buildPresetChip(
+                  mode: PresetMode.off,
+                  label: 'Off',
+                  colors: colors,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCvdCalibrationSlider(BuildContext context, ColorScheme colors) {
+    double currentVal;
+    ValueChanged<double> onChanged;
+    String modeName;
+
+    switch (_selectedPreset) {
+      case PresetMode.protan:
+        currentVal = _protanCalibration;
+        onChanged = (val) => setState(() => _protanCalibration = val);
+        modeName = 'Protan';
+        break;
+      case PresetMode.deutan:
+        currentVal = _deutanCalibration;
+        onChanged = (val) => setState(() => _deutanCalibration = val);
+        modeName = 'Deutan';
+        break;
+      case PresetMode.tritan:
+      default:
+        currentVal = _tritanCalibration;
+        onChanged = (val) => setState(() => _tritanCalibration = val);
+        modeName = 'Tritan';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '$modeName Calibration:',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: colors.onSurface,
+            ),
+          ),
+          Expanded(
+            child: Slider(
+              value: currentVal.clamp(0.1, 1.0),
+              min: 0.1,
+              max: 1.0,
+              divisions: 9,
+              activeColor: colors.primary,
+              label: '${(currentVal * 100).round()}%',
+              onChanged: onChanged,
+            ),
+          ),
+          Text(
+            '${(currentVal * 100).round()}%',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: colors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresetChip({
+    required PresetMode mode,
+    required String label,
+    required ColorScheme colors,
+  }) {
+    final isSelected = _selectedPreset == mode;
+
+    return GestureDetector(
+      onTap: () {
+        if (!isSelected) {
+          setState(() {
+            _selectedPreset = mode;
+            if (mode != PresetMode.customized) {
+              _showCalibrationSlider = false;
+            }
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? colors.primary : colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? colors.primary : colors.outlineVariant.withValues(alpha: 0.5),
+            width: isSelected ? 2.0 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              const Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 4),
+            ],
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? Colors.white : colors.onSurface,
+              ),
+              child: Text(label),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Displays the Delay Page matching light & dark theme specifications
+  /// when accessing KNN, Daltonize, or Uploaded photo mode.
+  Widget _buildDelayPage(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    const backgroundColor = Color(0xFF0F4C81);
+    final cardBackgroundColor = isDark ? const Color(0xFF161E2E) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
+
+    final progressTrackColor = isDark ? const Color(0xFF2C384C) : const Color(0xFFE5E7EB);
+    final progressFillColor = isDark ? const Color(0xFF3B82F6) : const Color(0xFF1D4E82);
+
+    return Container(
+      color: backgroundColor,
+      width: double.infinity,
+      height: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Decorative bottom asset overlay
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SvgPicture.asset(
+              'assets/images/delay_assets.svg',
+              width: MediaQuery.of(context).size.width,
+              fit: BoxFit.cover,
+            ),
+          ),
+          // Centered floating card
+          Center(
+            child: Container(
+              width: 290,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              decoration: BoxDecoration(
+                color: cardBackgroundColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // GabEye Logo emblem
+                  SvgPicture.asset(
+                    'assets/images/gabEyeLogo.svg',
+                    width: 90,
+                    height: 90,
+                  ),
+                  const SizedBox(height: 20),
+                  // Subtitle text
+                  Text(
+                    'Getting your view ready. Please wait.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  // Smooth animated linear progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 8,
+                      width: double.infinity,
+                      color: progressTrackColor,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: _delayProgress.clamp(0.0, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: progressFillColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraViewport(BuildContext context) {
+    if (_isDelaying) {
+      return _buildDelayPage(context);
+    }
+    final colors = Theme.of(context).colorScheme;
+
+    Widget viewportContent = _isFreezeFrameActive && _capturedFrameBytes != null
+        // ── Freeze-Frame Inspection Mode ──────────────────────────────────────
+        // Displayed when the user taps the shutter in KNN mode. Shows the still
+        // captured image with a draggable crosshair overlay.
+        ? _buildFreezeFrameInspectionView(context, colors)
+        : (_isSplitScreenView
+            ? _buildSplitScreenViewport(context, colors)
+            : (_isDisplayingUploadedImage
+                // Uploaded photo: pass the decoded ui.Image directly to the shader, inspection view, or object labeling view.
+                ? (_uploadedUiImage != null
+                    ? (_isUploadedIdentifyMode
+                        ? _buildUploadedImageInspectionView(context, colors)
+                        : (_isUploadedObjectLabelMode
+                            ? _buildUploadedObjectLabelingView(context, colors)
+                            : DaltonizationShaderWidget(
+                                customType: _getEffectiveShaderType(),
+                                intensity: _getEffectiveShaderIntensity(),
+                                image: _uploadedUiImage!,
+                              )))
+                    : const Center(child: CircularProgressIndicator()))
+                : (_isCameraPermissionGranted
+                    // In KNN mode or Object Detection mode, display natural un-filtered camera preview. Otherwise apply ColorFiltered Daltonization pass.
+                    ? (_activeCameraMode == CameraRealtimeMode.knn || _isObjectDetectionMode
+                        ? _buildCameraPreviewWidget(colors)
+                        : ColorFiltered(
+                            colorFilter: ColorFilter.matrix(
+                              _buildCameraColorMatrix(
+                                _getEffectiveShaderType(),
+                                _getEffectiveShaderIntensity(),
+                              ),
+                            ),
+                            child: _buildCameraPreviewWidget(colors),
+                          ))
+                    : InkWell(
+                        onTap: _requestCameraPermission,
+                        child: Container(
+                          color: colors.surfaceContainerHighest,
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.camera_alt_outlined,
+                              size: 48,
+                              color: colors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Vision Lens Access Required',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap to allow camera access and enable real-time LMS Daltonization color remapping.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.onSurface,
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            onPressed: _requestCameraPermission,
+                            icon: const Icon(Icons.security_rounded, size: 18, color: Colors.white),
+                            label: const Text(
+                              'Allow Camera Access',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ))));
+
+    return Stack(
+      children: [
+        // Viewport: Uploaded photo or Realtime Hardware Camera Feed through GLSL LMS Daltonization Shader
+        Positioned.fill(child: viewportContent),
+
+        // Indicator Chip when displaying uploaded photo
+        if (_isDisplayingUploadedImage && !_isSplitScreenView)
+          Positioned(
+            top: 16,
+            left: 20,
+            child: AnimatedOpacity(
+              opacity: _showUploadedNotification ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 400),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: colors.primary, width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _isUploadedObjectLabelMode
+                          ? Icons.category_rounded
+                          : (_isUploadedIdentifyMode ? Icons.palette_outlined : Icons.image),
+                      size: 14,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _isUploadedObjectLabelMode
+                          ? 'Object Labeling Mode (${_uploadedFileName ?? "Selected Image"})'
+                          : (_isUploadedIdentifyMode
+                              ? 'Identify Color Mode (${_uploadedFileName ?? "Selected Image"})'
+                              : 'Remap Color Mode (${_uploadedFileName ?? "Selected Image"})'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        // Real-Time Object Detection Bounding Box & Label Overlay
+        if (_isObjectDetectionMode &&
+            !_isDisplayingUploadedImage &&
+            !_isFreezeFrameActive &&
+            _isCameraPermissionGranted)
+          Positioned.fill(
+            child: ObjectDetectionOverlay(
+              key: const ValueKey('live_camera_object_overlay'),
+              objects: _detectedObjects,
+              imageSize: _cameraFrameSize,
+              cameraDescription: _cameraController?.description,
+              fit: BoxFit.cover,
+              isStaticImage: false,
+            ),
+          ),
+
+        // Indicator Chip when Live Camera is in Object Labeling Mode
+        if (!_isDisplayingUploadedImage &&
+            !_isFreezeFrameActive &&
+            _isObjectDetectionMode &&
+            !_isSplitScreenView)
+          Positioned(
+            top: 16,
+            left: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: colors.primary, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.category_rounded, size: 14, color: colors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Object Labeling',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'AtkinsonHyperlegible',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Indicator Chip when Live Camera is in KNN Color Identification Mode
+        // Hidden during freeze-frame (the freeze-frame view has its own status badge) and during Object Detection mode.
+        if (!_isDisplayingUploadedImage && !_isFreezeFrameActive &&
+            !_isObjectDetectionMode &&
+            _activeCameraMode == CameraRealtimeMode.knn && !_isSplitScreenView)
+          Positioned(
+            top: 16,
+            left: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: colors.primary, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.palette_outlined, size: 14, color: colors.primary),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'KNN Color Identification (Active)',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Precision Pinpoint Dot ROI Target Overlay when in KNN / Identify Mode
+        // Hidden during freeze-frame, when viewing an uploaded image, and during Object Detection mode.
+        if (!_isFreezeFrameActive &&
+            !_isDisplayingUploadedImage &&
+            !_isObjectDetectionMode &&
+            _activeCameraMode == CameraRealtimeMode.knn &&
+            !_isSplitScreenView &&
+            _isCameraPermissionGranted)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Center(
+                child: SizedBox(
+                  width: 160,
+                  height: 120,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      // Center Pinpoint Target Ring & Dot
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.primary.withValues(alpha: 0.2),
+                          border: Border.all(color: colors.primary, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Crosshair Tick Lines
+                      Positioned(
+                        top: 28,
+                        child: Container(width: 1.5, height: 10, color: colors.primary),
+                      ),
+                      Positioned(
+                        bottom: 48,
+                        child: Container(width: 1.5, height: 10, color: colors.primary),
+                      ),
+                      Positioned(
+                        left: 48,
+                        child: Container(width: 10, height: 1.5, color: colors.primary),
+                      ),
+                      Positioned(
+                        right: 48,
+                        child: Container(width: 10, height: 1.5, color: colors.primary),
+                      ),
+                      // Identified Color & Object Badge below pinpoint target
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: colors.primary.withValues(alpha: 0.6)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              _currentIdentifiedObject != null && _currentIdentifiedObject!.isNotEmpty
+                                  ? '$_currentIdentifiedColor ($_currentIdentifiedObject)'
+                                  : _currentIdentifiedColor,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // Vertically Centered Right-Side Floating Control Stack
+        Positioned(
+          top: 0,
+          bottom: 0,
+          right: 16,
+          child: Center(
+            child: _buildRightSideFloatingToolbar(context),
+          ),
+        ),
+
+        // Vertically Centered Zoom Slider Overlay (toggled by Zoom button)
+        if (_showZoomSlider)
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 76,
+            child: Center(
+              child: SizedBox(
+                width: 240,
+                child: _buildZoomSliderOverlay(context),
+              ),
+            ),
+          ),
+
+        // Uploaded Photo Object Detection Bounding Box Overlay
+        if (_isDisplayingUploadedImage &&
+            _isUploadedObjectLabelMode &&
+            _uploadedUiImage != null)
+          Positioned.fill(
+            child: ObjectDetectionOverlay(
+              key: const ValueKey('uploaded_photo_object_overlay'),
+              objects: _uploadedDetectedObjects,
+              imageSize: Size(
+                _uploadedUiImage!.width.toDouble(),
+                _uploadedUiImage!.height.toDouble(),
+              ),
+              cameraDescription: null,
+              fit: BoxFit.contain,
+              isStaticImage: true,
+              exifOrientation: _uploadedPhotoExifOrientation,
+            ),
+          ),
+
+        // Floating Calibration Slider Overlay & Triangle Button visibility check
+        if (_selectedPreset == PresetMode.customized &&
+            (!(_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode) || _isSplitScreenView) &&
+            !(_isDisplayingUploadedImage && (_isUploadedIdentifyMode || _isUploadedObjectLabelMode))) ...[
+          if (_showCalibrationSlider)
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 140,
+              child: _buildCalibrationSliderOverlay(context),
+            ),
+
+          // Standalone Floating Open-Triangle Button (Sitting between bottom action bar and calibration container)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 82,
+            child: Center(
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _showCalibrationSlider = !_showCalibrationSlider;
+                  });
+                },
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black.withValues(alpha: 0.65)
+                        : Colors.white.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.45),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: AnimatedRotation(
+                    turns: _showCalibrationSlider ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    child: SizedBox(
+                      width: 36,
+                      height: 20,
+                      child: CustomPaint(
+                        painter: OpenTrianglePainter(
+                          color: colors.primary,
+                          strokeWidth: 3.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        // Floating Uploaded Object Labeling Sheet & Open-Triangle Toggle Button
+        if (_isDisplayingUploadedImage && _isUploadedObjectLabelMode) ...[
+          if (_showUploadedObjectsSheet)
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 140,
+              child: _buildUploadedObjectsSheetOverlay(context),
+            ),
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 82,
+            child: Center(
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _showUploadedObjectsSheet = !_showUploadedObjectsSheet;
+                  });
+                },
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black.withValues(alpha: 0.65)
+                        : Colors.white.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.45),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: AnimatedRotation(
+                    turns: _showUploadedObjectsSheet ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    child: SizedBox(
+                      width: 36,
+                      height: 20,
+                      child: CustomPaint(
+                        painter: OpenTrianglePainter(
+                          color: colors.primary,
+                          strokeWidth: 3.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        // Transparent Floating Action Card (Upload, Center Shutter Ring, Remap/Live Camera)
+        Positioned(
+          left: 20,
+          right: 20,
+          bottom: 16,
+          child: _buildTransparentFloatingActionCard(context),
+        ),
+      ],
+    );
+  }
+
+
+
+  // ---------------------------------------------------------------------------
+  // Freeze-Frame Inspection View
+  // ---------------------------------------------------------------------------
+
+  /// Builds the full-screen still-image inspection UI with:
+  ///   - The captured image displayed with [BoxFit.contain] (preserves aspect ratio).
+  ///   - An interactive [GestureDetector] for tap and drag crosshair repositioning.
+  ///   - A [CustomPaint] overlay drawing the draggable crosshair and colour badge.
+  ///   - A "Resume Live Scan" pill button at the bottom to exit freeze mode.
+  ///   - A status badge at the top indicating freeze-frame mode.
+  Widget _buildFreezeFrameInspectionView(BuildContext context, ColorScheme colors) {
+    final Uint8List bytes = _capturedFrameBytes!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final Size containerSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+        return Stack(
+          children: [
+            // ── Still Image ──────────────────────────────────────────
+            // Uses the identical FittedBox(fit: BoxFit.cover) and previewSize footprint
+            // as _buildCameraPreviewWidget so that freeze frame perfectly matches the
+            // live CameraPreview geometry with zero layout shifts or scaling discrepancies.
+            Positioned.fill(
+              child: ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _cameraController?.value.previewSize?.height ?? 720,
+                    height: _cameraController?.value.previewSize?.width ?? 1280,
+                    child: Image.memory(
+                      bytes,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Interactive Crosshair Gesture Layer ─────────────────────
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTapDown: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                onPanUpdate: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                // Visual crosshair and color readout badge rendered directly over the image.
+                child: CustomPaint(
+                  painter: FreezeFrameCrosshairPainter(
+                    normPosition: _crosshairNorm,
+                    imageSize: _capturedImageSize,
+                    containerSize: containerSize,
+                    colorResult: _freezeFrameColorResult,
+                    accentColor: colors.primary,
+                  ),
+                  size: containerSize,
+                ),
+              ),
+            ),
+
+            // ── Freeze-Frame Status Badge (top-left) ────────────────────
+            Positioned(
+              top: 16,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isDisplayingUploadedImage ? Icons.image_outlined : Icons.camera_outlined,
+                      size: 15,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      _isDisplayingUploadedImage
+                          ? 'Uploaded Photo • Tap or drag to inspect'
+                          : 'Freeze-Frame • Tap or drag to inspect',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUploadedObjectLabelingView(BuildContext context, ColorScheme colors) {
+    final Uint8List bytes = _uploadedImageBytes!;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.memory(
+            bytes,
+            fit: BoxFit.contain,
+            gaplessPlayback: true,
+          ),
+        ),
+        if (_isUploadedObjectLabelingProcessing)
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildUploadedImageInspectionView(BuildContext context, ColorScheme colors) {
+    final Uint8List bytes = _uploadedImageBytes!;
+    final Size imageSize = _uploadedUiImage != null
+        ? Size(_uploadedUiImage!.width.toDouble(), _uploadedUiImage!.height.toDouble())
+        : Size.zero;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final Size containerSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+        return Stack(
+          children: [
+            // ── Uploaded Image ───────────────────────────────────────
+            Positioned.fill(
+              child: ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: imageSize.width > 0 ? imageSize.width : containerSize.width,
+                    height: imageSize.height > 0 ? imageSize.height : containerSize.height,
+                    child: Image.memory(
+                      bytes,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Interactive Crosshair Gesture Layer ─────────────────────
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTapDown: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                onPanUpdate: (details) {
+                  _onCrosshairInteraction(
+                    localPosition: details.localPosition,
+                    renderBoxSize: containerSize,
+                  );
+                },
+                // Visual crosshair and color readout badge rendered directly over the image.
+                child: CustomPaint(
+                  painter: FreezeFrameCrosshairPainter(
+                    normPosition: _crosshairNorm,
+                    imageSize: imageSize,
+                    containerSize: containerSize,
+                    colorResult: _freezeFrameColorResult,
+                    accentColor: colors.primary,
+                  ),
+                  size: containerSize,
+                ),
+              ),
+            ),
+
+            // ── Uploaded Image Status Badge (top-left) ──────────────────
+            Positioned(
+              top: 16,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.palette_outlined, size: 15, color: Colors.white),
+                    const SizedBox(width: 7),
+                    Text(
+                      'KNN Image Inspection • ${_uploadedFileName ?? "Tap or drag to inspect"}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCameraPreviewWidget(ColorScheme colors) {
+    if (_isCameraInitializing) {
+      return Container(
+        color: colors.surfaceContainer,
+        child: Center(
+          child: CircularProgressIndicator(color: colors.primary),
+        ),
+      );
+    }
+
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: _cameraController!.value.previewSize?.height ?? 720,
+          height: _cameraController!.value.previewSize?.width ?? 1280,
+          child: CameraPreview(_cameraController!),
+        ),
+      );
+    }
+
+    // High-quality sample scene fallback
+    return Image.asset(
+      'assets/images/gabeye_cover.png',
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: colors.surfaceContainer,
+        child: Center(
+          child: Icon(Icons.videocam, size: 64, color: colors.primary),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransparentFloatingActionCard(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isShutterDisabled = _isDisplayingUploadedImage && _isUploadedObjectLabelMode;
+    final iconColor = isDark
+        ? AppColors.darkPrimaryButton
+        : AppColors.primaryColor;
+
+    final cardBgColor = isDark
+        ? Colors.black.withValues(alpha: 0.55)
+        : Colors.white.withValues(alpha: 0.85);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(35),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(35),
+            border: Border.all(
+              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // Upload Button
+              InkWell(
+                onTap: _pickUploadedPhoto,
+                splashColor: iconColor.withValues(alpha: 0.15),
+                highlightColor: iconColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.collections_outlined,
+                        color: iconColor,
+                        size: 24,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Upload',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: iconColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Center Circular Shutter Ring
+              GestureDetector(
+                onTap: isShutterDisabled
+                    ? null
+                    : () {
+                        if (_isFreezeFrameActive) {
+                          // Already in freeze-frame inspection: tapping shutter again
+                          // exits inspection mode or returns to live scanning / clears photo.
+                          if (_isDisplayingUploadedImage) {
+                            unawaited(_switchToRealtimeCameraRemapping());
+                          } else {
+                            _resumeLiveKnnScan();
+                          }
+                        } else if (_isDisplayingUploadedImage) {
+                          // Viewing an uploaded image (not in freeze frame yet):
+                          if (_isUploadedIdentifyMode || _activeCameraMode == CameraRealtimeMode.knn) {
+                            // Apply shutter function of color identifier into upload mode
+                            _captureUploadedPhotoFreezeFrame();
+                          } else {
+                            // Daltonization mode: save uploaded photo prompt.
+                            _handleUploadedPhotoSavePrompt(context);
+                          }
+                        } else if (!_isCameraPermissionGranted) {
+                          // Request permission if not yet granted.
+                          _requestCameraPermission();
+                        } else if (_activeCameraMode == CameraRealtimeMode.knn) {
+                          // KNN live scan mode: freeze the current frame for inspection.
+                          _captureKnnFreezeFrame(context);
+                        } else {
+                          // Daltonization mode: existing save-to-gallery behaviour.
+                          _captureLiveDaltonizedPhoto(context);
+                        }
+                      },
+                child: Opacity(
+                  opacity: isShutterDisabled ? 0.38 : 1.0,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        // White in dark mode, brand primary in light mode
+                        color: isShutterDisabled
+                            ? colors.outline.withValues(alpha: 0.5)
+                            : (isDark ? Colors.white : colors.primary),
+                        width: _isFreezeFrameActive ? 5 : 4,
+                      ),
+                      color: Colors.transparent,
+                    ),
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // Fill uses white in dark mode, brand primary in light mode when active
+                          color: isShutterDisabled
+                              ? (isDark ? const Color(0xFF334155) : colors.surfaceContainerHighest)
+                              : (_isFreezeFrameActive
+                                  ? (isDark ? Colors.white : colors.primary)
+                                  : (_isRemapActive
+                                      ? (isDark ? Colors.white : colors.primary)
+                                      : (isDark ? const Color(0xFF334155) : colors.surfaceContainerHighest))),
+                        ),
+                        child: _isFreezeFrameActive
+                            ? Icon(
+                                Icons.replay_rounded,
+                                color: isDark ? AppColors.darkSurface : Colors.white,
+                                size: 20,
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Remap / Identify / Live Camera Switcher Button
+              InkWell(
+                onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  if (_isDisplayingUploadedImage) {
+                    await _switchToRealtimeCameraRemapping();
+                    if (_isCameraPermissionGranted) {
+                      await _startDelayPage();
+                    }
+                  } else {
+                    final nextMode = _activeCameraMode == CameraRealtimeMode.daltonization
+                        ? CameraRealtimeMode.knn
+                        : CameraRealtimeMode.daltonization;
+                    if (_isCameraPermissionGranted) {
+                      await _startDelayPage();
+                    }
+                    if (!mounted) return;
+                    setState(() {
+                      _activeCameraMode = nextMode;
+                      _isObjectDetectionMode = false;
+                      _detectedObjects = [];
+                      _isSplitScreenView = false;
+                      _showCalibrationSlider = false;
+                      VisionLensScreen.isFullScreenNotifier.value = false;
+                    });
+                    if (nextMode == CameraRealtimeMode.knn) {
+                      _startKnnFrameStream();
+                    } else {
+                      _stopKnnFrameStream();
+                    }
+                    messenger.hideCurrentSnackBar();
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          _activeCameraMode == CameraRealtimeMode.knn
+                              ? 'Switched to KNN Color Identification Mode'
+                              : 'Switched to LMS Daltonization Mode',
+                        ),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                },
+                splashColor: iconColor.withValues(alpha: 0.15),
+                highlightColor: iconColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isDisplayingUploadedImage
+                            ? Icons.videocam
+                            : (_activeCameraMode == CameraRealtimeMode.daltonization
+                                ? Icons.auto_awesome
+                                : Icons.palette_outlined),
+                        color: iconColor,
+                        size: 24,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _isDisplayingUploadedImage
+                            ? 'Live Camera'
+                            : (_activeCameraMode == CameraRealtimeMode.daltonization ? 'Identify' : 'Remap'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: iconColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalibrationSliderOverlay(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardBgColor = isDark
+        ? Colors.black.withValues(alpha: 0.85)
+        : Colors.white.withValues(alpha: 0.90);
+
+    final double recIntensity = VisionProfileService.instance.recommendedIntensity;
+    final int currentPercent = (VisionProfileService.instance.customIntensityOverride * 100).round();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: colors.primary.withValues(alpha: 0.4),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.change_history_rounded, size: 18, color: colors.onSurfaceVariant),
+                        const SizedBox(width: 6),
+                        Text(
+                          'LMS Shift Calibration',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: colors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        InkWell(
+                          onTap: () {
+                            VisionProfileService.instance.setCustomIntensityOverride(recIntensity);
+                          },
+                          splashColor: colors.primary.withValues(alpha: 0.15),
+                          highlightColor: colors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colors.onSurfaceVariant.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: colors.onSurfaceVariant.withValues(alpha: 0.4), width: 1),
+                            ),
+                            child: Text(
+                              'Rec: ${VisionProfileService.instance.recommendedRangeLabel}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '$currentPercent%',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showCalibrationSlider = false;
+                          });
+                        },
+                        child: Icon(Icons.close, size: 18, color: colors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Slider(
+                value: VisionProfileService.instance.customIntensityOverride.clamp(0.0, 1.0),
+                min: 0.0,
+                max: 1.0,
+                divisions: 20, // 5% per slide step increment
+                activeColor: colors.onSurfaceVariant,
+                inactiveColor: colors.onSurfaceVariant.withValues(alpha: 0.25),
+                onChanged: (val) {
+                  final roundedVal = (val * 20).round() / 20.0;
+                  VisionProfileService.instance.setCustomIntensityOverride(roundedVal);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRightSideFloatingToolbar(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.black.withValues(alpha: 0.55) : Colors.white.withValues(alpha: 0.85);
+    final iconColor = isDark ? Colors.white : Colors.black87;
+
+    final bool isKnnMode =
+        _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode || _isFreezeFrameActive;
+    final bool isLiveCamera = !_isDisplayingUploadedImage && !_isFreezeFrameActive;
+    final bool isLiveDaltonization = isLiveCamera && _activeCameraMode == CameraRealtimeMode.daltonization;
+    final bool canSpeakObjectDetection =
+        (_isObjectDetectionMode && !_isDisplayingUploadedImage && !_isFreezeFrameActive && !_isUploadedIdentifyMode) ||
+        (_isDisplayingUploadedImage && _isUploadedObjectLabelMode);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Object Labeling Mode Toggle Button (Accessible in live feeds for both Daltonization & KNN)
+        if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) ...[
+          _buildFloatingCircleButton(
+            icon: Icons.category_rounded,
+            isActive: _isObjectDetectionMode,
+            onTap: _toggleObjectDetectionMode,
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: _isObjectDetectionMode ? Colors.white : iconColor,
+            tooltip: _isObjectDetectionMode ? 'Disable Object Labeling' : 'Enable Object Labeling',
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Zoom Toggle Button (Live camera feed only; hidden when viewing an uploaded photo)
+        if (!_isDisplayingUploadedImage) ...[
+          _buildFloatingCircleButton(
+            icon: Icons.zoom_in_rounded,
+            isActive: _showZoomSlider,
+            onTap: () {
+              setState(() {
+                _showZoomSlider = !_showZoomSlider;
+              });
+            },
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: _showZoomSlider ? Colors.white : iconColor,
+            tooltip: 'Zoom Control',
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Flashlight Torch Toggle Button (Live Daltonization mode only; hidden in Identify mode, Freeze-Frame & Uploads)
+        if (isLiveDaltonization) ...[
+          _buildFloatingCircleButton(
+            icon: _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+            isActive: _isTorchOn,
+            onTap: _toggleTorch,
+            bgColor: bgColor,
+            activeBgColor: Colors.amber.shade700,
+            iconColor: _isTorchOn ? Colors.white : iconColor,
+            tooltip: 'Flashlight',
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Split Screen View Comparison Toggle Button (Live camera feeds only — both Daltonization & Identify mode; hidden in Object Detection mode, Freeze-Frame & Uploads)
+        if (isLiveCamera && !_isObjectDetectionMode) ...[
+          _buildFloatingCircleButton(
+            icon: _isSplitScreenView ? Icons.compare_rounded : Icons.splitscreen_rounded,
+            isActive: _isSplitScreenView,
+            onTap: () {
+              setState(() {
+                _isSplitScreenView = !_isSplitScreenView;
+              });
+              VisionLensScreen.isFullScreenNotifier.value = _isSplitScreenView;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _isSplitScreenView
+                        ? 'Split Screen View & Full Screen enabled (Original vs Daltonized)'
+                        : 'Standard View restored',
+                  ),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: _isSplitScreenView ? Colors.white : iconColor,
+            tooltip: 'Split Screen Comparison',
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // On-Demand Audio Narration Speak Button (Available in Identify / KNN mode, Object Labeling mode & Freeze-Frame)
+        if (isKnnMode || canSpeakObjectDetection) ...[
+          _buildFloatingCircleButton(
+            icon: Icons.volume_up_rounded,
+            isActive: false,
+            onTap: () {
+              if (canSpeakObjectDetection) {
+                final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
+                final objectNames = sourceList
+                    .where((o) => o.labels.isNotEmpty)
+                    .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
+                    .toSet()
+                    .toList();
+                final speechText = objectNames.isNotEmpty
+                    ? 'Detected: ${objectNames.join(", ")}'
+                    : 'No objects detected';
+                AuditoryFeedbackService.instance.speakText(speechText);
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(speechText),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                AuditoryFeedbackService.instance.speakIdentification(
+                  colorName: _currentIdentifiedColor,
+                  objectLabel: null,
+                );
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Speaking: $_currentIdentifiedColor'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: iconColor,
+            tooltip: canSpeakObjectDetection ? 'Speak Detected Objects' : 'Speak Color',
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFloatingCircleButton({
+    required IconData icon,
+    required bool isActive,
+    VoidCallback? onTap,
+    required Color bgColor,
+    required Color activeBgColor,
+    required Color iconColor,
+    required String tooltip,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Material(
+            color: isActive ? activeBgColor : bgColor,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: Tooltip(
+                message: tooltip,
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildZoomSliderOverlay(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark
+        ? Colors.black.withValues(alpha: 0.85)
+        : Colors.white.withValues(alpha: 0.90);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: colors.primary.withValues(alpha: 0.4),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.zoom_in_rounded, size: 18, color: colors.onSurfaceVariant),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Camera Zoom',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '${_currentZoomLevel.toStringAsFixed(1)}x',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showZoomSlider = false;
+                          });
+                        },
+                        child: Icon(Icons.close, size: 18, color: colors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Slider(
+                value: _currentZoomLevel.clamp(_minZoom, _maxZoom),
+                min: _minZoom,
+                max: _maxZoom,
+                divisions: 8, // 0.5x steps from 1.0x to 5.0x
+                activeColor: colors.primary,
+                inactiveColor: colors.onSurfaceVariant.withValues(alpha: 0.25),
+                onChanged: (val) {
+                  _setZoomLevel(val);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSplitScreenViewport(BuildContext context, ColorScheme colors) {
+    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    final double shaderType = _getEffectiveShaderType();
+    final double intensity = _getEffectiveShaderIntensity();
+
+    Widget leftOriginal;
+    Widget rightFiltered;
+
+    if (_isDisplayingUploadedImage && _uploadedUiImage != null) {
+      leftOriginal = RawImage(image: _uploadedUiImage, fit: BoxFit.cover);
+      rightFiltered = DaltonizationShaderWidget(
+        customType: shaderType,
+        intensity: intensity,
+        image: _uploadedUiImage!,
+      );
+    } else if (_isCameraPermissionGranted) {
+      leftOriginal = _buildCameraPreviewWidget(colors);
+      rightFiltered = ColorFiltered(
+        colorFilter: ColorFilter.matrix(
+          isKnnMode
+              ? _buildCvdSimulationMatrix(shaderType, intensity)
+              : _buildCameraColorMatrix(shaderType, intensity),
+        ),
+        child: _buildCameraPreviewWidget(colors),
+      );
+    } else {
+      leftOriginal = InkWell(
+        onTap: _requestCameraPermission,
+        child: Container(
+          color: colors.surfaceContainerHighest,
+          child: Center(
+            child: Icon(Icons.camera_alt_outlined, size: 48, color: colors.primary),
+          ),
+        ),
+      );
+      rightFiltered = leftOriginal;
+    }
+
+    if (isKnnMode) {
+      // ── Identify Mode: Horizontal Split Screen View (Top = Color ID, Bottom = CVD Sim) ──
+      return Stack(
+        children: [
+          Column(
+            children: [
+              // Upper Half: Original View with Live Color Identification Capability & Centered ROI Target
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRect(
+                      child: SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: 1000,
+                            height: 1000,
+                            child: leftOriginal,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Centered Pinpoint Target & Color Identifier Badge inside Upper View
+                    Center(
+                      child: SizedBox(
+                        width: 160,
+                        height: 120,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: colors.primary.withValues(alpha: 0.2),
+                                border: Border.all(color: colors.primary, width: 2.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 28,
+                              child: Container(width: 1.5, height: 10, color: colors.primary),
+                            ),
+                            Positioned(
+                              bottom: 48,
+                              child: Container(width: 1.5, height: 10, color: colors.primary),
+                            ),
+                            Positioned(
+                              left: 48,
+                              child: Container(width: 10, height: 1.5, color: colors.primary),
+                            ),
+                            Positioned(
+                              right: 48,
+                              child: Container(width: 10, height: 1.5, color: colors.primary),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.85),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: colors.primary.withValues(alpha: 0.6)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.25),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    _currentIdentifiedObject != null && _currentIdentifiedObject!.isNotEmpty
+                                        ? '$_currentIdentifiedColor ($_currentIdentifiedObject)'
+                                        : _currentIdentifiedColor,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Upper View Label Badge
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white30, width: 1),
+                        ),
+                        child: const Text(
+                          'Color Identification (Original)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Lower Half: CVD Simulation View
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRect(
+                      child: SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: 1000,
+                            height: 1000,
+                            child: rightFiltered,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Lower View Label Badge
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white38, width: 1),
+                        ),
+                        child: Text(
+                          'CVD Simulation (${_selectedPreset.name.toUpperCase()})',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Center Horizontal Split Line
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                height: 3.0,
+                color: colors.primary.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
+          // Center Compare Handle Icon
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.unfold_more_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // ── Daltonization Mode: Vertical Split Screen View ──
+    return Stack(
+      children: [
+        Row(
+          children: [
+            // Left Half: Original Un-filtered View
+            Expanded(
+              child: ClipRect(
+                child: SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: 1000,
+                      height: 1000,
+                      child: leftOriginal,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Right Half: Daltonized Color-Remapped View
+            Expanded(
+              child: ClipRect(
+                child: SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: 1000,
+                      height: 1000,
+                      child: rightFiltered,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Center Accent Split Line
+        Positioned(
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              width: 3.0,
+              color: colors.primary.withValues(alpha: 0.85),
+            ),
+          ),
+        ),
+        // Center Divider Compare Icon Handle
+        Positioned(
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colors.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.compare_arrows_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+        // Left Label Badge: Original
+        Positioned(
+          top: 20,
+          left: 20,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white30, width: 1),
+            ),
+            child: const Text(
+              'Original',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        // Right Label Badge: Daltonized
+        Positioned(
+          top: 20,
+          right: 80,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white38, width: 1),
+            ),
+            child: const Text(
+              'Daltonized',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUploadedObjectsSheetOverlay(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgDecoration = BoxDecoration(
+      color: isDark
+          ? Colors.black.withValues(alpha: 0.85)
+          : Colors.white.withValues(alpha: 0.95),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: colors.primary.withValues(alpha: 0.5), width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.3),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+
+    if (_isUploadedObjectLabelingProcessing) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: bgDecoration,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                color: colors.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Analyzing photo with Image Labeling...',
+              style: TextStyle(
+                color: colors.onSurface,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'AtkinsonHyperlegible',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_uploadedDetectedObjects.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: bgDecoration,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline_rounded, size: 18, color: colors.primary),
+            const SizedBox(width: 10),
+            Text(
+              'No objects detected in this photo.',
+              style: TextStyle(
+                color: colors.onSurface,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'AtkinsonHyperlegible',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 220),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: bgDecoration,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.category_rounded, size: 18, color: colors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Detected Objects (${_uploadedDetectedObjects.length})',
+                    style: TextStyle(
+                      color: colors.onSurface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'AtkinsonHyperlegible',
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Image Labeling',
+                  style: TextStyle(
+                    color: colors.primary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Flexible(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(_uploadedDetectedObjects.length, (index) {
+                  final obj = _uploadedDetectedObjects[index];
+                  final label = ObjectDetectionService.instance.resolveBestDisplayLabel(obj.labels);
+                  final matched = ObjectDetectionService.instance.findMatchedLabel(obj.labels) ??
+                      (obj.labels.isNotEmpty ? obj.labels.first : null);
+                  final conf = matched != null ? (matched.confidence * 100).round() : 0;
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerHighest.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colors.primary.withValues(alpha: 0.3),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.center_focus_strong_rounded, size: 14, color: colors.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: colors.onSurface,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'AtkinsonHyperlegible',
+                          ),
+                        ),
+                        if (conf > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$conf%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// CustomPainter that draws the interactive crosshair overlay on the
+/// freeze-frame captured image.
+///
+/// The crosshair position is given as normalised coordinates in [0, 1] × [0, 1]
+/// image-space. The painter converts this to screen-space by applying the same
+/// BoxFit.contain letterbox/pillarbox offset math used in
+/// [_VisionLensScreenState._screenTouchToNormalisedImageCoord].
+class FreezeFrameCrosshairPainter extends CustomPainter {
+  final Offset normPosition;       // Normalised position [0,1]x[0,1] in image space
+  final Size imageSize;            // Actual pixel dimensions of the captured image
+  final Size containerSize;        // Rendered size of the widget container
+  final KnnIsolateResult? colorResult; // Latest classification result (may be null while sampling)
+  final Color accentColor;         // Theme primary color for crosshair ring
+
+  FreezeFrameCrosshairPainter({
+    required this.normPosition,
+    required this.imageSize,
+    required this.containerSize,
+    required this.colorResult,
+    required this.accentColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (imageSize.isEmpty || containerSize.isEmpty) return;
+
+    // ── Step 1: Compute the rendered image rect (BoxFit.cover) ────────────
+    // Mirror the same math as _screenTouchToNormalisedImageCoord so the
+    // crosshair is always pixel-accurate relative to what the user sees.
+    final double cW = containerSize.width;
+    final double cH = containerSize.height;
+    final double iW = imageSize.width;
+    final double iH = imageSize.height;
+
+    final double scale = (cW / iW) > (cH / iH) ? (cW / iW) : (cH / iH);
+    final double renderedW = iW * scale;
+    final double renderedH = iH * scale;
+    final double offsetX = (cW - renderedW) / 2.0;
+    final double offsetY = (cH - renderedH) / 2.0;
+
+    // Convert normalised image-space position to screen-space canvas position.
+    final double cx = offsetX + normPosition.dx * renderedW;
+    final double cy = offsetY + normPosition.dy * renderedH;
+    final Offset centre = Offset(cx, cy);
+
+    // ── Step 2: Draw crosshair elements ───────────────────────────────
+    const double ringRadius = 20.0; // outer ring radius (px)
+    const double dotRadius  = 4.0;  // centre dot radius
+    const double tickGap    = 6.0;  // gap between ring edge and tick start
+    const double tickLen    = 14.0; // tick line length
+
+    final Paint ringPaint = Paint()
+      ..color = accentColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+
+    final Paint shadowPaint = Paint()
+      ..color = const Color(0x55000000)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.5;
+
+    final Paint dotPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final Paint tickPaint = Paint()
+      ..color = accentColor
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+
+    // Drop-shadow ring for legibility on light backgrounds.
+    canvas.drawCircle(centre, ringRadius, shadowPaint);
+    // Accent-coloured outer ring.
+    canvas.drawCircle(centre, ringRadius, ringPaint);
+    // White centre dot.
+    canvas.drawCircle(centre, dotRadius, dotPaint);
+
+    // Four directional ticks extending outward from the ring.
+    final double tickStart = ringRadius + tickGap;
+    final double tickEnd   = tickStart + tickLen;
+
+    // Top tick
+    canvas.drawLine(
+      Offset(cx, cy - tickStart), Offset(cx, cy - tickEnd), tickPaint);
+    // Bottom tick
+    canvas.drawLine(
+      Offset(cx, cy + tickStart), Offset(cx, cy + tickEnd), tickPaint);
+    // Left tick
+    canvas.drawLine(
+      Offset(cx - tickStart, cy), Offset(cx - tickEnd, cy), tickPaint);
+    // Right tick
+    canvas.drawLine(
+      Offset(cx + tickStart, cy), Offset(cx + tickEnd, cy), tickPaint);
+
+    // ── Step 3: Draw colour readout badge ──────────────────────────────
+    if (colorResult == null) return;
+
+    final String label = colorResult!.colorName;
+    final String hexStr = colorResult!.hexColor.toUpperCase();
+    final int intensityPercent = (colorResult!.averageV * 100).round();
+
+    // Parse hex colour for the swatch (e.g. '#FF6600' → Color(0xFFFF6600)).
+    Color swatchColor = accentColor;
+    try {
+      final String cleaned = hexStr.replaceAll('#', '');
+      if (cleaned.length == 6) {
+        swatchColor = Color(int.parse('FF$cleaned', radix: 16));
+      }
+    } catch (_) {/* keep accentColor as fallback */}
+
+    // Badge layout constants.
+    const double swatchSize  = 18.0;
+    const double badgePadH   = 12.0;
+    const double badgePadV   = 8.0;
+    const double badgeRadius = 14.0;
+    const double swatchTextGap = 10.0;
+    const double badgeGap    = ringRadius + tickGap + tickLen + 10.0; // vertical offset from centre
+
+    final TextPainter tp = TextPainter(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              height: 1.2,
+            ),
+          ),
+          TextSpan(
+            text: '\n$hexStr  •  $intensityPercent% Intensity',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    tp.layout();
+
+    // Badge total width: swatch + gap + text + 2 * horizontal padding.
+    final double badgeW = swatchSize + swatchTextGap + tp.width + badgePadH * 2;
+    final double badgeH = tp.height + badgePadV * 2;
+
+    // Position badge centred relative to crosshair; flip above crosshair if near bottom dock.
+    double badgeLeft = cx - badgeW / 2;
+    double badgeTop = (cy + badgeGap + badgeH > size.height - 85.0)
+        ? (cy - badgeGap - badgeH)
+        : (cy + badgeGap);
+    badgeLeft = badgeLeft.clamp(8.0, size.width  - badgeW - 8.0);
+    badgeTop  = badgeTop .clamp(8.0, size.height - badgeH - 8.0);
+
+    final RRect badgeRRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(badgeLeft, badgeTop, badgeW, badgeH),
+      const Radius.circular(badgeRadius),
+    );
+
+    // Subtle drop shadow for badge readability.
+    canvas.drawRRect(
+      badgeRRect.shift(const Offset(0, 3)),
+      Paint()
+        ..color = const Color(0x66000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+
+    // Dark sleek badge background.
+    canvas.drawRRect(
+      badgeRRect,
+      Paint()..color = const Color(0xE610141D),
+    );
+    // Badge border in brand primary accent.
+    canvas.drawRRect(
+      badgeRRect,
+      Paint()
+        ..color = accentColor.withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    // Colour swatch circle centered vertically in the badge.
+    final double swatchCenterY = badgeTop + badgeH / 2;
+    final double swatchCenterX = badgeLeft + badgePadH + swatchSize / 2;
+
+    canvas.drawCircle(
+      Offset(swatchCenterX, swatchCenterY),
+      swatchSize / 2,
+      Paint()..color = swatchColor,
+    );
+    // Swatch border ring.
+    canvas.drawCircle(
+      Offset(swatchCenterX, swatchCenterY),
+      swatchSize / 2,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    // Text label (color name, hex, intensity).
+    tp.paint(
+      canvas,
+      Offset(
+        badgeLeft + badgePadH + swatchSize + swatchTextGap,
+        badgeTop + badgePadV,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant FreezeFrameCrosshairPainter old) {
+    return old.normPosition != normPosition ||
+        old.colorResult != colorResult ||
+        old.accentColor != accentColor ||
+        old.containerSize != containerSize;
+  }
+}
+
+class OpenTrianglePainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+
+  OpenTrianglePainter({
+    required this.color,
+    this.strokeWidth = 3.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final path = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant OpenTrianglePainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
+}
+
