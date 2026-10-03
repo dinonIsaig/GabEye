@@ -68,7 +68,9 @@ class CameraFrameIngestionService {
     final Uint8List rgbBytes = Uint8List(roiW * roiH * 3);
     int outIdx = 0;
 
-    if (image.format.group == ImageFormatGroup.yuv420 && image.planes.length >= 3) {
+    if ((image.format.group == ImageFormatGroup.yuv420 ||
+            image.format.group == ImageFormatGroup.nv21) &&
+        image.planes.length >= 3) {
       final yPlane = image.planes[0];
       final uPlane = image.planes[1];
       final vPlane = image.planes[2];
@@ -96,6 +98,41 @@ class CameraFrameIngestionService {
             final int yVal = yBytes[yIdx];
             final int uVal = uBytes[uIdx] - 128;
             final int vVal = vBytes[vIdx] - 128;
+
+            int r = (yVal + 1.402 * vVal).round().clamp(0, 255);
+            int g = (yVal - 0.344136 * uVal - 0.714136 * vVal).round().clamp(0, 255);
+            int b = (yVal + 1.772 * uVal).round().clamp(0, 255);
+
+            rgbBytes[outIdx++] = r;
+            rgbBytes[outIdx++] = g;
+            rgbBytes[outIdx++] = b;
+          }
+        }
+      }
+    } else if (image.format.group == ImageFormatGroup.nv21 && image.planes.length == 2) {
+      // Bi-planar NV21: Plane 0 is Y, Plane 1 is interleaved VU
+      final yPlane = image.planes[0];
+      final vuPlane = image.planes[1];
+
+      final yBytes = yPlane.bytes;
+      final vuBytes = vuPlane.bytes;
+
+      final yRowStride = yPlane.bytesPerRow;
+      final vuRowStride = vuPlane.bytesPerRow;
+      final int vuPixelStride = vuPlane.bytesPerPixel ?? 2;
+
+      for (int y = startY; y < endY; y++) {
+        for (int x = startX; x < endX; x++) {
+          final int yIdx = y * yRowStride + x;
+          final int uvY = y ~/ 2;
+          final int uvX = x ~/ 2;
+          final int vIdx = uvY * vuRowStride + uvX * vuPixelStride;
+          final int uIdx = vIdx + 1;
+
+          if (yIdx < yBytes.length && vIdx < vuBytes.length && uIdx < vuBytes.length) {
+            final int yVal = yBytes[yIdx];
+            final int vVal = vuBytes[vIdx] - 128;
+            final int uVal = vuBytes[uIdx] - 128;
 
             int r = (yVal + 1.402 * vVal).round().clamp(0, 255);
             int g = (yVal - 0.344136 * uVal - 0.714136 * vVal).round().clamp(0, 255);
