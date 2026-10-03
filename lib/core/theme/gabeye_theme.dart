@@ -149,6 +149,17 @@ class GabEyeTheme {
           minimumSize: const Size(double.infinity, 55),
         ),
       ),
+      // onPrimary matches primary in light mode, which would paint the
+      // selected thumb the same color as its track; use a light thumb instead.
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected) &&
+              !states.contains(WidgetState.disabled)) {
+            return AppColors.lightSurface;
+          }
+          return null;
+        }),
+      ),
       textTheme: _buildTextTheme(AppColors.lightTextPrimary),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.lightSurface,

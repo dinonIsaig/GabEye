@@ -12,14 +12,17 @@ import 'package:gabeye/features/home/widgets/hero_section.dart';
 import 'package:gabeye/features/home/widgets/vision_profile_card.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// Tab to open on: 0 = Home, 1 = Vision Lens (camera), 2 = Profile.
+  final int initialIndex;
+
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialIndex;
 
   List<FeatureRowData> _getFeatures(BuildContext context) {
     return [
