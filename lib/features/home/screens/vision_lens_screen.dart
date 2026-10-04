@@ -1683,6 +1683,17 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       return _buildDelayPage(context);
     }
     final colors = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    const darkTargetColor = Color(0xFFB0C6D9);
+    final chipBgColor = isDarkMode
+        ? Colors.black.withValues(alpha: 0.75)
+        : Colors.white.withValues(alpha: 0.85);
+    final chipAccentColor = isDarkMode
+        ? const Color(0xFFB0C6D9)
+        : colors.primary;
+    final chipTextColor = isDarkMode
+        ? Colors.white
+        : colors.primary;
 
     Widget viewportContent = _isFreezeFrameActive && _capturedFrameBytes != null
         // ── Freeze-Frame Inspection Mode ──────────────────────────────────────
@@ -1728,11 +1739,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: colors.primary.withValues(alpha: 0.15),
+                              color: isDarkMode ? darkTargetColor : colors.primary.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              Icons.camera_alt_outlined,
+                              Icons.camera_alt_rounded,
                               size: 48,
                               color: colors.primary,
                             ),

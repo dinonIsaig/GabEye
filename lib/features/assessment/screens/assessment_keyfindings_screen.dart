@@ -258,7 +258,7 @@ class _AssessmentKeyfindingsScreenState extends State<AssessmentKeyfindingsScree
         const SizedBox(width: 14),
 
         Expanded(
-          child: Text(
+          child: BoldMarkupText(
             description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
@@ -339,7 +339,7 @@ class _AssessmentKeyfindingsScreenState extends State<AssessmentKeyfindingsScree
 
           const SizedBox(height: 16),
 
-          Text(
+          BoldMarkupText(
             diagnosisStyle.closerLook,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,

@@ -6,6 +6,35 @@ import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.da
 import '../settings/help_feedback_screen.dart';
 import '../settings/gabeye_settings.dart';
 
+List<InlineSpan> buildBoldSpans(String text, List<String> boldPhrases) {
+  if (boldPhrases.isEmpty) return [TextSpan(text: text)];
+
+  // Longest first so overlapping phrases match the longer one.
+  final sorted = [...boldPhrases]..sort((a, b) => b.length.compareTo(a.length));
+  final pattern = RegExp(sorted.map(RegExp.escape).join('|'));
+
+  final spans = <InlineSpan>[];
+  int cursor = 0;
+
+  for (final match in pattern.allMatches(text)) {
+    if (match.start > cursor) {
+      spans.add(TextSpan(text: text.substring(cursor, match.start)));
+    }
+    spans.add(
+      TextSpan(
+        text: match.group(0),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+    cursor = match.end;
+  }
+
+  if (cursor < text.length) {
+    spans.add(TextSpan(text: text.substring(cursor)));
+  }
+  return spans;
+}
+
 // Models for article content
 class FeatureItem {
   final String title;
@@ -23,6 +52,12 @@ class ArticleSection {
   final List<FeatureItem>? features;
   final ComparisonTable? table;
 
+  /// Phrases inside [description] that should be rendered bold.
+  final List<String> boldPhrases;
+
+  /// Marks this section as the "Remember" disclaimer card.
+  final bool isRemember;
+
   ArticleSection({
     this.title,
     this.description,
@@ -31,7 +66,28 @@ class ArticleSection {
     this.imagePath,
     this.features,
     this.table,
+    this.boldPhrases = const [],
+    this.isRemember = false,
   });
+
+  static const String defaultRememberBold =
+      'It does not replace a professional eye examination or clinical diagnosis.';
+
+  static const String defaultRememberText =
+      "GabEye's assessment helps personalize the application. "
+      '$defaultRememberBold';
+
+  /// Reusable "Remember" section. Call `ArticleSection.remember()` for the
+  /// standard text (with its bold sentence), or pass [text] and
+  /// [boldPhrases] to override it.
+  factory ArticleSection.remember({String? text, List<String>? boldPhrases}) {
+    return ArticleSection(
+      title: 'Remember',
+      description: text ?? defaultRememberText,
+      boldPhrases: boldPhrases ?? (text == null ? const [defaultRememberBold] : const []),
+      isRemember: true,
+    );
+  }
 }
 
 // Simple row/column comparison table (e.g. Ishihara vs. D-15).
@@ -150,6 +206,11 @@ class ArticleContent {
           title: 'What is Protan?',
           description:
               'Protan is a type of red-green Color Vision Deficiency. It involves the L-cones, which are associated with sensitivity to red light.',
+          boldPhrases: const [
+            'red-green Color Vision Deficiency',
+            'L-cones',
+            'sensitivity to red light',
+          ],
           showImage: true,
           imageLabel: 'Protan color comparison image',
           imagePath: 'assets/images/nv_protan.png',
@@ -159,6 +220,9 @@ class ArticleContent {
           description:
               'People with Protan have reduced or absent sensitivity to red. In more severe cases, red may appear very dark or almost black. '
               'Some colors can also become harder to separate from one another. This can affect color-dependent information in everyday situations.',
+          boldPhrases: const [
+            'red may appear very dark or almost black',
+          ],
           showImage: true,
           imageLabel: 'Everyday Protan example image',
           imagePath: 'assets/images/ev_protan.png',
@@ -168,12 +232,12 @@ class ArticleContent {
           description:
               'GabEye is designed to recognize Protan as one of its supported CVD categories. '
               "The app can then personalize its visual assistance for that result based on the user's CVD profile.",
+          boldPhrases: const [
+            'personalize its visual assistance',
+            'CVD profile',
+          ],
         ),
-        ArticleSection(
-          title: 'Remember',
-          description:
-              "GabEye's assessment helps personalize the application. It does not replace a professional eye examination or clinical diagnosis.",
-        ),
+        ArticleSection.remember(),
       ],
     );
   }
@@ -187,6 +251,11 @@ class ArticleContent {
           title: 'What is Deutan?',
           description:
               'Deutan is another type of red-green Color Vision Deficiency. It involves the M-cones, which are associated with sensitivity to green light.',
+          boldPhrases: const [
+            'red-green Color Vision Deficiency',
+            'M-cones',
+            'green light',
+          ],
           showImage: true,
           imageLabel: 'Deutan color comparison image',
           imagePath: 'assets/images/nv_deutan.png',
@@ -196,6 +265,9 @@ class ArticleContent {
           description:
               'People with Deutan may have difficulty separating red, orange, yellow, and green. Greens may sometimes appear muted, beige, or gray. '
               'The level of difficulty can vary between users. This makes personalized color assistance important for everyday tasks.',
+          boldPhrases: const [
+            'Greens may sometimes appear muted, beige, or gray.',
+          ],
           showImage: true,
           imageLabel: 'Everyday Deutan example image',
           imagePath: 'assets/images/ev_deutan.png',
@@ -205,12 +277,11 @@ class ArticleContent {
           description:
               'GabEye can identify a Deutan result through its pre-assessment. '
               "It can then apply visual assistance based on the user's CVD profile.",
+          boldPhrases: const [
+            'visual assistance',
+          ],
         ),
-        ArticleSection(
-          title: 'Remember',
-          description:
-              "GabEye's assessment helps personalize the application. It does not replace a professional eye examination or clinical diagnosis.",
-        ),
+        ArticleSection.remember(),
       ],
     );
   }
@@ -224,6 +295,11 @@ class ArticleContent {
           title: 'What is Tritan?',
           description:
               'Tritan is a rarer type of Color Vision Deficiency. It affects the S-cones, which are associated with sensitivity to blue light.',
+          boldPhrases: const [
+            'rarer type',
+            'S-cones',
+            'blue light',
+          ],
           showImage: true,
           imageLabel: 'Tritan color comparison image',
           imagePath: 'assets/images/nv_tritan.png',
@@ -233,6 +309,13 @@ class ArticleContent {
           description:
               'A person with Tritan may have difficulty separating blue from green or yellow from violet. '
               "Blue may sometimes appear greenish. Yellow may appear gray or light purple, depending on the person's deficiency.",
+          boldPhrases: const [
+            'blue from green or yellow from violet',
+            'Blue',
+            'appear greenish',
+            'Yellow',
+            'appear gray or light purple',
+          ],
           showImage: true,
           imageLabel: 'Everyday Tritan example image',
           imagePath: 'assets/images/ev_tritan.png',
@@ -242,12 +325,11 @@ class ArticleContent {
           description:
               'GabEye supports Tritan alongside Protan and Deutan. '
               "Its personalized assistance can adapt according to the user's identified CVD type.",
+          boldPhrases: const [
+            'personalized assistance',
+          ],
         ),
-        ArticleSection(
-          title: 'Remember',
-          description:
-              "GabEye's assessment helps personalize the application. It does not replace a professional eye examination or clinical diagnosis.",
-        ),
+        ArticleSection.remember(),
       ],
     );
   }
@@ -269,11 +351,18 @@ class ArticleContent {
         ArticleSection(
           description:
               'No numbers to spot, no letters to squint at. Just sort the colors.',
+          boldPhrases: const [
+            'No numbers to spot, no letters to squint at. Just sort the colors.',
+          ],
         ),
         ArticleSection(
           title: 'How Does It Figure Out My CVD Type?',
           description:
               'Everyone\'s eyes see color differently. Sorting reveals which colors are hardest for you to tell apart. This pattern shows whether you have Protanopia (red), Deuteranopia (green), or Tritanopia (blue-yellow).',
+          boldPhrases: const [
+            'Sorting reveals which colors are hardest for you to tell apart',
+            'Protanopia (red), Deuteranopia (green), or Tritanopia (blue-yellow).',
+          ],
         ),
         ArticleSection(
           title: 'How Is It Different From Other Tests?',
@@ -291,10 +380,12 @@ class ArticleContent {
             ],
           ),
         ),
-        ArticleSection(
-          title: 'Remember',
-          description:
+        ArticleSection.remember(
+          text:
               "GabEye's assessment helps personalize the application. It does not replace a professional eye exam or diagnosis For an official diagnosis, see an eye doctor. For using the app, your results here are enough..",
+          boldPhrases: const [
+            'It does not replace a professional eye exam or diagnosis',
+          ],
         ),
       ],
     );
@@ -550,10 +641,11 @@ class ArticleSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (section.title?.toLowerCase() == 'remember') {
+    if (section.isRemember) {
       return RememberCard(
         title: section.title!,
         text: section.description ?? '',
+        boldPhrases: section.boldPhrases,
       );
     }
 
@@ -576,11 +668,16 @@ class ArticleSectionWidget extends StatelessWidget {
             ),
           ),
         if (section.description != null)
-          Text(
-            section.description!,
-            style: textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-              height: 1.6,
+          Text.rich(
+            TextSpan(
+              style: textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                height: 1.6,
+              ),
+              children: buildBoldSpans(
+                section.description!,
+                section.boldPhrases,
+              ),
             ),
           ),
         if (section.table != null) ...[
@@ -602,8 +699,14 @@ class ArticleSectionWidget extends StatelessWidget {
 class RememberCard extends StatelessWidget {
   final String title;
   final String text;
+  final List<String> boldPhrases;
 
-  const RememberCard({super.key, required this.title, required this.text});
+  const RememberCard({
+    super.key,
+    required this.title,
+    required this.text,
+    this.boldPhrases = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -634,11 +737,13 @@ class RememberCard extends StatelessWidget {
                 ),
                 if (text.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(
-                    text,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      height: 1.6,
+                  Text.rich(
+                    TextSpan(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        height: 1.6,
+                      ),
+                      children: buildBoldSpans(text, boldPhrases),
                     ),
                   ),
                 ],
