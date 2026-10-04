@@ -1780,6 +1780,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
     final colors = Theme.of(context).colorScheme;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    const darkTargetColor = Color(0xFFB0C6D9);
     final chipBgColor = isDarkMode
         ? Colors.black.withValues(alpha: 0.75)
         : Colors.white.withValues(alpha: 0.85);
@@ -1834,11 +1835,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: colors.primary.withValues(alpha: 0.15),
+                              color: isDarkMode ? darkTargetColor : colors.primary.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              Icons.camera_alt_outlined,
+                              Icons.camera_alt_rounded,
                               size: 48,
                               color: colors.primary,
                             ),

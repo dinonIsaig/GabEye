@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
+import 'package:gabeye/core/theme/cvd_personalization_controller.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
+import 'package:gabeye/features/home/screens/delay_screen.dart';
+import 'package:gabeye/features/home/screens/home_screen.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/core/utils/responsive.dart';
@@ -213,18 +217,40 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
     );
   }
 
-  void _goToPersonalizedUI(BuildContext context) {
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.home,
-      (route) => false,
-    );
+  Future<void> _goToPersonalizedUI(BuildContext context) async {
+    if (cvdPersonalizationController.isSupported) {
+      // Same switch the menu's "Personalize UI" toggle flips; the theme
+      // rebuilds right away, so the loading screen already shows it.
+      cvdPersonalizationController.setEnabled(true);
+      await Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: true,
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return const DelayScreen(
+              duration: Duration(milliseconds: 4500),
+              message: 'Personalizing your colors. Please wait.',
+              footer: _PersonalizationNote(),
+            );
+          },
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    }
+    if (!context.mounted) return;
+    _goHome(context);
   }
 
   void _goToGabEyeCamera(BuildContext context) {
-    Navigator.pushNamedAndRemoveUntil(
+    Navigator.pushAndRemoveUntil(
       context,
-      AppRoutes.home,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: AppRoutes.home),
+        builder: (context) => const HomeScreen(initialIndex: 1),
+      ),
       (route) => false,
     );
   }
@@ -234,6 +260,82 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
       context,
       AppRoutes.home,
       (route) => false,
+    );
+  }
+}
+
+/// Explains, on the personalization loading screen, what the adjusted colors
+/// are for, with a swatch of each state color in the new palette.
+class _PersonalizationNote extends StatelessWidget {
+  const _PersonalizationNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final semantic = context.semanticColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'GabEye is adjusting its colors to your color vision profile, so '
+          'the interface is easier to tell apart and states stand out at a '
+          'glance:',
+          style: TextStyle(fontSize: 12, height: 1.4, color: textColor),
+        ),
+        const SizedBox(height: 12),
+        _StateSwatch(color: semantic.success, label: 'Success', textColor: textColor),
+        _StateSwatch(color: semantic.warning, label: 'Warning', textColor: textColor),
+        _StateSwatch(color: semantic.info, label: 'Disclaimer & info', textColor: textColor),
+        _StateSwatch(color: semantic.error, label: 'Error', textColor: textColor),
+        const SizedBox(height: 8),
+        Text(
+          'You can turn this off anytime from "Personalize UI" in the menu.',
+          style: TextStyle(
+            fontSize: 11,
+            height: 1.4,
+            color: textColor.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StateSwatch extends StatelessWidget {
+  final Color color;
+  final String label;
+  final Color textColor;
+
+  const _StateSwatch({
+    required this.color,
+    required this.label,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

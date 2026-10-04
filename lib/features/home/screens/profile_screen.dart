@@ -243,8 +243,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              // Same reset as the "Take Assessment" button
-                              // on the D-15 article screen: clears the
+                              // Clears the
                               // stored result in VisionProfileService (what
                               // the Personalize UI toggle actually reads
                               // from) so it disables and the theme falls
