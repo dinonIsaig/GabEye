@@ -3,6 +3,7 @@ import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
+import 'package:gabeye/core/services/vision_profile_service.dart';
 import '../settings/help_feedback_screen.dart';
 import '../settings/gabeye_settings.dart';
 
