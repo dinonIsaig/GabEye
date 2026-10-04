@@ -981,7 +981,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         final controller = CameraController(
           cameras.first,
           ResolutionPreset.medium,
-          imageFormatGroup: Platform.isIOS ? ImageFormatGroup.bgra8888 : ImageFormatGroup.nv21,
+          imageFormatGroup: Platform.isIOS ? ImageFormatGroup.bgra8888 : ImageFormatGroup.yuv420,
           enableAudio: false,
         );
         await controller.initialize();
