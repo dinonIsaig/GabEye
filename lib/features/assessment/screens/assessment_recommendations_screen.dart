@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
+import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/screens/results_screen.dart';
 import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/assessment/widgets/post_assessment_progressbar.dart';
 import 'package:gabeye/features/assessment/widgets/recommendation_row.dart';
+
+class _RecommendationItem {
+  final String? title;
+  final String description;
+  final String buttonText;
+  final VoidCallback onPressed;
+
+  const _RecommendationItem({
+    this.title,
+    required this.description,
+    required this.buttonText,
+    required this.onPressed,
+  });
+}
 
 class AssessmentRecommendationsScreen extends StatelessWidget {
   final List<int>? arrangedCaps;
@@ -15,10 +30,45 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
     this.arrangedCaps,
   });
 
+  List<int> get _caps =>
+      arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
+
+  bool get _showPersonalizedUI {
+    final caps = _caps;
+    if (caps.length != 15) return true;
+    return ScoringService.calculateScore(caps).recommendsPersonalizedUI;
+  }
+
+  List<_RecommendationItem> _buildRecommendations(BuildContext context) {
+    return [
+      if (_showPersonalizedUI)
+        _RecommendationItem(
+          title: 'Recommended Personalize UI',
+          description:
+              'We recommend high-contrast monochrome tokens to maximize legibility across all app sections.',
+          buttonText: 'Continue with Personalized UI',
+          onPressed: () => _goToPersonalizedUI(context),
+        ),
+      _RecommendationItem(
+        description:
+            "Allow GabEye to assist you in identifying and remapping colors you're confused with.",
+        buttonText: 'GabEye Camera',
+        onPressed: () => _goToGabEyeCamera(context),
+      ),
+      _RecommendationItem(
+        description:
+            "If this is getting in the way of daily life, an eye specialist can give you a proper assessment and real options.",
+        buttonText: 'Color Vision Profile',
+        onPressed: () => _goToDetailedResult(context),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final items = _buildRecommendations(context);
 
     return ProgressBarScaffold(
       currentStep: 3,
@@ -42,27 +92,15 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
                       children: [
                         _buildRecommendationCard(colors, textTheme),
                         const SizedBox(height: 16),
-                        RecommendationRow(
-                          title: 'Recommended Personalize UI',
-                          description:
-                              'We recommend high-contrast monochrome tokens to maximize legibility across all app sections.',
-                          buttonText: 'Continue with Personalized UI',
-                          onPressed: () => _goToPersonalizedUI(context),
-                        ),
-                        const SizedBox(height: 12),
-                        RecommendationRow(
-                          description:
-                              "Allow GabEye to assist you in identifying and remapping colors you're confused with.",
-                          buttonText: 'GabEye Camera',
-                          onPressed: () => _goToGabEyeCamera(context),
-                        ),
-                        const SizedBox(height: 12),
-                        RecommendationRow(
-                          description:
-                              "If this is getting in the way of daily life, an eye specialist can give you a proper assessment and real options.",
-                          buttonText: 'Color Vision Profile',
-                          onPressed: () => _goToDetailedResult(context),
-                        ),
+                        for (var i = 0; i < items.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 12),
+                          RecommendationRow(
+                            title: items[i].title,
+                            description: items[i].description,
+                            buttonText: items[i].buttonText,
+                            onPressed: items[i].onPressed,
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         _buildOrDivider(colors),
                         const SizedBox(height: 24),
@@ -206,10 +244,9 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
   }
 
   void _goToDetailedResult(BuildContext context) {
-    final caps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: caps)),
+      MaterialPageRoute(builder: (context) => ResultsPage(arrangedCaps: _caps)),
     );
   }
 

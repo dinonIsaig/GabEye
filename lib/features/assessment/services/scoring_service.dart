@@ -18,7 +18,7 @@ enum ColorDeficiencyType {
 ///
 /// NOTE: the cIndex cut point below (3.0) is a practical banding choice
 /// for presenting results to a general audience, not a clinically
-/// validated scale on its own 
+/// validated scale on its own
 enum SeverityLevel { none, moderate, strong }
 
 class CrossingError {
@@ -77,6 +77,15 @@ class D15ScoreResult {
     required this.rangeBody,
     required this.practicalTip,
   });
+  bool get recommendsPersonalizedUI =>
+      diagnosisType != ColorDeficiencyType.normal &&
+      diagnosisType != ColorDeficiencyType.unclassified &&
+      diagnosisType != ColorDeficiencyType.random;
+
+  bool get hasDedicatedArticle =>
+      diagnosisType == ColorDeficiencyType.protan ||
+      diagnosisType == ColorDeficiencyType.deutan ||
+      diagnosisType == ColorDeficiencyType.tritan;
 }
 
 class ScoringService {
