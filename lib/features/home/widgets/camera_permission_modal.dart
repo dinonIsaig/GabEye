@@ -35,7 +35,7 @@ class CameraPermissionModal extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDarkMode ? darkTargetColor : colors.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
-                border: Border.all(color: colors.primary, width: 2.5),
+                border: Border.all(color: isDarkMode ? darkTargetColor : colors.primary.withValues(alpha: 0.15), width: 2.5),
               ),
               child: Center(
                 child: Icon(
@@ -92,7 +92,7 @@ class CameraPermissionModal extends StatelessWidget {
                   Icon(
                     Icons.shield_outlined,
                     size: 22,
-                    color: colors.primary,
+                    color: colors.onSurface,
                   ),
                   const SizedBox(width: 12),
                   Expanded(

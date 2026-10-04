@@ -6,10 +6,16 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// during transitions, displaying the GabEye emblem, animated progress bar, and bottom hand illustration.
 class DelayScreen extends StatefulWidget {
   final Duration duration;
+  final String message;
+
+  /// Optional extra content shown below the progress bar inside the card.
+  final Widget? footer;
 
   const DelayScreen({
     super.key,
     this.duration = const Duration(milliseconds: 2500),
+    this.message = 'Getting your view ready. Please wait.',
+    this.footer,
   });
 
   @override
@@ -101,7 +107,7 @@ class _DelayScreenState extends State<DelayScreen> with SingleTickerProviderStat
                       const SizedBox(height: 20),
                       // Subtitle text
                       Text(
-                        'Getting your view ready. Please wait.',
+                        widget.message,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -137,6 +143,10 @@ class _DelayScreenState extends State<DelayScreen> with SingleTickerProviderStat
                           );
                         },
                       ),
+                      if (widget.footer != null) ...[
+                        const SizedBox(height: 20),
+                        widget.footer!,
+                      ],
                     ],
                   ),
                 ),

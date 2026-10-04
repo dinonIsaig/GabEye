@@ -112,7 +112,7 @@ class ResultsPage extends StatelessWidget {
           const SizedBox(height: 20),
           Center(child: ConfusionDiagram(arrangedCaps: arrangedCaps)),
           const SizedBox(height: 20),
-          Text(
+          BoldMarkupText(
             result.diagnosisType == ColorDeficiencyType.normal ? result.description : diagnosisStyle.shortSummary,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
