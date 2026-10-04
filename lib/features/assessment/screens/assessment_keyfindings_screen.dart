@@ -68,6 +68,7 @@ class _AssessmentKeyfindingsScreenState extends State<AssessmentKeyfindingsScree
                           colors,
                           diagnosisStyle,
                           result.diagnosisType,
+                          showReadMore: result.hasDedicatedArticle,
                         ),
                         const SizedBox(height: 20),
 
@@ -282,8 +283,9 @@ class _AssessmentKeyfindingsScreenState extends State<AssessmentKeyfindingsScree
     BuildContext context,
     ColorScheme colors,
     DiagnosisStyle diagnosisStyle,
-    ColorDeficiencyType diagnosisType,
-  ) {
+    ColorDeficiencyType diagnosisType, {
+    required bool showReadMore,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -354,39 +356,42 @@ class _AssessmentKeyfindingsScreenState extends State<AssessmentKeyfindingsScree
                 ),
           ),
 
-          const SizedBox(height: 16),
-
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                side: BorderSide(color: colors.outline, width: 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+          // Only Protan / Deutan / Tritan have dedicated article pages.
+          // Normal, Unclassified and Random hide the button (and its spacing).
+          if (showReadMore) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  side: BorderSide(color: colors.outline, width: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                onPressed: () => _openArticle(context, diagnosisType),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Read More',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Icon(
+                      Icons.help_outline_rounded,
+                      size: 18,
+                    ),
+                  ],
                 ),
               ),
-              onPressed: () => _openArticle(context, diagnosisType),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Read More',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Icon(
-                    Icons.help_outline_rounded,
-                    size: 18,
-                  ),
-                ],
-              ),
             ),
-          ),
+          ],
         ],
       ),
     );
