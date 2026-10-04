@@ -34,9 +34,7 @@ class VisionProfileCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.cardBorder.withValues(alpha: isDark ? 0.4 : 0.6),
-        ),
+        border: Border.all(color: AppColors.cardBorder.withValues(alpha: isDark ? 0.4 : 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,11 +50,7 @@ class VisionProfileCard extends StatelessWidget {
                 height: imageH,
                 color: isDark ? AppColors.darkSurface : AppColors.altLightSurface,
                 alignment: Alignment.center,
-                child: Icon(
-                  Icons.palette_outlined,
-                  size: 48,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                child: Icon(Icons.palette_outlined, size: 48, color: colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -70,7 +64,8 @@ class VisionProfileCard extends StatelessWidget {
                     data.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style:
+                        theme.textTheme.headlineSmall?.copyWith(
                           fontSize: Responsive.font(context, base: 22, min: 18, max: 24),
                           fontWeight: FontWeight.bold,
                         ) ??
@@ -81,29 +76,37 @@ class VisionProfileCard extends StatelessWidget {
                         ),
                   ),
                   const SizedBox(height: 6),
-                  Expanded(
-                    child: Text(
-                      data.description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
-                            height: 1.5,
-                          ) ??
-                          TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
-                            color: colorScheme.onSurfaceVariant,
-                            height: 1.5,
-                          ),
-                    ),
+                  Text(
+                    data.description,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
+                          height: 1.5,
+                        ) ??
+                        TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: Responsive.font(context, base: 16, min: 14, max: 18),
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
                   ),
+                  // Pushes the button to the bottom so CTAs line up across cards
+                  // of different description lengths.
+                  const Spacer(),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    height: 44,
                     child: FilledButton(
+                      // The theme's 14px vertical padding leaves too little room for
+                      // the label at 44px, clipping it. Use a min height instead of a
+                      // fixed one so the button grows with the system font scale.
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
                       onPressed: () => data.onReadMore(context),
                       child: Semantics(
                         // Screen readers announce the destination, not just "Read more" —

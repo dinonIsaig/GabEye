@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
-import 'package:gabeye/core/utils/responsive.dart';
 import 'vision_profile_card.dart';
 
 class FeaturedReadsSection extends StatefulWidget {
@@ -38,7 +37,6 @@ class _FeaturedReadsSectionState extends State<FeaturedReadsSection> {
   Widget build(BuildContext context) {
     final atStart = _currentIndex == 0;
     final atEnd = _currentIndex == widget.reads.length - 1;
-    final listHeight = Responsive.space(context, base: 345, min: 320, max: 360);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,15 +44,20 @@ class _FeaturedReadsSectionState extends State<FeaturedReadsSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Featured Reads',
-              style: Theme.of(context).textTheme.headlineSmall ??
-                  const TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                  ),
+            // Flexible lets the heading wrap instead of pushing the arrows off
+            // screen on narrow phones with an enlarged system font.
+            Flexible(
+              child: Text(
+                'Featured Reads',
+                style: Theme.of(context).textTheme.headlineSmall ??
+                    const TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+              ),
             ),
+            const SizedBox(width: 8),
             Row(
               children: [
                 _NavArrow(
@@ -75,17 +78,24 @@ class _FeaturedReadsSectionState extends State<FeaturedReadsSection> {
           ],
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: listHeight,
-          child: ListView.separated(
-            controller: _controller,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: widget.reads.length,
-            separatorBuilder: (_, index) => const SizedBox(width: _cardSpacing),
-            itemBuilder: (context, i) => SizedBox(
-              width: _cardWidth,
-              child: VisionProfileCard(data: widget.reads[i]),
+        // Height comes from the tallest card instead of a fixed value, so the
+        // text isn't clipped when the system font scale is enlarged.
+        SingleChildScrollView(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < widget.reads.length; i++) ...[
+                  if (i > 0) const SizedBox(width: _cardSpacing),
+                  SizedBox(
+                    width: _cardWidth,
+                    child: VisionProfileCard(data: widget.reads[i]),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
