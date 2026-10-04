@@ -87,9 +87,15 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   final GlobalKey _torchButtonKey = GlobalKey();
   final GlobalKey _splitButtonKey = GlobalKey();
   final GlobalKey _audioButtonKey = GlobalKey();
+  final GlobalKey _uploadButtonKey = GlobalKey();
+  final GlobalKey _modeSwitchButtonKey = GlobalKey();
 
   bool _isTutorialActive = false;
   int _currentTutorialStepIndex = 0;
+  // Whether the automatic first-time tutorial was already shown per mode; the
+  // on-demand help button only appears once it has been.
+  bool _hasSeenRemapTutorial = false;
+  bool _hasSeenKnnTutorial = false;
 
   // Camera Realtime Mode (Daltonization vs. KNN Color Identification)
   CameraRealtimeMode _activeCameraMode = CameraRealtimeMode.daltonization;
@@ -373,6 +379,10 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         return _getWidgetRect(_torchButtonKey);
       case 2:
         return _getWidgetRect(_splitButtonKey);
+      case 3:
+        return _getWidgetRect(_uploadButtonKey);
+      case 4:
+        return _getWidgetRect(_modeSwitchButtonKey);
       default:
         return null;
     }
@@ -388,6 +398,10 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         return _getWidgetRect(_splitButtonKey);
       case 3:
         return _getWidgetRect(_audioButtonKey);
+      case 4:
+        return _getWidgetRect(_uploadButtonKey);
+      case 5:
+        return _getWidgetRect(_modeSwitchButtonKey);
       default:
         return null;
     }
@@ -404,6 +418,16 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         : (isKnn
             ? await TutorialPreferencesService.hasSeenKnnTutorial()
             : await TutorialPreferencesService.hasSeenRemapTutorial());
+
+    if (hasSeen && mounted) {
+      setState(() {
+        if (isKnn) {
+          _hasSeenKnnTutorial = true;
+        } else {
+          _hasSeenRemapTutorial = true;
+        }
+      });
+    }
 
     if (!hasSeen && mounted && widget.isActive) {
       Future.delayed(const Duration(milliseconds: 600), () {
@@ -422,22 +446,25 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
   }
 
-  /// Manually re-triggers the floating toolbar tutorial overlay.
-  Future<void> replayToolbarTutorial() async {
-    final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
-    if (isKnn) {
-      await TutorialPreferencesService.resetAllTutorials();
-    } else {
-      await TutorialPreferencesService.resetAllTutorials();
-    }
-    if (mounted) {
-      _checkToolbarTutorialStatus(forceReplay: true);
-    }
+  /// Manually re-triggers the floating toolbar tutorial overlay (help button).
+  void replayToolbarTutorial() {
+    if (_isTutorialActive) return;
+    setState(() {
+      _isTutorialActive = true;
+      _currentTutorialStepIndex = 0;
+    });
+    // Re-render once the toolbar buttons are laid out so the target rects resolve.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _isTutorialActive) {
+        setState(() {});
+      }
+    });
   }
 
   void _nextTutorialStep() {
     final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
-    final int maxSteps = isKnn ? 4 : 3;
+    final int maxSteps =
+        isKnn ? IdentifyToolbarTutorialOverlay.steps.length : RemapToolbarTutorialOverlay.steps.length;
     if (_currentTutorialStepIndex < maxSteps - 1) {
       setState(() {
         _currentTutorialStepIndex++;
@@ -456,6 +483,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
     setState(() {
       _isTutorialActive = false;
+      if (isKnn) {
+        _hasSeenKnnTutorial = true;
+      } else {
+        _hasSeenRemapTutorial = true;
+      }
     });
     if (isKnn) {
       TutorialPreferencesService.markKnnTutorialAsSeen();
@@ -2589,6 +2621,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             children: [
               // Upload Button
               InkWell(
+                key: _uploadButtonKey,
                 onTap: _pickUploadedPhoto,
                 splashColor: iconColor.withValues(alpha: 0.15),
                 highlightColor: iconColor.withValues(alpha: 0.08),
@@ -2699,6 +2732,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
               // Remap / Identify / Live Camera Switcher Button
               InkWell(
+                key: _modeSwitchButtonKey,
                 onTap: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   if (_isDisplayingUploadedImage) {
@@ -2799,6 +2833,22 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Tutorial Help Button (Live camera only, after the automatic first-time tutorial for this mode;
+        // set apart from the camera controls by a wider gap)
+        if (isLiveCamera && _isCameraPermissionGranted &&
+            (isKnnMode ? _hasSeenKnnTutorial : _hasSeenRemapTutorial)) ...[
+          _buildFloatingCircleButton(
+            icon: Icons.question_mark_rounded,
+            isActive: false,
+            onTap: replayToolbarTutorial,
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: iconColor,
+            tooltip: 'Show Tutorial',
+          ),
+          const SizedBox(height: 32),
+        ],
+
         // Object Labeling Mode Toggle Button (Accessible ONLY in KNN mode live feeds)
         if (isKnnMode && !_isDisplayingUploadedImage && !_isFreezeFrameActive) ...[
           _buildFloatingCircleButton(
