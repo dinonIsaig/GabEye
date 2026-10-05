@@ -11,7 +11,17 @@ class AuditoryFeedbackService {
 
   final FlutterTts _flutterTts = FlutterTts();
   bool _isInitialized = false;
-  bool _isSpeaking = false;
+  bool _isSpeakingFlag = false;
+
+  /// True while a narration is playing; lets the UI disable the speak button until it finishes.
+  final ValueNotifier<bool> isSpeakingNotifier = ValueNotifier<bool>(false);
+
+  bool get _isSpeaking => _isSpeakingFlag;
+  set _isSpeaking(bool value) {
+    _isSpeakingFlag = value;
+    isSpeakingNotifier.value = value;
+  }
+
   bool _ttsEnabled = true;
   double _ttsSpeechRate = 0.48;
 
@@ -60,15 +70,6 @@ class AuditoryFeedbackService {
         ttsSpeechRate: _ttsSpeechRate,
       ),
     );
-  bool _isSpeakingFlag = false;
-
-  /// True while a narration is playing; lets the UI disable the speak button until it finishes.
-  final ValueNotifier<bool> isSpeakingNotifier = ValueNotifier<bool>(false);
-
-  bool get _isSpeaking => _isSpeakingFlag;
-  set _isSpeaking(bool value) {
-    _isSpeakingFlag = value;
-    isSpeakingNotifier.value = value;
   }
 
   Future<void> initialize() async {
