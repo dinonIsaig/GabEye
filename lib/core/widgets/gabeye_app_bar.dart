@@ -78,10 +78,10 @@ class GabEyeAppBar extends StatelessWidget implements PreferredSizeWidget {
               ? InkWell(
                   onTap: () {
                     if (ModalRoute.of(context)?.settings.name !=
-                        AppRoutes.getStarted) {
+                        AppRoutes.home) {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
-                        AppRoutes.getStarted,
+                        AppRoutes.home,
                         (route) => false,
                       );
                     }

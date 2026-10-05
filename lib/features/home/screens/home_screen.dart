@@ -41,15 +41,15 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       FeatureRowData(
         icon: Icons.tune,
-        title: 'Personalized Accessibility',
+        title: 'Audio & Personalized Accessibility',
         bullets: const [
-          'UI themes',
-          'Color filters',
-          'Accessibility settings',
+          'UI themes & dark mode',
+          'Color palette adjustments',
+          'Voice narration & speech rate',
         ],
         ctaLabel: 'Configure in Settings',
         onCtaPressed: () {
-          Navigator.pushNamed(context, AppRoutes.settings);
+          Navigator.pushNamed(context, AppRoutes.personalizedAccessibility);
         },
       ),
       FeatureRowData(
@@ -63,19 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ctaLabel: 'View Vision Profile',
         onCtaPressed: () {
           _onBottomNavTapped(2);
-        },
-      ),
-      FeatureRowData(
-        icon: Icons.volume_up_outlined,
-        title: 'Audio & Contextual Feedback',
-        bullets: const [
-          'Spoken color names',
-          'Haptic cues',
-          'Context-aware alerts',
-        ],
-        ctaLabel: 'Learn More',
-        onCtaPressed: () {
-          Navigator.pushNamed(context, AppRoutes.article);
         },
       ),
     ];
@@ -164,11 +151,11 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
           onLogoTap: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.getStarted,
-              (route) => false,
-            );
+            if (_selectedIndex != 0) {
+              setState(() {
+                _selectedIndex = 0;
+              });
+            }
           },
           onMenuSelected: (option) {
             switch (option.label) {

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/services/vision_profile_service.dart';
+import 'package:gabeye/data/local/database_helper.dart';
+import 'package:gabeye/data/models/adaptive_ui_settings.dart';
 import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 
@@ -33,11 +36,15 @@ class CvdPersonalizationController extends ChangeNotifier {
   bool _enabled = false;
   bool _testInProgress = false;
 
-  /// The current diagnosis, or null if no assessment has been taken yet
-  /// this session.
-  ColorDeficiencyType? get diagnosisType => assessmentController.hasTakenAssessment
-      ? assessmentController.currentResult.diagnosisType
-      : null;
+  /// The current diagnosis, from either VisionProfileService (persisted) or AssessmentController (active session).
+  ColorDeficiencyType? get diagnosisType {
+    if (VisionProfileService.instance.value != null) {
+      return VisionProfileService.instance.value!.diagnosisType;
+    }
+    return assessmentController.hasTakenAssessment
+        ? assessmentController.currentResult.diagnosisType
+        : null;
+  }
 
   bool get isSupported => !_testInProgress && diagnosisType?.personalizableProfile != null;
 
@@ -50,6 +57,18 @@ class CvdPersonalizationController extends ChangeNotifier {
 
   void setEnabled(bool enabled) {
     if (!isSupported) return;
+    _enabled = enabled;
+    notifyListeners();
+    DatabaseHelper.instance.saveUiSettings(
+      AdaptiveUiSettings(
+        userId: 1,
+        appliedTheme: activeProfile.name,
+        colorAgnosticMode: isEnabled,
+      ),
+    );
+  }
+
+  void hydrateFromDatabase({required bool enabled}) {
     _enabled = enabled;
     notifyListeners();
   }

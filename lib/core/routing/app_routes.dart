@@ -13,6 +13,8 @@ import 'package:gabeye/features/assessment/screens/pre_assessment/disclaimer_scr
 import 'package:gabeye/features/featured_reads/settings/gabeye_settings.dart';
 import 'package:gabeye/features/featured_reads/settings/help_feedback_screen.dart';
 import 'package:gabeye/features/featured_reads/settings/how_to_use_gabeye.dart';
+import 'package:gabeye/features/featured_reads/settings/personal_data_screen.dart';
+import 'package:gabeye/features/featured_reads/settings/personalized_accessibility_screen.dart';
 import 'package:gabeye/features/featured_reads/settings/real_time_mode_safety.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/learnmore_screen.dart';
 
@@ -30,6 +32,8 @@ class AppRoutes {
   static const String d15Assessment = '/assessment/d15';
   static const String assessmentRecommendations = '/assessment/recommendations';
   static const String settings = '/settings';
+  static const String personalizedAccessibility = '/settings/personalized-accessibility';
+  static const String personalData = '/settings/personal-data';
   static const String helpFeedback = '/help-feedback';
   static const String howToUseGabEye = '/settings/how-to-use';
   static const String realTimeModeSafety = '/settings/real-time-safety';
@@ -52,6 +56,9 @@ class AppRoutes {
       assessmentRecommendations: (context) =>
           const AssessmentRecommendationsScreen(),
       settings: (context) => const GabEyeSettingsScreen(),
+      personalizedAccessibility: (context) =>
+          const PersonalizedAccessibilityScreen(),
+      personalData: (context) => const PersonalDataScreen(),
       helpFeedback: (context) => const HelpFeedbackScreen(),
       howToUseGabEye: (context) => const HowToUseGabEyeScreen(),
       realTimeModeSafety: (context) => const RealTimeModeSafetyScreen(),

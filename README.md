@@ -56,9 +56,9 @@ gabeye/
 │   │   ├── utils/           # Math helpers (e.g., RGB to HSV converters, Euclidean distance)
 │   │   └── constants/       # Hardcoded strings, API limits, and strict WCAG sizing ratios
 │   │
-│   ├── data/                # Data layer handling local NoSQL persistence
-│   │   ├── models/          # User_Profile, Diagnostic_Data, Adaptive_UI_Settings
-│   │   └── local/           # Hive or Isar database initialization and query logic
+│   ├── data/                # Data layer handling local SQLite persistence
+│   │   ├── models/          # User_Profile, Diagnostic_Data, Adaptive_UI_Settings, Accessibility_Preferences
+│   │   └── local/           # SQLite database helper, schema migrations, and query logic
 │   │
 │   ├── services/            # Isolated integrations for hardware and third-party packages
 │   │   ├── camera/          # Low-latency camera streaming and frame extraction

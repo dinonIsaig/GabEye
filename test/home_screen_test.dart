@@ -39,17 +39,17 @@ void main() {
 
     // Verify Core Features section
     expect(find.text('Core Features'), findsOneWidget);
-    expect(find.byType(FeatureRow), findsNWidgets(4));
+    expect(find.byType(FeatureRow), findsNWidgets(3));
     expect(find.text('Real-Time and Static Visual Processing'), findsOneWidget);
-    expect(find.text('Personalized Accessibility'), findsOneWidget);
+    expect(find.text('Audio & Personalized Accessibility'), findsOneWidget);
     expect(find.text('Color Diagnostic Assessment'), findsOneWidget);
-    expect(find.text('Audio & Contextual Feedback'), findsOneWidget);
+    expect(find.text('Audio & Contextual Feedback'), findsNothing);
 
     // Verify CTA buttons
     expect(find.text('Try Using Camera'), findsOneWidget);
     expect(find.text('Configure in Settings'), findsOneWidget);
     expect(find.text('View Vision Profile'), findsOneWidget);
-    expect(find.text('Learn More'), findsOneWidget);
+    expect(find.text('Learn More'), findsNothing);
 
     // Verify Featured Reads section & Navigation arrows
     expect(find.byType(FeaturedReadsSection), findsOneWidget);
@@ -160,6 +160,29 @@ void main() {
     expect(find.text('Core Features'), findsOneWidget);
   });
 
+  testWidgets('Tapping Configure in Settings navigates directly to Personalized Accessibility screen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(createTestWidget());
+    await tester.pump();
+
+    // Navigate directly to Personalized Accessibility
+    await tester.tap(find.text('Configure in Settings'));
+    await tester.pumpAndSettle();
+
+    // Verify on Personalized Accessibility screen
+    expect(find.text('Visual Experience'), findsOneWidget);
+    expect(find.text('Dark Mode'), findsOneWidget);
+    expect(find.text('Personalize UI'), findsOneWidget);
+    expect(find.text('Voice Feedback & Narration'), findsOneWidget);
+  });
+
   testWidgets('Settings screen navigates to How to Use GabEye and Real-time Mode Safety',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
@@ -172,8 +195,10 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pump();
 
-    // Navigate to Settings
-    await tester.tap(find.text('Configure in Settings'));
+    // Open kebab menu and navigate to Settings
+    await tester.tap(find.byTooltip('Open menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
     // Verify on Settings screen
@@ -202,7 +227,7 @@ void main() {
     expect(find.text('Why Lighting Matters'), findsOneWidget);
   });
 
-  testWidgets('Tapping navbar logo navigates to GetStartedScreen (1st page of GabEye)',
+  testWidgets('Tapping navbar logo redirects to home page instead of GetStartedScreen',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -214,17 +239,23 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    // Verify on HomeScreen
+    // Verify on HomeScreen (tab 0)
     expect(find.text('Core Features'), findsOneWidget);
 
+    // Switch to profile tab (index 2)
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Core Features'), findsNothing);
+
     // Tap the navbar logo
-    await tester.tap(find.byType(SvgPicture));
+    await tester.tap(find.byType(SvgPicture).first);
     await tester.pumpAndSettle();
 
-    // Verify on GetStartedScreen (the 1st page of GabEye)
-    expect(find.text('Welcome to'), findsOneWidget);
-    expect(find.text('GabEye!'), findsOneWidget);
-    expect(find.text('Get Started'), findsOneWidget);
+    // Verify redirected back to Home page overview (tab 0)
+    expect(find.text('Core Features'), findsOneWidget);
+    // Ensure we did not go back to GetStartedScreen
+    expect(find.text('Welcome to'), findsNothing);
+    expect(find.text('Get Started'), findsNothing);
   });
 
   testWidgets('Assessment post-flow navigates from Key Findings to Recommendations and to Home',
@@ -361,7 +392,7 @@ void main() {
       theme: GabEyeTheme.lightTheme,
       routes: testRoutes,
       home: const AssessmentKeyfindingsScreen(
-        arrangedCaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        arrangedCaps: [15, 1, 14, 2, 13, 3, 12, 4, 11, 5, 10, 6, 9, 7, 8],
       ),
     ));
     await tester.pumpAndSettle();
@@ -371,7 +402,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify article screen is opened
-    expect(find.text('About the Farnsworth D-15'), findsOneWidget);
+    expect(find.text('About Protan'), findsWidgets);
   });
 }
 

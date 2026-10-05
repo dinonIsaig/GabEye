@@ -21,6 +21,12 @@ class AssessmentController extends ValueNotifier<List<int>> {
     value = List<int>.unmodifiable(caps);
   }
 
+  /// Explicitly sets the completion state (used when restoring state from database).
+  void setAssessmentCompleted({required bool hasCompleted}) {
+    _hasTakenAssessment = hasCompleted;
+    notifyListeners();
+  }
+
   /// Resets the assessment back to the default (Normal vision) arrangement.
   void reset() {
     _hasTakenAssessment = false;

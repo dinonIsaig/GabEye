@@ -42,6 +42,17 @@ Rect scaleBoundingBox({
     double imgH = imageSize.height;
     Rect uprightBox = rawBox;
 
+    // Detect and denormalize [0..1] coordinates if supplied
+    if (rawBox.left <= 1.0 && rawBox.top <= 1.0 && rawBox.right <= 1.0 && rawBox.bottom <= 1.0 &&
+        (imgW > 1.0 || imgH > 1.0)) {
+      uprightBox = Rect.fromLTRB(
+        rawBox.left * imgW,
+        rawBox.top * imgH,
+        rawBox.right * imgW,
+        rawBox.bottom * imgH,
+      );
+    }
+
     final bool isUprightPortrait = imgH > imgW;
     final bool isApple = defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
@@ -133,12 +144,17 @@ Rect scaleBoundingBox({
   final double uprightHeight = isRotated ? math.max(imageSize.width, imageSize.height) : imageSize.height;
 
   // 1. Coordinate Normalization & Axis Rotation:
-  // Detect if rawBox coordinates are in unrotated landscape sensor space
-  // (e.g., box.right > uprightWidth indicates coordinates are in the [0..1280] sensor domain).
+  // Detect if rawBox coordinates are in unrotated landscape sensor space.
+  // Note: On Android, google_mlkit_commons passes rotation metadata to InputImage,
+  // causing ML Kit Android to return bounding boxes ALREADY transformed into upright portrait space.
+  // On Apple platforms (iOS/macOS), the plugin ignores rotation metadata in bytesToVisionImage,
+  // returning raw coordinates in landscape sensor space ([0, 1280] x [0, 720]).
+  final bool isApple = defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.macOS;
   Rect uprightRect;
   final bool isLandscapeSensor = imageSize.width > imageSize.height;
   final bool isRawSensorSpace = isRotated &&
-      (isLandscapeSensor ||
+      ((isApple && isLandscapeSensor) ||
        rawBox.right > uprightWidth ||
        rawBox.left > uprightWidth ||
        rawBox.width > uprightWidth);
