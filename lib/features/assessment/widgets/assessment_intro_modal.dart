@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/features/assessment/widgets/how_it_works_modal.dart';
 
 class AssessmentIntroModal extends StatelessWidget {
   const AssessmentIntroModal({super.key});
@@ -56,9 +57,8 @@ class AssessmentIntroModal extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   OutlinedButton(
-                    onPressed: () {
-                      Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);
-                    },
+                    // Opens the walkthrough on top; closing it returns to this modal.
+                    onPressed: () => showHowItWorksModal(context),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isDark ? Colors.white : colors.onSurface,
                       backgroundColor: Colors.transparent,
