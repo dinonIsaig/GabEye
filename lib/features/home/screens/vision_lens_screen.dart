@@ -94,6 +94,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   final GlobalKey _uploadButtonKey = GlobalKey();
   final GlobalKey _shutterButtonKey = GlobalKey();
   final GlobalKey _modeSwitchButtonKey = GlobalKey();
+  final GlobalKey _downloadButtonKey = GlobalKey();
 
   bool _isTutorialActive = false;
   int _currentTutorialStepIndex = 0;
@@ -147,6 +148,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   ui.Image? _uploadedUiImage;
   String? _uploadedFileName;
   bool _isDisplayingUploadedImage = false;
+  // True after the user picks "Just View Result" on a remapped photo; shows the
+  // floating download button until the photo is saved or cleared.
+  bool _hasUnsavedRemapResult = false;
   bool _isUploadedObjectLabelMode = false;
   bool _isUploadedObjectLabelingProcessing = false;
   List<DetectedObject> _uploadedDetectedObjects = [];
@@ -201,9 +205,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
   }
 
-  Future<void> _handleUploadedPhotoSavePrompt(BuildContext context) async {
+  /// Asks whether to save the remapped photo or just view it.
+  /// Returns true for "Save to Gallery", false for "Just View Result", null if dismissed.
+  Future<bool?> _showRemapSaveChoiceDialog(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    await showDialog(
+    return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -226,41 +232,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               ElevatedButton.icon(
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  bool success = false;
-                  if (_uploadedImageBytes != null) {
-                    final type = _getEffectiveShaderType();
-                    final intensity = _getEffectiveShaderIntensity();
-                    final fallbackMatrix = _buildCameraColorMatrix(type, intensity);
-
-                    // Apply offscreen Daltonization filter so the saved image matches what the user sees on screen
-                    final filteredBytes = await GalleryService.applyDaltonizationShaderToImageBytes(
-                      _uploadedImageBytes!,
-                      shaderType: type,
-                      intensity: intensity,
-                      fallbackMatrix: fallbackMatrix,
-                    );
-
-                    success = await GalleryService.saveImageToGallery(
-                      filteredBytes,
-                      filename: _uploadedFileName,
-                    );
-                  }
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Saved color-enhanced Daltonized photo to device Gallery.'
-                              : 'Failed to save photo to Gallery.',
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.check, size: 18),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                icon: const Icon(Icons.download_rounded, size: 18),
                 label: const Text(
                   'Save to Gallery',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -273,20 +246,137 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 ),
               ),
               const SizedBox(height: 10),
-              OutlinedButton(
-                onPressed: () => Navigator.of(ctx).pop(),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(ctx).pop(false),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                   foregroundColor: colors.onSurfaceVariant,
                   side: BorderSide(color: colors.outline.withValues(alpha: 0.5)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text(
+                icon: const Icon(Icons.visibility_rounded, size: 18),
+                label: const Text(
                   'Just View Result',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Applies the active Daltonization filter to [rawBytes] and saves the result to the gallery.
+  Future<bool> _saveDaltonizedBytesToGallery(Uint8List rawBytes, {String? filename}) async {
+    final type = _getEffectiveShaderType();
+    final intensity = _getEffectiveShaderIntensity();
+    final fallbackMatrix = _buildCameraColorMatrix(type, intensity);
+
+    // Apply offscreen Daltonization filter so the saved image matches what the user sees on screen
+    final filteredBytes = await GalleryService.applyDaltonizationShaderToImageBytes(
+      rawBytes,
+      shaderType: type,
+      intensity: intensity,
+      fallbackMatrix: fallbackMatrix,
+    );
+
+    return GalleryService.saveImageToGallery(
+      filteredBytes,
+      filename: filename,
+    );
+  }
+
+  Future<void> _handleUploadedPhotoSavePrompt(BuildContext context) async {
+    final shouldSave = await _showRemapSaveChoiceDialog(context);
+    if (shouldSave == null || !mounted) return;
+
+    if (!shouldSave) {
+      setState(() {
+        _hasUnsavedRemapResult = true;
+      });
+      return;
+    }
+
+    bool success = false;
+    if (_uploadedImageBytes != null) {
+      success = await _saveDaltonizedBytesToGallery(
+        _uploadedImageBytes!,
+        filename: _uploadedFileName,
+      );
+    }
+    if (!context.mounted) return;
+    if (!success) {
+      _showSaveFailedSnackBar(context);
+      return;
+    }
+    setState(() {
+      _hasUnsavedRemapResult = false;
+    });
+    await _showPhotoDownloadedDialog(context);
+  }
+
+  /// Saves the photo being viewed after "Just View Result" and confirms with a modal.
+  Future<void> _downloadViewedRemapResult(BuildContext context) async {
+    if (_uploadedImageBytes == null) return;
+    final success = await _saveDaltonizedBytesToGallery(
+      _uploadedImageBytes!,
+      filename: _uploadedFileName,
+    );
+    if (!context.mounted) return;
+
+    if (!success) {
+      _showSaveFailedSnackBar(context);
+      return;
+    }
+
+    setState(() {
+      _hasUnsavedRemapResult = false;
+    });
+    await _showPhotoDownloadedDialog(context);
+  }
+
+  void _showSaveFailedSnackBar(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to save photo to Gallery.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _showPhotoDownloadedDialog(BuildContext context) async {
+    final colors = Theme.of(context).colorScheme;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_rounded, color: colors.primary),
+            const SizedBox(width: 8),
+            const Text('Photo Downloaded'),
+          ],
+        ),
+        content: const Text(
+          'Your color-enhanced Daltonized photo has been saved to your device gallery.',
+          textAlign: TextAlign.center,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text(
+              'Done',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
           ),
         ],
       ),
@@ -304,38 +394,57 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         final XFile photo = await _cameraController!.takePicture();
         final rawBytes = await photo.readAsBytes();
 
-        if (wasStreaming && mounted && (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn)) {
-          await _startKnnFrameStream();
-        }
+        if (!mounted) return;
 
-        final type = _getEffectiveShaderType();
-        final intensity = _getEffectiveShaderIntensity();
-        final matrix = _buildCameraColorMatrix(type, intensity);
-
-        // Apply Daltonization filter to captured camera frame bytes before saving to device gallery
-        final filteredBytes = await GalleryService.applyDaltonizationShaderToImageBytes(
-          rawBytes,
-          shaderType: type,
-          intensity: intensity,
-          fallbackMatrix: matrix,
-        );
-
-        final success = await GalleryService.saveImageToGallery(
-          filteredBytes,
-          filename: photo.name,
-        );
+        // Freeze on the captured photo (remap filter applied) while the save modal is shown.
+        setState(() {
+          _uploadedImageBytes = rawBytes;
+          _uploadedPhotoExifOrientation = ObjectDetectionService.extractExifOrientation(rawBytes);
+          _uploadedUiImage = null; // will be set after decode
+          _uploadedFileName = photo.name;
+          _isDisplayingUploadedImage = true;
+          _showUploadedNotification = false;
+          _showZoomSlider = false;
+          _isSplitScreenView = false;
+          _isCvdPerceptionSplitActive = false;
+          VisionLensScreen.isFullScreenNotifier.value = false;
+          _isRemapActive = true;
+          _isUploadedIdentifyMode = false;
+          _isUploadedObjectLabelMode = false;
+          _showUploadedObjectsSheet = false;
+          _hasUnsavedRemapResult = false;
+        });
+        await _decodeUploadedImage(rawBytes);
 
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? 'Captured & saved Daltonized photo with filter applied!'
-                  : 'Failed to save captured photo to Gallery.',
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        final shouldSave = await _showRemapSaveChoiceDialog(context);
+        if (!mounted) return;
+
+        if (shouldSave == false) {
+          // "Just View Result": keep showing the captured photo, with a floating
+          // download button to save it later.
+          setState(() {
+            _hasUnsavedRemapResult = true;
+          });
+          return;
+        }
+
+        if (shouldSave == true) {
+          final success = await _saveDaltonizedBytesToGallery(rawBytes, filename: photo.name);
+          if (!context.mounted) return;
+          if (success) {
+            await _showPhotoDownloadedDialog(context);
+          } else {
+            _showSaveFailedSnackBar(context);
+          }
+        }
+
+        // Saved or dismissed: return to the live camera.
+        if (!mounted) return;
+        await _switchToRealtimeCameraRemapping(showSnackBar: false);
+        if (wasStreaming && (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn)) {
+          await _startKnnFrameStream();
+        }
       } catch (e) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -376,12 +485,24 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return relativeOffset & buttonBox.size;
   }
 
+  /// Whether a captured or uploaded photo is being viewed with the Remap filter.
+  bool get _isViewingRemapResult =>
+      _isDisplayingUploadedImage &&
+      _isRemapActive &&
+      !_isUploadedIdentifyMode &&
+      !_isUploadedObjectLabelMode &&
+      !_isFreezeFrameActive;
+
   /// Tutorial steps for the current mode, minus the action bar steps while split screen hides that bar.
   List<ToolbarTutorialStep> get _tutorialSteps {
     final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
     return isKnn
         ? IdentifyToolbarTutorialOverlay.stepsFor(isSplitScreenView: _isSplitScreenView)
-        : RemapToolbarTutorialOverlay.stepsFor(isSplitScreenView: _isSplitScreenView);
+        : RemapToolbarTutorialOverlay.stepsFor(
+            isSplitScreenView: _isSplitScreenView,
+            isViewingResult: _isViewingRemapResult,
+            showDownload: _hasUnsavedRemapResult,
+          );
   }
 
   Rect? _getTutorialTargetRect(int stepIndex) {
@@ -394,6 +515,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       ToolbarTutorialTarget.cvdPerception => _cvdPerceptionButtonKey,
       ToolbarTutorialTarget.splitScreen => _splitButtonKey,
       ToolbarTutorialTarget.audio => _audioButtonKey,
+      ToolbarTutorialTarget.download => _downloadButtonKey,
       ToolbarTutorialTarget.upload => _uploadButtonKey,
       ToolbarTutorialTarget.shutter => _shutterButtonKey,
       ToolbarTutorialTarget.modeSwitch => _modeSwitchButtonKey,
@@ -1092,6 +1214,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           _uploadedUiImage = null; // will be set after decode
           _uploadedFileName = picked.name;
           _isDisplayingUploadedImage = true;
+          _hasUnsavedRemapResult = false;
           _showUploadedNotification = true;
           _showZoomSlider = false;
           _isSplitScreenView = false;
@@ -1278,7 +1401,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
   }
 
-  Future<void> _switchToRealtimeCameraRemapping() async {
+  Future<void> _switchToRealtimeCameraRemapping({bool showSnackBar = true}) async {
     _uploadedNotificationTimer?.cancel();
     _crosshairObjectDetectionTimer?.cancel();
     _crosshairObjectDetectionTimer = null;
@@ -1303,6 +1426,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       _uploadedPhotoExifOrientation = 1;
       _uploadedFileName = null;
       _isDisplayingUploadedImage = false;
+      _hasUnsavedRemapResult = false;
       _showUploadedNotification = false;
       _isUploadedIdentifyMode = false;
       _isUploadedObjectLabelMode = false;
@@ -1325,7 +1449,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       VisionLensScreen.isFullScreenNotifier.value = false;
     });
 
-    if (!mounted) return;
+    if (!mounted || !showSnackBar) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Cleared image. Active real-time LMS Daltonization enabled.'),
@@ -2303,8 +2427,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             child: _buildTransparentFloatingActionCard(context),
           ),
 
-        // One-time Floating Toolbar Tutorial Overlay (Shown ONLY when camera is allowed & ready)
-        if (_isTutorialActive && _isCameraPermissionGranted) ...[
+        // One-time Floating Toolbar Tutorial Overlay (Shown ONLY when camera is allowed & ready,
+        // or on demand while viewing a Remap result)
+        if (_isTutorialActive && (_isCameraPermissionGranted || _isViewingRemapResult)) ...[
           if (_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode)
             Positioned.fill(
               child: IdentifyToolbarTutorialOverlay(
@@ -2321,6 +2446,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
               child: RemapToolbarTutorialOverlay(
                 stepIndex: _currentTutorialStepIndex,
                 isSplitScreenView: _isSplitScreenView,
+                isViewingResult: _isViewingRemapResult,
+                showDownload: _hasUnsavedRemapResult,
                 targetRect: _getTutorialTargetRect(_currentTutorialStepIndex),
                 onNext: _nextTutorialStep,
                 onSkip: _completeTutorial,
@@ -2889,10 +3016,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Tutorial Help Button (Live camera only, after the automatic first-time tutorial for this mode;
-        // set apart from the camera controls by a wider gap)
-        if (isLiveCamera && _isCameraPermissionGranted &&
-            (isKnnMode ? _hasSeenKnnTutorial : _hasSeenRemapTutorial)) ...[
+        // Tutorial Help Button (Live camera after the automatic first-time tutorial for this mode,
+        // or while viewing a Remap result; set apart from the other controls by a wider gap)
+        if ((isLiveCamera && _isCameraPermissionGranted &&
+                (isKnnMode ? _hasSeenKnnTutorial : _hasSeenRemapTutorial)) ||
+            _isViewingRemapResult) ...[
           _buildFloatingCircleButton(
             icon: Icons.question_mark_rounded,
             isActive: false,
@@ -2903,6 +3031,21 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             tooltip: 'Show Tutorial',
           ),
           const SizedBox(height: 32),
+        ],
+
+        // Download Button (Remap mode after "Just View Result"; saves the viewed photo to the gallery)
+        if (_isViewingRemapResult && _hasUnsavedRemapResult) ...[
+          _buildFloatingCircleButton(
+            key: _downloadButtonKey,
+            icon: Icons.download_rounded,
+            isActive: false,
+            onTap: () => _downloadViewedRemapResult(context),
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: iconColor,
+            tooltip: 'Save to Gallery',
+          ),
+          const SizedBox(height: 12),
         ],
 
         // Object Labeling Mode Toggle Button (Accessible ONLY in KNN mode live feeds)
@@ -3020,48 +3163,54 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         ],
 
         // On-Demand Audio Narration Speak Button (Available in Identify / KNN mode, Object Labeling mode & Freeze-Frame)
+        // Shown pressed and ignores taps while narration is playing, so it can't be spammed.
         if (isKnnMode || canSpeakObjectDetection) ...[
-          _buildFloatingCircleButton(
-            key: _audioButtonKey,
-            icon: Icons.volume_up_rounded,
-            isActive: false,
-            onTap: () {
-              if (canSpeakObjectDetection) {
-                final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
-                final objectNames = sourceList
-                    .where((o) => o.labels.isNotEmpty)
-                    .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
-                    .toSet()
-                    .toList();
-                final speechText = objectNames.isNotEmpty
-                    ? 'Detected: ${objectNames.join(", ")}'
-                    : 'No objects detected';
-                AuditoryFeedbackService.instance.speakText(speechText);
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(speechText),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                AuditoryFeedbackService.instance.speakIdentification(
-                  colorName: _currentIdentifiedColor,
-                  objectLabel: null,
-                );
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Speaking: $_currentIdentifiedColor'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            bgColor: bgColor,
-            activeBgColor: colors.primary,
-            iconColor: iconColor,
-            tooltip: canSpeakObjectDetection ? 'Speak Detected Objects' : 'Speak Color',
+          ValueListenableBuilder<bool>(
+            valueListenable: AuditoryFeedbackService.instance.isSpeakingNotifier,
+            builder: (context, isSpeaking, _) => _buildFloatingCircleButton(
+              key: _audioButtonKey,
+              icon: Icons.volume_up_rounded,
+              isActive: isSpeaking,
+              onTap: isSpeaking ? null : () {
+                if (canSpeakObjectDetection) {
+                  final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
+                  final objectNames = sourceList
+                      .where((o) => o.labels.isNotEmpty)
+                      .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
+                      .toSet()
+                      .toList();
+                  final speechText = objectNames.isNotEmpty
+                      ? 'Detected: ${objectNames.join(", ")}'
+                      : 'No objects detected';
+                  AuditoryFeedbackService.instance.speakText(speechText);
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(speechText),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                } else {
+                  AuditoryFeedbackService.instance.speakIdentification(
+                    colorName: _currentIdentifiedColor,
+                    objectLabel: null,
+                  );
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Speaking: $_currentIdentifiedColor'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              bgColor: bgColor,
+              activeBgColor: colors.primary,
+              iconColor: isSpeaking ? Colors.white : iconColor,
+              tooltip: isSpeaking
+                  ? 'Speaking…'
+                  : (canSpeakObjectDetection ? 'Speak Detected Objects' : 'Speak Color'),
+            ),
           ),
         ],
       ],

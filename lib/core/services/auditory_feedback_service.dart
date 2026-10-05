@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:gabeye/data/local/database_helper.dart';
 import 'package:gabeye/data/models/accessibility_preferences.dart';
@@ -59,6 +60,15 @@ class AuditoryFeedbackService {
         ttsSpeechRate: _ttsSpeechRate,
       ),
     );
+  bool _isSpeakingFlag = false;
+
+  /// True while a narration is playing; lets the UI disable the speak button until it finishes.
+  final ValueNotifier<bool> isSpeakingNotifier = ValueNotifier<bool>(false);
+
+  bool get _isSpeaking => _isSpeakingFlag;
+  set _isSpeaking(bool value) {
+    _isSpeakingFlag = value;
+    isSpeakingNotifier.value = value;
   }
 
   Future<void> initialize() async {
@@ -85,6 +95,10 @@ class AuditoryFeedbackService {
       }
 
       _flutterTts.setCompletionHandler(() {
+        _isSpeaking = false;
+      });
+
+      _flutterTts.setCancelHandler(() {
         _isSpeaking = false;
       });
 
