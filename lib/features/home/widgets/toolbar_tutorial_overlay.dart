@@ -12,6 +12,7 @@ enum ToolbarTutorialTarget {
   cvdPerception,
   splitScreen,
   audio,
+  download,
   upload,
   shutter,
   modeSwitch;
@@ -28,6 +29,14 @@ enum ToolbarTutorialTarget {
       };
 }
 
+/// A highlighted banner shown under a tutorial step's description.
+class ToolbarTutorialCallout {
+  final String text;
+  final IconData icon;
+
+  const ToolbarTutorialCallout(this.text, {this.icon = Icons.info_rounded});
+}
+
 /// Item model for a Vision Lens tutorial step.
 class ToolbarTutorialStep {
   final ToolbarTutorialTarget target;
@@ -35,18 +44,16 @@ class ToolbarTutorialStep {
   final String description;
   final IconData icon;
 
-  /// Optional callout rendered as a highlighted banner under the description
+  /// Callouts rendered as highlighted banners under the description
   /// (e.g. "Turn your volume up" for voice narration).
-  final String? emphasis;
-  final IconData? emphasisIcon;
+  final List<ToolbarTutorialCallout> callouts;
 
   const ToolbarTutorialStep({
     required this.target,
     required this.title,
     required this.description,
     required this.icon,
-    this.emphasis,
-    this.emphasisIcon,
+    this.callouts = const [],
   });
 }
 
@@ -274,8 +281,8 @@ class ToolbarTutorialOverlay extends StatelessWidget {
                 ),
               ),
 
-              // Emphasized callout
-              if (step.emphasis != null) ...[
+              // Emphasized callouts
+              for (final callout in step.callouts) ...[
                 const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
@@ -287,11 +294,11 @@ class ToolbarTutorialOverlay extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(step.emphasisIcon ?? Icons.info_rounded, size: 22, color: accent),
+                      Icon(callout.icon, size: 22, color: accent),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          step.emphasis!,
+                          callout.text,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,

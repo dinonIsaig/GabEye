@@ -36,8 +36,10 @@ class IdentifyToolbarTutorialOverlay extends StatelessWidget {
       title: 'Voice Narration',
       description: 'Tap to hear the name of the color or objects on your screen read out loud.',
       icon: Icons.volume_up_rounded,
-      emphasis: 'Turn your volume up!',
-      emphasisIcon: Icons.volume_up_rounded,
+      callouts: [
+        ToolbarTutorialCallout('Turn your volume up!', icon: Icons.volume_up_rounded),
+        ToolbarTutorialCallout('Turn off silent mode', icon: Icons.notifications_off_rounded),
+      ],
     ),
     ToolbarTutorialStep(
       target: ToolbarTutorialTarget.upload,

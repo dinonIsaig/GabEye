@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 /// Service interfacing with flutter_tts for on-demand offline spoken narration feedback.
@@ -8,7 +9,16 @@ class AuditoryFeedbackService {
 
   final FlutterTts _flutterTts = FlutterTts();
   bool _isInitialized = false;
-  bool _isSpeaking = false;
+  bool _isSpeakingFlag = false;
+
+  /// True while a narration is playing; lets the UI disable the speak button until it finishes.
+  final ValueNotifier<bool> isSpeakingNotifier = ValueNotifier<bool>(false);
+
+  bool get _isSpeaking => _isSpeakingFlag;
+  set _isSpeaking(bool value) {
+    _isSpeakingFlag = value;
+    isSpeakingNotifier.value = value;
+  }
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -34,6 +44,10 @@ class AuditoryFeedbackService {
       }
 
       _flutterTts.setCompletionHandler(() {
+        _isSpeaking = false;
+      });
+
+      _flutterTts.setCancelHandler(() {
         _isSpeaking = false;
       });
 

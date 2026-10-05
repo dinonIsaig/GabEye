@@ -92,6 +92,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   final GlobalKey _uploadButtonKey = GlobalKey();
   final GlobalKey _shutterButtonKey = GlobalKey();
   final GlobalKey _modeSwitchButtonKey = GlobalKey();
+  final GlobalKey _downloadButtonKey = GlobalKey();
 
   bool _isTutorialActive = false;
   int _currentTutorialStepIndex = 0;
@@ -482,12 +483,24 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return relativeOffset & buttonBox.size;
   }
 
+  /// Whether a captured or uploaded photo is being viewed with the Remap filter.
+  bool get _isViewingRemapResult =>
+      _isDisplayingUploadedImage &&
+      _isRemapActive &&
+      !_isUploadedIdentifyMode &&
+      !_isUploadedObjectLabelMode &&
+      !_isFreezeFrameActive;
+
   /// Tutorial steps for the current mode, minus the action bar steps while split screen hides that bar.
   List<ToolbarTutorialStep> get _tutorialSteps {
     final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
     return isKnn
         ? IdentifyToolbarTutorialOverlay.stepsFor(isSplitScreenView: _isSplitScreenView)
-        : RemapToolbarTutorialOverlay.stepsFor(isSplitScreenView: _isSplitScreenView);
+        : RemapToolbarTutorialOverlay.stepsFor(
+            isSplitScreenView: _isSplitScreenView,
+            isViewingResult: _isViewingRemapResult,
+            showDownload: _hasUnsavedRemapResult,
+          );
   }
 
   Rect? _getTutorialTargetRect(int stepIndex) {
@@ -500,6 +513,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       ToolbarTutorialTarget.cvdPerception => _cvdPerceptionButtonKey,
       ToolbarTutorialTarget.splitScreen => _splitButtonKey,
       ToolbarTutorialTarget.audio => _audioButtonKey,
+      ToolbarTutorialTarget.download => _downloadButtonKey,
       ToolbarTutorialTarget.upload => _uploadButtonKey,
       ToolbarTutorialTarget.shutter => _shutterButtonKey,
       ToolbarTutorialTarget.modeSwitch => _modeSwitchButtonKey,
@@ -2366,8 +2380,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             child: _buildTransparentFloatingActionCard(context),
           ),
 
-        // One-time Floating Toolbar Tutorial Overlay (Shown ONLY when camera is allowed & ready)
-        if (_isTutorialActive && _isCameraPermissionGranted) ...[
+        // One-time Floating Toolbar Tutorial Overlay (Shown ONLY when camera is allowed & ready,
+        // or on demand while viewing a Remap result)
+        if (_isTutorialActive && (_isCameraPermissionGranted || _isViewingRemapResult)) ...[
           if (_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode)
             Positioned.fill(
               child: IdentifyToolbarTutorialOverlay(
@@ -2384,6 +2399,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
               child: RemapToolbarTutorialOverlay(
                 stepIndex: _currentTutorialStepIndex,
                 isSplitScreenView: _isSplitScreenView,
+                isViewingResult: _isViewingRemapResult,
+                showDownload: _hasUnsavedRemapResult,
                 targetRect: _getTutorialTargetRect(_currentTutorialStepIndex),
                 onNext: _nextTutorialStep,
                 onSkip: _completeTutorial,
@@ -2936,24 +2953,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Download Button (Remap mode after "Just View Result"; saves the viewed photo to the gallery)
-        if (_isDisplayingUploadedImage && _isRemapActive && _hasUnsavedRemapResult) ...[
-          _buildFloatingCircleButton(
-            icon: Icons.download_rounded,
-            isActive: false,
-            onTap: () => _downloadViewedRemapResult(context),
-            bgColor: bgColor,
-            activeBgColor: colors.primary,
-            iconColor: iconColor,
-            tooltip: 'Save to Gallery',
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // Tutorial Help Button (Live camera only, after the automatic first-time tutorial for this mode;
-        // set apart from the camera controls by a wider gap)
-        if (isLiveCamera && _isCameraPermissionGranted &&
-            (isKnnMode ? _hasSeenKnnTutorial : _hasSeenRemapTutorial)) ...[
+        // Tutorial Help Button (Live camera after the automatic first-time tutorial for this mode,
+        // or while viewing a Remap result; set apart from the other controls by a wider gap)
+        if ((isLiveCamera && _isCameraPermissionGranted &&
+                (isKnnMode ? _hasSeenKnnTutorial : _hasSeenRemapTutorial)) ||
+            _isViewingRemapResult) ...[
           _buildFloatingCircleButton(
             icon: Icons.question_mark_rounded,
             isActive: false,
@@ -2964,6 +2968,21 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             tooltip: 'Show Tutorial',
           ),
           const SizedBox(height: 32),
+        ],
+
+        // Download Button (Remap mode after "Just View Result"; saves the viewed photo to the gallery)
+        if (_isViewingRemapResult && _hasUnsavedRemapResult) ...[
+          _buildFloatingCircleButton(
+            key: _downloadButtonKey,
+            icon: Icons.download_rounded,
+            isActive: false,
+            onTap: () => _downloadViewedRemapResult(context),
+            bgColor: bgColor,
+            activeBgColor: colors.primary,
+            iconColor: iconColor,
+            tooltip: 'Save to Gallery',
+          ),
+          const SizedBox(height: 12),
         ],
 
         // Object Labeling Mode Toggle Button (Accessible ONLY in KNN mode live feeds)
@@ -3081,48 +3100,54 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         ],
 
         // On-Demand Audio Narration Speak Button (Available in Identify / KNN mode, Object Labeling mode & Freeze-Frame)
+        // Shown pressed and ignores taps while narration is playing, so it can't be spammed.
         if (isKnnMode || canSpeakObjectDetection) ...[
-          _buildFloatingCircleButton(
-            key: _audioButtonKey,
-            icon: Icons.volume_up_rounded,
-            isActive: false,
-            onTap: () {
-              if (canSpeakObjectDetection) {
-                final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
-                final objectNames = sourceList
-                    .where((o) => o.labels.isNotEmpty)
-                    .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
-                    .toSet()
-                    .toList();
-                final speechText = objectNames.isNotEmpty
-                    ? 'Detected: ${objectNames.join(", ")}'
-                    : 'No objects detected';
-                AuditoryFeedbackService.instance.speakText(speechText);
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(speechText),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                AuditoryFeedbackService.instance.speakIdentification(
-                  colorName: _currentIdentifiedColor,
-                  objectLabel: null,
-                );
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Speaking: $_currentIdentifiedColor'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            bgColor: bgColor,
-            activeBgColor: colors.primary,
-            iconColor: iconColor,
-            tooltip: canSpeakObjectDetection ? 'Speak Detected Objects' : 'Speak Color',
+          ValueListenableBuilder<bool>(
+            valueListenable: AuditoryFeedbackService.instance.isSpeakingNotifier,
+            builder: (context, isSpeaking, _) => _buildFloatingCircleButton(
+              key: _audioButtonKey,
+              icon: Icons.volume_up_rounded,
+              isActive: isSpeaking,
+              onTap: isSpeaking ? null : () {
+                if (canSpeakObjectDetection) {
+                  final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
+                  final objectNames = sourceList
+                      .where((o) => o.labels.isNotEmpty)
+                      .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
+                      .toSet()
+                      .toList();
+                  final speechText = objectNames.isNotEmpty
+                      ? 'Detected: ${objectNames.join(", ")}'
+                      : 'No objects detected';
+                  AuditoryFeedbackService.instance.speakText(speechText);
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(speechText),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                } else {
+                  AuditoryFeedbackService.instance.speakIdentification(
+                    colorName: _currentIdentifiedColor,
+                    objectLabel: null,
+                  );
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Speaking: $_currentIdentifiedColor'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              bgColor: bgColor,
+              activeBgColor: colors.primary,
+              iconColor: isSpeaking ? Colors.white : iconColor,
+              tooltip: isSpeaking
+                  ? 'Speaking…'
+                  : (canSpeakObjectDetection ? 'Speak Detected Objects' : 'Speak Color'),
+            ),
           ),
         ],
       ],
