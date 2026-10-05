@@ -8,6 +8,7 @@ class RemapToolbarTutorialOverlay extends StatelessWidget {
   final bool isSplitScreenView;
   final bool isViewingResult;
   final bool showDownload;
+  final bool hideShutter;
   final Rect? targetRect;
   final VoidCallback onNext;
   final VoidCallback onSkip;
@@ -81,25 +82,25 @@ class RemapToolbarTutorialOverlay extends StatelessWidget {
     ),
     ToolbarTutorialStep(
       target: ToolbarTutorialTarget.modeSwitch,
-      title: 'Live Camera',
-      description: 'Go back to the live camera to adjust colors in real time.',
+      title: 'Real-Time',
+      description: 'Go back to the real-time camera to adjust colors as you look around.',
       icon: Icons.videocam,
     ),
   ];
 
   /// Only the steps whose control is on screen in the current view (see [ToolbarTutorialTarget.isVisibleIn]).
   /// When [isViewingResult], the result steps are used instead; [showDownload] is false once the photo is saved.
+  /// [hideShutter] drops the shutter step while it is disabled (viewing a gallery upload).
   static List<ToolbarTutorialStep> stepsFor({
     required bool isSplitScreenView,
     bool isViewingResult = false,
     bool showDownload = false,
+    bool hideShutter = false,
   }) {
-    if (isViewingResult) {
-      return resultSteps
-          .where((step) => step.target != ToolbarTutorialTarget.download || showDownload)
-          .toList();
-    }
-    return allSteps.where((step) => step.target.isVisibleIn(isSplitScreenView: isSplitScreenView)).toList();
+    final steps = isViewingResult
+        ? resultSteps.where((step) => step.target != ToolbarTutorialTarget.download || showDownload)
+        : allSteps.where((step) => step.target.isVisibleIn(isSplitScreenView: isSplitScreenView));
+    return steps.where((step) => step.target != ToolbarTutorialTarget.shutter || !hideShutter).toList();
   }
 
   const RemapToolbarTutorialOverlay({
@@ -108,6 +109,7 @@ class RemapToolbarTutorialOverlay extends StatelessWidget {
     required this.isSplitScreenView,
     this.isViewingResult = false,
     this.showDownload = false,
+    this.hideShutter = false,
     required this.targetRect,
     required this.onNext,
     required this.onSkip,
@@ -122,6 +124,7 @@ class RemapToolbarTutorialOverlay extends StatelessWidget {
         isSplitScreenView: isSplitScreenView,
         isViewingResult: isViewingResult,
         showDownload: showDownload,
+        hideShutter: hideShutter,
       ),
       stepIndex: stepIndex,
       targetRect: targetRect,
