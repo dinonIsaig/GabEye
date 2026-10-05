@@ -15,7 +15,10 @@ enum ToolbarTutorialTarget {
   download,
   upload,
   shutter,
-  modeSwitch;
+  modeSwitch,
+  // Uploaded photo targets: the crosshair on an Identify photo and the Object Labeling list toggle.
+  photoCrosshair,
+  objectsSheet;
 
   /// Whether the control is on screen: the bottom action bar (Upload, Shutter, mode switch) is
   /// hidden while split screen is showing, and the CVD Perception toggle only exists in split screen.

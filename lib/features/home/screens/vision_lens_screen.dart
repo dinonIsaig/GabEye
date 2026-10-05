@@ -21,6 +21,7 @@ import 'package:gabeye/core/services/tutorial_preferences_service.dart';
 import 'package:gabeye/features/home/widgets/remap_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/features/home/widgets/identify_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/features/home/widgets/toolbar_tutorial_overlay.dart';
+import 'package:gabeye/features/home/widgets/upload_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
@@ -96,6 +97,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   final GlobalKey _uploadButtonKey = GlobalKey();
   final GlobalKey _shutterButtonKey = GlobalKey();
   final GlobalKey _modeSwitchButtonKey = GlobalKey();
+  final GlobalKey _objectsSheetToggleKey = GlobalKey();
 
   // Height of the Remap preset chip bar, measured while it is shown. Identify hides the bar, so the
   // camera permission prompt adds this much top padding there to stay in the same place on screen.
@@ -505,25 +507,42 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       !_isUploadedObjectLabelMode &&
       !_isFreezeFrameActive;
 
-  /// Whether the shutter is disabled (viewing a photo picked from the gallery).
+  /// Whether the shutter is disabled, so its tutorial step is skipped.
   bool get _isShutterHidden => _isDisplayingUploadedImage && _isGalleryUpload;
+
+  /// Processing option of the gallery photo being viewed, or null when not viewing a gallery upload.
+  AssistanceMode? get _uploadTutorialMode {
+    if (!_isDisplayingUploadedImage || !_isGalleryUpload) return null;
+    if (_isUploadedObjectLabelMode) return AssistanceMode.objectLabeling;
+    if (_isUploadedIdentifyMode) return AssistanceMode.identifyColor;
+    return AssistanceMode.remapColor;
+  }
 
   /// Tutorial steps for the current mode, minus the action bar steps while split screen hides that bar.
   List<ToolbarTutorialStep> get _tutorialSteps {
+    final AssistanceMode? uploadMode = _uploadTutorialMode;
+    if (uploadMode != null) {
+      return UploadToolbarTutorialOverlay.stepsFor(uploadMode, showDownload: _hasUnsavedRemapResult);
+    }
     final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
     return isKnn
-        ? IdentifyToolbarTutorialOverlay.stepsFor(isSplitScreenView: _isSplitScreenView)
+        ? IdentifyToolbarTutorialOverlay.stepsFor(
+            isSplitScreenView: _isSplitScreenView,
+            hideShutter: _isShutterHidden,
+            isObjectLabelingOn: _isObjectDetectionMode,
+          )
         : RemapToolbarTutorialOverlay.stepsFor(
             isSplitScreenView: _isSplitScreenView,
             isViewingResult: _isViewingRemapResult,
             showDownload: _hasUnsavedRemapResult,
+            hideShutter: _isShutterHidden,
           );
   }
 
   Rect? _getTutorialTargetRect(int stepIndex) {
     final steps = _tutorialSteps;
     if (stepIndex < 0 || stepIndex >= steps.length) return null;
-    final GlobalKey key = switch (steps[stepIndex].target) {
+    final GlobalKey? key = switch (steps[stepIndex].target) {
       ToolbarTutorialTarget.objectLabels => _mlKitButtonKey,
       ToolbarTutorialTarget.zoom => _zoomButtonKey,
       ToolbarTutorialTarget.torch => _torchButtonKey,
@@ -534,8 +553,36 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       ToolbarTutorialTarget.upload => _uploadButtonKey,
       ToolbarTutorialTarget.shutter => _shutterButtonKey,
       ToolbarTutorialTarget.modeSwitch => _modeSwitchButtonKey,
+      ToolbarTutorialTarget.objectsSheet => _objectsSheetToggleKey,
+      ToolbarTutorialTarget.photoCrosshair => null,
     };
+    if (key == null) return _getCrosshairRect();
     return _getWidgetRect(key);
+  }
+
+  /// Where the crosshair is drawn on an uploaded photo, relative to the viewport (BoxFit.cover).
+  Rect? _getCrosshairRect() {
+    final viewportBox = _viewportKey.currentContext?.findRenderObject() as RenderBox?;
+    final image = _uploadedUiImage;
+    if (viewportBox == null || !viewportBox.hasSize || image == null) return null;
+    final Size box = viewportBox.size;
+    final double scale = math.max(box.width / image.width, box.height / image.height);
+    final double renderedW = image.width * scale;
+    final double renderedH = image.height * scale;
+    final Offset center = Offset(
+      (box.width - renderedW) / 2 + _crosshairNorm.dx * renderedW,
+      (box.height - renderedH) / 2 + _crosshairNorm.dy * renderedH,
+    );
+    return Rect.fromCenter(center: center, width: 56, height: 56);
+  }
+
+  /// Shows the tutorial for the current gallery upload option the first time it is used.
+  Future<void> _checkUploadTutorialStatus() async {
+    final AssistanceMode? mode = _uploadTutorialMode;
+    if (mode == null || _isTutorialActive) return;
+    if (await TutorialPreferencesService.hasSeenUploadTutorial(mode.name)) return;
+    if (!mounted || !widget.isActive || _uploadTutorialMode != mode) return;
+    replayToolbarTutorial();
   }
 
   Future<void> _checkToolbarTutorialStatus({bool forceReplay = false}) async {
@@ -609,6 +656,12 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   }
 
   void _completeTutorial() {
+    final AssistanceMode? uploadMode = _uploadTutorialMode;
+    if (uploadMode != null) {
+      setState(() => _isTutorialActive = false);
+      TutorialPreferencesService.markUploadTutorialAsSeen(uploadMode.name);
+      return;
+    }
     final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
     setState(() {
       _isTutorialActive = false;
@@ -1291,6 +1344,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         if (mode == AssistanceMode.remapColor && mounted) {
           await _handleUploadedPhotoSavePrompt(context);
         }
+        // First time with this option: walk through its controls once processing is done.
+        if (mounted) await _checkUploadTutorialStatus();
       }
     } catch (e) {
       // Fallback sample image if running in test environment or gallery picking is unavailable
@@ -2431,6 +2486,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             bottom: 82,
             child: Center(
               child: InkWell(
+                key: _objectsSheetToggleKey,
                 onTap: () {
                   setState(() {
                     _showUploadedObjectsSheet = !_showUploadedObjectsSheet;
@@ -2488,12 +2544,26 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
         // One-time Floating Toolbar Tutorial Overlay (Shown ONLY when camera is allowed & ready,
         // or on demand while viewing a Remap result)
-        if (_isTutorialActive && (_isCameraPermissionGranted || _isViewingRemapResult)) ...[
-          if (_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode)
+        if (_isTutorialActive && (_isCameraPermissionGranted || _isDisplayingUploadedImage)) ...[
+          if (_uploadTutorialMode != null)
+            Positioned.fill(
+              child: UploadToolbarTutorialOverlay(
+                mode: _uploadTutorialMode!,
+                showDownload: _hasUnsavedRemapResult,
+                stepIndex: _currentTutorialStepIndex,
+                targetRect: _getTutorialTargetRect(_currentTutorialStepIndex),
+                onNext: _nextTutorialStep,
+                onSkip: _completeTutorial,
+                onComplete: _completeTutorial,
+              ),
+            )
+          else if (_activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode)
             Positioned.fill(
               child: IdentifyToolbarTutorialOverlay(
                 stepIndex: _currentTutorialStepIndex,
                 isSplitScreenView: _isSplitScreenView,
+                hideShutter: _isShutterHidden,
+                isObjectLabelingOn: _isObjectDetectionMode,
                 targetRect: _getTutorialTargetRect(_currentTutorialStepIndex),
                 onNext: _nextTutorialStep,
                 onSkip: _completeTutorial,
@@ -2507,6 +2577,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 isSplitScreenView: _isSplitScreenView,
                 isViewingResult: _isViewingRemapResult,
                 showDownload: _hasUnsavedRemapResult,
+                hideShutter: _isShutterHidden,
                 targetRect: _getTutorialTargetRect(_currentTutorialStepIndex),
                 onNext: _nextTutorialStep,
                 onSkip: _completeTutorial,
@@ -3086,7 +3157,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         // or while viewing a Remap result; set apart from the other controls by a wider gap)
         if ((isLiveCamera && _isCameraPermissionGranted &&
                 (isKnnMode ? _hasSeenKnnTutorial : _hasSeenRemapTutorial)) ||
-            _isViewingRemapResult) ...[
+            _isViewingRemapResult ||
+            _uploadTutorialMode != null) ...[
           _buildFloatingCircleButton(
             icon: Icons.question_mark_rounded,
             isActive: false,
