@@ -58,10 +58,10 @@ class GabEyeHomeNavbar extends StatelessWidget {
                         if (onLogoTap != null) {
                           onLogoTap!();
                         } else if (ModalRoute.of(context)?.settings.name !=
-                            AppRoutes.getStarted) {
+                            AppRoutes.home) {
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            AppRoutes.getStarted,
+                            AppRoutes.home,
                             (route) => false,
                           );
                         } else if (onBack != null) {

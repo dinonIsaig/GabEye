@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+
 import 'help_feedback_screen.dart';
 import 'how_to_use_gabeye.dart';
 import 'real_time_mode_safety.dart';
@@ -35,6 +37,33 @@ class SettingsContent {
   factory SettingsContent.defaultContent(BuildContext context) {
     return SettingsContent(
       sections: [
+        SettingSection(
+          title: 'Accessibility & Personalization',
+          items: [
+            SettingItem(
+              title: 'Personalized Accessibility',
+              icon: Icons.tune_rounded,
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.personalizedAccessibility,
+                );
+              },
+            ),
+          ],
+        ),
+        SettingSection(
+          title: 'Data & Storage',
+          items: [
+            SettingItem(
+              title: 'Personal Data',
+              icon: Icons.storage_outlined,
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.personalData);
+              },
+            ),
+          ],
+        ),
         SettingSection(
           title: 'More About GabEye',
           items: [
@@ -158,7 +187,7 @@ class GabEyeSettingsScreen extends StatelessWidget {
       widgets.add(SettingsSectionWidget(section: section));
 
       if (i < sections.length - 1) {
-        widgets.add(const SizedBox(height: 32));
+        widgets.add(const SizedBox(height: 28));
       }
     }
 
@@ -180,7 +209,7 @@ class SettingsSectionWidget extends StatelessWidget {
       children: [
         if (section.title != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               section.title!,
               style: textTheme.titleMedium?.copyWith(
