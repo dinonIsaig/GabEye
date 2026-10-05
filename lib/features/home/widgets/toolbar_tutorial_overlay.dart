@@ -4,8 +4,33 @@ import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 
+/// Vision Lens control a tutorial step highlights.
+enum ToolbarTutorialTarget {
+  objectLabels,
+  zoom,
+  torch,
+  cvdPerception,
+  splitScreen,
+  audio,
+  upload,
+  shutter,
+  modeSwitch;
+
+  /// Whether the control is on screen: the bottom action bar (Upload, Shutter, mode switch) is
+  /// hidden while split screen is showing, and the CVD Perception toggle only exists in split screen.
+  bool isVisibleIn({required bool isSplitScreenView}) => switch (this) {
+        ToolbarTutorialTarget.upload ||
+        ToolbarTutorialTarget.shutter ||
+        ToolbarTutorialTarget.modeSwitch =>
+          !isSplitScreenView,
+        ToolbarTutorialTarget.cvdPerception => isSplitScreenView,
+        _ => true,
+      };
+}
+
 /// Item model for a Vision Lens tutorial step.
 class ToolbarTutorialStep {
+  final ToolbarTutorialTarget target;
   final String title;
   final String description;
   final IconData icon;
@@ -16,6 +41,7 @@ class ToolbarTutorialStep {
   final IconData? emphasisIcon;
 
   const ToolbarTutorialStep({
+    required this.target,
     required this.title,
     required this.description,
     required this.icon,
@@ -66,7 +92,7 @@ class ToolbarTutorialOverlay extends StatelessWidget {
               48,
             );
 
-        // Bottom action bar targets (Upload, mode switch) sit in the lower part of the viewport.
+        // Bottom action bar targets (Upload, Shutter, mode switch) sit in the lower part of the viewport.
         final bool isBottomTarget = target.center.dy > area.height * 0.6;
 
         return Stack(

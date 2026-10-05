@@ -18,6 +18,7 @@ import 'package:gabeye/core/widgets/cvd_simulation_shader_widget.dart';
 import 'package:gabeye/core/services/tutorial_preferences_service.dart';
 import 'package:gabeye/features/home/widgets/remap_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/features/home/widgets/identify_toolbar_tutorial_overlay.dart';
+import 'package:gabeye/features/home/widgets/toolbar_tutorial_overlay.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
@@ -85,9 +86,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   final GlobalKey _mlKitButtonKey = GlobalKey();
   final GlobalKey _zoomButtonKey = GlobalKey();
   final GlobalKey _torchButtonKey = GlobalKey();
+  final GlobalKey _cvdPerceptionButtonKey = GlobalKey();
   final GlobalKey _splitButtonKey = GlobalKey();
   final GlobalKey _audioButtonKey = GlobalKey();
   final GlobalKey _uploadButtonKey = GlobalKey();
+  final GlobalKey _shutterButtonKey = GlobalKey();
   final GlobalKey _modeSwitchButtonKey = GlobalKey();
 
   bool _isTutorialActive = false;
@@ -371,40 +374,29 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return relativeOffset & buttonBox.size;
   }
 
-  Rect? _getRemapTutorialTargetRect(int stepIndex) {
-    switch (stepIndex) {
-      case 0:
-        return _getWidgetRect(_zoomButtonKey);
-      case 1:
-        return _getWidgetRect(_torchButtonKey);
-      case 2:
-        return _getWidgetRect(_splitButtonKey);
-      case 3:
-        return _getWidgetRect(_uploadButtonKey);
-      case 4:
-        return _getWidgetRect(_modeSwitchButtonKey);
-      default:
-        return null;
-    }
+  /// Tutorial steps for the current mode, minus the action bar steps while split screen hides that bar.
+  List<ToolbarTutorialStep> get _tutorialSteps {
+    final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    return isKnn
+        ? IdentifyToolbarTutorialOverlay.stepsFor(isSplitScreenView: _isSplitScreenView)
+        : RemapToolbarTutorialOverlay.stepsFor(isSplitScreenView: _isSplitScreenView);
   }
 
-  Rect? _getIdentifyTutorialTargetRect(int stepIndex) {
-    switch (stepIndex) {
-      case 0:
-        return _getWidgetRect(_mlKitButtonKey);
-      case 1:
-        return _getWidgetRect(_zoomButtonKey);
-      case 2:
-        return _getWidgetRect(_splitButtonKey);
-      case 3:
-        return _getWidgetRect(_audioButtonKey);
-      case 4:
-        return _getWidgetRect(_uploadButtonKey);
-      case 5:
-        return _getWidgetRect(_modeSwitchButtonKey);
-      default:
-        return null;
-    }
+  Rect? _getTutorialTargetRect(int stepIndex) {
+    final steps = _tutorialSteps;
+    if (stepIndex < 0 || stepIndex >= steps.length) return null;
+    final GlobalKey key = switch (steps[stepIndex].target) {
+      ToolbarTutorialTarget.objectLabels => _mlKitButtonKey,
+      ToolbarTutorialTarget.zoom => _zoomButtonKey,
+      ToolbarTutorialTarget.torch => _torchButtonKey,
+      ToolbarTutorialTarget.cvdPerception => _cvdPerceptionButtonKey,
+      ToolbarTutorialTarget.splitScreen => _splitButtonKey,
+      ToolbarTutorialTarget.audio => _audioButtonKey,
+      ToolbarTutorialTarget.upload => _uploadButtonKey,
+      ToolbarTutorialTarget.shutter => _shutterButtonKey,
+      ToolbarTutorialTarget.modeSwitch => _modeSwitchButtonKey,
+    };
+    return _getWidgetRect(key);
   }
 
   Future<void> _checkToolbarTutorialStatus({bool forceReplay = false}) async {
@@ -462,9 +454,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   }
 
   void _nextTutorialStep() {
-    final bool isKnn = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
-    final int maxSteps =
-        isKnn ? IdentifyToolbarTutorialOverlay.steps.length : RemapToolbarTutorialOverlay.steps.length;
+    final int maxSteps = _tutorialSteps.length;
     if (_currentTutorialStepIndex < maxSteps - 1) {
       setState(() {
         _currentTutorialStepIndex++;
@@ -2272,7 +2262,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             Positioned.fill(
               child: IdentifyToolbarTutorialOverlay(
                 stepIndex: _currentTutorialStepIndex,
-                targetRect: _getIdentifyTutorialTargetRect(_currentTutorialStepIndex),
+                isSplitScreenView: _isSplitScreenView,
+                targetRect: _getTutorialTargetRect(_currentTutorialStepIndex),
                 onNext: _nextTutorialStep,
                 onSkip: _completeTutorial,
                 onComplete: _completeTutorial,
@@ -2282,7 +2273,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             Positioned.fill(
               child: RemapToolbarTutorialOverlay(
                 stepIndex: _currentTutorialStepIndex,
-                targetRect: _getRemapTutorialTargetRect(_currentTutorialStepIndex),
+                isSplitScreenView: _isSplitScreenView,
+                targetRect: _getTutorialTargetRect(_currentTutorialStepIndex),
                 onNext: _nextTutorialStep,
                 onSkip: _completeTutorial,
                 onComplete: _completeTutorial,
@@ -2652,6 +2644,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
               // Center Circular Shutter Ring
               GestureDetector(
+                key: _shutterButtonKey,
                 onTap: isShutterDisabled
                     ? null
                     : () {
@@ -2901,6 +2894,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         // CVD Perception Split Mode Toggle Button (Appears in Remapping mode ONLY when Split Screen is ENABLED)
         if (!isKnnMode && _isSplitScreenView) ...[
           _buildFloatingCircleButton(
+            key: _cvdPerceptionButtonKey,
             icon: _isCvdPerceptionSplitActive ? Icons.visibility_rounded : Icons.visibility_outlined,
             isActive: _isCvdPerceptionSplitActive,
             onTap: () {
@@ -2931,7 +2925,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         if (isLiveCamera && !_isObjectDetectionMode) ...[
           _buildFloatingCircleButton(
             key: _splitButtonKey,
-            icon: _isSplitScreenView ? Icons.compare_rounded : Icons.splitscreen_rounded,
+            // Same icon in both states; the filled background marks it as pressed.
+            icon: Icons.splitscreen_rounded,
             isActive: _isSplitScreenView,
             onTap: () {
               setState(() {
