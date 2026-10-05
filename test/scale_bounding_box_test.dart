@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 import 'package:gabeye/features/home/widgets/object_detection_overlay.dart';
 
 void main() {
@@ -157,6 +159,75 @@ void main() {
       expect(scaled.top, closeTo(200.0, 0.01));
       expect(scaled.width, closeTo(90.0, 0.01));
       expect(scaled.height, closeTo(120.0, 0.01));
+    });
+  });
+
+  group('scaleBoundingBox Real-Time Camera Platform Tests', () {
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    test('Android: preserves upright ML Kit bounding boxes without secondary rotation', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+      // 1280x720 landscape camera buffer displayed on 360x640 portrait screen
+      const imageSize = Size(1280, 720);
+      const canvasSize = Size(360, 640);
+      // Android ML Kit already returns upright coordinates (width=720, height=1280):
+      const rawBox = Rect.fromLTWH(100, 200, 200, 300);
+
+      final scaled = scaleBoundingBox(
+        rawBox: rawBox,
+        imageSize: imageSize,
+        canvasSize: canvasSize,
+        rotation: InputImageRotation.rotation90deg,
+        fit: BoxFit.cover,
+        isStaticImage: false,
+      );
+
+      // Upright dimensions are 720x1280.
+      // scale = max(360/720, 640/1280) = 0.5.
+      // offsets = 0, 0.
+      // Expected:
+      // left = 100 * 0.5 = 50.0
+      // top = 200 * 0.5 = 100.0
+      // width = 200 * 0.5 = 100.0
+      // height = 300 * 0.5 = 150.0
+      expect(scaled.left, closeTo(50.0, 0.01));
+      expect(scaled.top, closeTo(100.0, 0.01));
+      expect(scaled.width, closeTo(100.0, 0.01));
+      expect(scaled.height, closeTo(150.0, 0.01));
+    });
+
+    test('iOS: rotates raw landscape ML Kit bounding box 90 deg into upright portrait space', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+      // 1280x720 landscape camera buffer displayed on 360x640 portrait screen
+      const imageSize = Size(1280, 720);
+      const canvasSize = Size(360, 640);
+      // iOS ML Kit returns raw unrotated landscape coordinates ([0..1280] x [0..720]):
+      // For upright left=100, top=200, width=200, height=300 (right=300, bottom=500):
+      // In 90 CW sensor space: sensorX = top = 200, sensorY = 720 - right = 420.
+      // sensorWidth = height = 300, sensorHeight = width = 200 (bottom = 620).
+      const rawBox = Rect.fromLTWH(200, 420, 300, 200);
+
+      final scaled = scaleBoundingBox(
+        rawBox: rawBox,
+        imageSize: imageSize,
+        canvasSize: canvasSize,
+        rotation: InputImageRotation.rotation90deg,
+        fit: BoxFit.cover,
+        isStaticImage: false,
+      );
+
+      // 90 deg rotation gives upright:
+      // left = 720 - 620 = 100, top = 200, width = 200, height = 300.
+      // Scaled by 0.5:
+      // left = 50.0, top = 100.0, width = 100.0, height = 150.0.
+      expect(scaled.left, closeTo(50.0, 0.01));
+      expect(scaled.top, closeTo(100.0, 0.01));
+      expect(scaled.width, closeTo(100.0, 0.01));
+      expect(scaled.height, closeTo(150.0, 0.01));
     });
   });
 }

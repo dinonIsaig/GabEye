@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/routing/app_routes.dart';
 import 'core/services/auditory_feedback_service.dart';
@@ -10,6 +11,12 @@ import 'data/local/database_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock orientation to portrait mode (disable landscape)
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // Initialize SQLite database
   await DatabaseHelper.instance.database;

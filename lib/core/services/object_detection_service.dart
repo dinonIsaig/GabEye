@@ -182,9 +182,16 @@ class ObjectDetectionService {
       final inputImage = _convertCameraImageToInputImage(image);
       if (inputImage == null) return null;
 
+      final double frameW = Platform.isAndroid
+          ? (image.width > image.height ? image.height.toDouble() : image.width.toDouble())
+          : image.width.toDouble();
+      final double frameH = Platform.isAndroid
+          ? (image.width > image.height ? image.width.toDouble() : image.height.toDouble())
+          : image.height.toDouble();
+
       final crosshairPoint = Offset(
-        image.width * normalizedCrosshair.dx.clamp(0.0, 1.0),
-        image.height * normalizedCrosshair.dy.clamp(0.0, 1.0),
+        frameW * normalizedCrosshair.dx.clamp(0.0, 1.0),
+        frameH * normalizedCrosshair.dy.clamp(0.0, 1.0),
       );
 
       // Check ObjectDetector bounding boxes for spatial collision with crosshair
@@ -811,9 +818,15 @@ class ObjectDetectionService {
       _isDetectorBusy = false;
       _isProcessingLiveFrame = false;
 
+      final Size effectiveFrameSize = Platform.isAndroid
+          ? (image.width > image.height
+              ? Size(image.height.toDouble(), image.width.toDouble())
+              : Size(image.width.toDouble(), image.height.toDouble()))
+          : Size(image.width.toDouble(), image.height.toDouble());
+
       final prominent = filterProminentObjects(
         rawObjects,
-        frameSize: Size(image.width.toDouble(), image.height.toDouble()),
+        frameSize: effectiveFrameSize,
         maxObjects: 2,
       );
 
