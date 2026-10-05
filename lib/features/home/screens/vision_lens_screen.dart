@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -497,6 +499,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         ObjectDetectionService.instance.resetBusyState();
       } else {
         // Resumed because user switched back to the Camera tab
+        if (_cameraController != null && _cameraController!.value.isInitialized) {
+          try {
+            _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+          } catch (_) {}
+        }
         if (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn) {
           if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) {
             _startKnnFrameStream();
@@ -517,6 +524,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       AuditoryFeedbackService.instance.stop();
       ObjectDetectionService.instance.resetBusyState();
     } else if (state == AppLifecycleState.resumed) {
+      try {
+        _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      } catch (_) {}
       if (widget.isActive && (_isObjectDetectionMode || _activeCameraMode == CameraRealtimeMode.knn)) {
         if (!_isDisplayingUploadedImage && !_isFreezeFrameActive) {
           _startKnnFrameStream();
@@ -1013,6 +1023,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           enableAudio: false,
         );
         await controller.initialize();
+        try {
+          await controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
+        } catch (_) {}
         if (mounted) {
           setState(() {
             _cameraController = controller;
@@ -2337,6 +2350,13 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return LayoutBuilder(
       builder: (context, constraints) {
         final Size containerSize = Size(constraints.maxWidth, constraints.maxHeight);
+        final freezePreviewSize = _cameraController?.value.previewSize;
+        final double freezeWidth = freezePreviewSize != null
+            ? math.min(freezePreviewSize.width, freezePreviewSize.height)
+            : 720;
+        final double freezeHeight = freezePreviewSize != null
+            ? math.max(freezePreviewSize.width, freezePreviewSize.height)
+            : 1280;
 
         return Stack(
           children: [
@@ -2349,8 +2369,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 child: FittedBox(
                   fit: BoxFit.cover,
                   child: SizedBox(
-                    width: _cameraController?.value.previewSize?.height ?? 720,
-                    height: _cameraController?.value.previewSize?.width ?? 1280,
+                    width: freezeWidth,
+                    height: freezeHeight,
                     child: Image.memory(
                       bytes,
                       fit: BoxFit.cover,
@@ -2587,11 +2607,19 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
 
     if (_cameraController != null && _cameraController!.value.isInitialized) {
+      final previewSize = _cameraController!.value.previewSize;
+      final double previewWidth = previewSize != null
+          ? math.min(previewSize.width, previewSize.height)
+          : 720;
+      final double previewHeight = previewSize != null
+          ? math.max(previewSize.width, previewSize.height)
+          : 1280;
+
       return FittedBox(
         fit: BoxFit.cover,
         child: SizedBox(
-          width: _cameraController!.value.previewSize?.height ?? 720,
-          height: _cameraController!.value.previewSize?.width ?? 1280,
+          width: previewWidth,
+          height: previewHeight,
           child: CameraPreview(_cameraController!),
         ),
       );

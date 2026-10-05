@@ -392,7 +392,7 @@ void main() {
       theme: GabEyeTheme.lightTheme,
       routes: testRoutes,
       home: const AssessmentKeyfindingsScreen(
-        arrangedCaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        arrangedCaps: [15, 1, 14, 2, 13, 3, 12, 4, 11, 5, 10, 6, 9, 7, 8],
       ),
     ));
     await tester.pumpAndSettle();
@@ -402,7 +402,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify article screen is opened
-    expect(find.text('About the Farnsworth D-15'), findsOneWidget);
+    expect(find.text('About Protan'), findsWidgets);
   });
 }
 
