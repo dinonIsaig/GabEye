@@ -15,6 +15,7 @@ class TermsAndConditionsModal extends StatefulWidget {
 class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
   late ScrollController _scrollController;
   bool _hasScrolledToBottom = false;
+  bool _hasAgreed = false;
 
   @override
   void initState() {
@@ -32,6 +33,60 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
         }
       }
     });
+  }
+
+  /// Smoothly scrolls to the end of the terms, where the button turns into "I Accept".
+  void _scrollToEnd() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildAcceptanceCheckbox(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => setState(() => _hasAgreed = !_hasAgreed),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _hasAgreed,
+                onChanged: (value) => setState(() => _hasAgreed = value ?? false),
+                activeColor: colors.onPrimary,
+                checkColor: colors.surface,
+                side: BorderSide(color: colors.onSurfaceVariant, width: 1.5),
+              ),
+              Expanded(
+                child: Padding(
+                  // Line the first line of text up with the checkbox.
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    TermsAndConditionsContent.acceptanceStatement,
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: Responsive.font(context, base: 15, min: 12, max: 17),
+                      fontWeight: FontWeight.bold,
+                      color: colors.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -88,9 +143,9 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                             left: 24.0,
                             right: 24.0,
                             top: 10.0,
-                            bottom: 120.0,
+                            bottom: 220.0,
                           ),
-                          child: const TermsAndConditionsContent(),
+                          child: const TermsAndConditionsContent(showAcceptanceStatement: false),
                         ),
                       ),
                     ),
@@ -109,6 +164,14 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Acceptance checkbox, revealed once the user reaches the end of the terms.
+                        if (_hasScrolledToBottom) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: _buildAcceptanceCheckbox(context),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: BackdropFilter(
@@ -117,7 +180,7 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                               width: double.infinity,
                               height: Responsive.space(context, base: 55, min: 48, max: 64),
                               child: ElevatedButton(
-                                onPressed: _hasScrolledToBottom
+                                onPressed: _hasScrolledToBottom && _hasAgreed
                                     ? () {
                                         Navigator.pushNamedAndRemoveUntil(
                                           context,
@@ -125,7 +188,8 @@ class _TermsAndConditionsModalState extends State<TermsAndConditionsModal> {
                                           (route) => false,
                                         );
                                       }
-                                    : null,
+                                    // Before the end, tapping scrolls down to the acceptance checkbox.
+                                    : (_hasScrolledToBottom ? null : _scrollToEnd),
                                 style: ElevatedButton.styleFrom(
                                   elevation: 0,
                                   backgroundColor: Theme.of(context).colorScheme.onPrimary,

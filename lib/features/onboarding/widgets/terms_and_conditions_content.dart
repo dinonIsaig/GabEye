@@ -6,7 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 /// The full Terms & Conditions copy, shared by the onboarding modal and the
 /// Settings page so both always show the same text.
 class TermsAndConditionsContent extends StatelessWidget {
-  const TermsAndConditionsContent({super.key});
+  /// Closing acceptance line; the onboarding modal shows it beside its checkbox instead.
+  static const String acceptanceStatement =
+      'By continuing to use GabEye, you acknowledge and accept these Terms and Conditions.';
+
+  final bool showAcceptanceStatement;
+
+  const TermsAndConditionsContent({super.key, this.showAcceptanceStatement = true});
 
   @override
   Widget build(BuildContext context) {
@@ -889,13 +895,6 @@ class TermsAndConditionsContent extends StatelessWidget {
         _buildBulletPoint('6. You understand that GabEye should not be used as the sole basis for safety-critical, medical, or professional decisions; and', bodyStyle, overrideBullet: false),
         _buildBulletPoint('7. You agree to comply with these Terms and Conditions while using GabEye.', bodyStyle, overrideBullet: false),
         const SizedBox(height: 24),
-        Text(
-          'By continuing to use GabEye, you acknowledge and accept these Terms and Conditions.',
-          style: bodyStyle.copyWith(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.justify,
-        ),
-        const SizedBox(height: 24),
-
         Text('Important Reminder', style: headingStyle),
         SizedBox(height: Responsive.space(context, base: 4, min: 2, max: 8)),
         RichText(
@@ -922,6 +921,14 @@ class TermsAndConditionsContent extends StatelessWidget {
             ],
           ),
         ),
+        if (showAcceptanceStatement) ...[
+          const SizedBox(height: 24),
+          Text(
+            acceptanceStatement,
+            style: bodyStyle.copyWith(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.justify,
+          ),
+        ],
       ],
     );
   }
