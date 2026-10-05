@@ -22,6 +22,7 @@ import 'package:gabeye/features/home/widgets/remap_toolbar_tutorial_overlay.dart
 import 'package:gabeye/features/home/widgets/identify_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/features/home/widgets/toolbar_tutorial_overlay.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
 import 'package:gabeye/features/home/widgets/camera_permission_modal.dart';
@@ -55,6 +56,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   PresetMode _selectedPreset = PresetMode.customized;
   bool _isRemapActive = true;
   bool _isCameraPermissionGranted = false;
+  bool _isGalleryPermissionGranted = false;
   bool _showCalibrationSlider = false;
 
   // Independent calibration values for CVD presets and Recommended mode
@@ -94,6 +96,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   final GlobalKey _uploadButtonKey = GlobalKey();
   final GlobalKey _shutterButtonKey = GlobalKey();
   final GlobalKey _modeSwitchButtonKey = GlobalKey();
+
+  // Height of the Remap preset chip bar, measured while it is shown. Identify hides the bar, so the
+  // camera permission prompt adds this much top padding there to stay in the same place on screen.
+  final GlobalKey _presetBarKey = GlobalKey();
+  double _presetBarHeight = 0;
   final GlobalKey _downloadButtonKey = GlobalKey();
 
   bool _isTutorialActive = false;
@@ -148,6 +155,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   ui.Image? _uploadedUiImage;
   String? _uploadedFileName;
   bool _isDisplayingUploadedImage = false;
+  // True while showing a photo picked from the gallery (not a shutter capture);
+  // the shutter is disabled for these.
+  bool _isGalleryUpload = false;
   // True after the user picks "Just View Result" on a remapped photo; shows the
   // floating download button until the photo is saved or cleared.
   bool _hasUnsavedRemapResult = false;
@@ -289,9 +299,10 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
   Future<void> _handleUploadedPhotoSavePrompt(BuildContext context) async {
     final shouldSave = await _showRemapSaveChoiceDialog(context);
-    if (shouldSave == null || !mounted) return;
+    if (!mounted) return;
 
-    if (!shouldSave) {
+    // Dismissed counts as "Just View Result" so the download button stays available.
+    if (shouldSave != true) {
       setState(() {
         _hasUnsavedRemapResult = true;
       });
@@ -403,6 +414,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           _uploadedUiImage = null; // will be set after decode
           _uploadedFileName = photo.name;
           _isDisplayingUploadedImage = true;
+          _isGalleryUpload = false;
           _showUploadedNotification = false;
           _showZoomSlider = false;
           _isSplitScreenView = false;
@@ -492,6 +504,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       !_isUploadedIdentifyMode &&
       !_isUploadedObjectLabelMode &&
       !_isFreezeFrameActive;
+
+  /// Whether the shutter is disabled (viewing a photo picked from the gallery).
+  bool get _isShutterHidden => _isDisplayingUploadedImage && _isGalleryUpload;
 
   /// Tutorial steps for the current mode, minus the action bar steps while split screen hides that bar.
   List<ToolbarTutorialStep> get _tutorialSteps {
@@ -979,7 +994,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   ///
   /// The method:
   ///   1. Maps screen coordinates → normalised image coordinates accounting for
-  ///      [BoxFit.contain] letterboxing / pillarboxing.
+  ///      the [BoxFit.cover] centre crop.
   ///   2. Clamps the result to [0, 1].
   ///   3. Triggers async pixel sampling for real-time visual UI update (no TTS).
   void _onCrosshairInteraction({
@@ -996,7 +1011,6 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       localPosition: localPosition,
       renderBoxSize: renderBoxSize,
       imagePixelSize: imageSize,
-      isUploadedImage: _isDisplayingUploadedImage,
     );
 
     setState(() {
@@ -1009,20 +1023,20 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
   /// Converts a touch point inside the image container to a normalised
   /// [0, 1] × [0, 1] coordinate within the **actual image content**,
-  /// accounting for [BoxFit.contain] letterboxing/pillarboxing.
+  /// accounting for the [BoxFit.cover] centre crop used by every viewport
+  /// (live freeze frame and uploaded photos alike).
   ///
   /// ### Coordinate Mapping Algorithm
-  /// BoxFit.contain scales the image uniformly so it fits within the container
-  /// while preserving aspect ratio. This creates empty bands on either the
-  /// horizontal (pillarbox) or vertical (letterbox) edges.
+  /// BoxFit.cover scales the image uniformly so it fills the container while
+  /// preserving aspect ratio, cropping the overflow equally on both sides.
   ///
   ///   scaleX = containerW / imageW
   ///   scaleY = containerH / imageH
-  ///   scale  = min(scaleX, scaleY)          ← the constraining axis
+  ///   scale  = max(scaleX, scaleY)          ← the filling axis
   ///   renderedW = imageW * scale
   ///   renderedH = imageH * scale
-  ///   offsetX = (containerW - renderedW) / 2  ← pillarbox band width
-  ///   offsetY = (containerH - renderedH) / 2  ← letterbox band height
+  ///   offsetX = (containerW - renderedW) / 2  ← negative: cropped overflow
+  ///   offsetY = (containerH - renderedH) / 2
   ///
   /// Touch point mapped to image-space:
   ///   normX = (touchX - offsetX) / renderedW  → clamped [0, 1]
@@ -1031,7 +1045,6 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     required Offset localPosition,
     required Size renderBoxSize,
     required Size imagePixelSize,
-    bool isUploadedImage = false,
   }) {
     if (imagePixelSize.isEmpty || renderBoxSize.isEmpty) {
       return const Offset(0.5, 0.5);
@@ -1042,18 +1055,12 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     final double imageW = imagePixelSize.width;
     final double imageH = imagePixelSize.height;
 
-    // Scale factor for BoxFit.contain when uploaded image, or BoxFit.cover for live camera freeze frame.
-    final double scale = isUploadedImage
-        ? ((containerW / imageW) < (containerH / imageH)
-            ? (containerW / imageW)
-            : (containerH / imageH))
-        : ((containerW / imageW) > (containerH / imageH)
-            ? (containerW / imageW)
-            : (containerH / imageH));
+    // BoxFit.cover scale factor.
+    final double scale = math.max(containerW / imageW, containerH / imageH);
     final double renderedW = imageW * scale;
     final double renderedH = imageH * scale;
 
-    // Center-crop offsets or pillarbox/letterbox padding offsets.
+    // Center-crop offsets.
     final double offsetX = (containerW - renderedW) / 2.0;
     final double offsetY = (containerH - renderedH) / 2.0;
 
@@ -1164,6 +1171,22 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
   }
 
+  /// Upload button: asks for gallery access first; declining returns to the live camera.
+  Future<void> _onUploadPressed() async {
+    if (!_isGalleryPermissionGranted) {
+      final granted = await showGalleryPermissionModal(context);
+      if (!mounted) return;
+      if (granted != true) {
+        if (_isDisplayingUploadedImage) {
+          await _switchToRealtimeCameraRemapping(showSnackBar: false);
+        }
+        return;
+      }
+      setState(() => _isGalleryPermissionGranted = true);
+    }
+    await _pickUploadedPhoto();
+  }
+
   Future<void> _pickUploadedPhoto() async {
     // 1. Instantly stop live frame streaming and wipe all detected objects state and previous uploaded image state to prevent state bleed
     await _stopKnnFrameStream();
@@ -1178,6 +1201,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         _uploadedUiImage = null;
         _uploadedFileName = null;
         _isDisplayingUploadedImage = false;
+        _isGalleryUpload = false;
         _isFreezeFrameActive = false;
         _capturedFrameBytes = null;
         _capturedUiImage = null;
@@ -1214,6 +1238,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           _uploadedUiImage = null; // will be set after decode
           _uploadedFileName = picked.name;
           _isDisplayingUploadedImage = true;
+          _isGalleryUpload = true;
           _hasUnsavedRemapResult = false;
           _showUploadedNotification = true;
           _showZoomSlider = false;
@@ -1290,6 +1315,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           _uploadedImageBytes = null;
           _uploadedUiImage = null;
           _isDisplayingUploadedImage = true;
+          _isGalleryUpload = true;
           _showUploadedNotification = true;
           _showZoomSlider = false;
           _isSplitScreenView = false;
@@ -1426,6 +1452,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       _uploadedPhotoExifOrientation = 1;
       _uploadedFileName = null;
       _isDisplayingUploadedImage = false;
+      _isGalleryUpload = false;
       _hasUnsavedRemapResult = false;
       _showUploadedNotification = false;
       _isUploadedIdentifyMode = false;
@@ -1612,22 +1639,32 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     );
   }
 
+  /// Whether the top preset chip bar is hidden: uploaded Identify / Object Labeling photos and
+  /// Identify mode, outside split screen.
+  bool get _isPresetBarHidden {
+    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    if (_isSplitScreenView) return false;
+    return isKnnMode || (_isDisplayingUploadedImage && _isUploadedObjectLabelMode);
+  }
+
   Widget _buildTopPresetSelectorBar(BuildContext context) {
     final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
 
-    // Hide top preset bar if displaying uploaded image in Identify or Object Labeling mode when NOT in split screen
-    if (_isDisplayingUploadedImage && (_isUploadedIdentifyMode || _isUploadedObjectLabelMode) && !_isSplitScreenView) {
-      return const SizedBox.shrink();
-    }
-
-    // In Identify mode (non-split screen): hide top preset bar
-    if (isKnnMode && !_isSplitScreenView) {
+    if (_isPresetBarHidden) {
       return const SizedBox.shrink();
     }
 
     final colors = Theme.of(context).colorScheme;
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final double? height = _presetBarKey.currentContext?.size?.height;
+      if (mounted && height != null && height != _presetBarHeight) {
+        setState(() => _presetBarHeight = height);
+      }
+    });
+
     return Container(
+      key: _presetBarKey,
       color: colors.surfaceContainerHighest.withValues(alpha: 0.95),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -1991,15 +2028,17 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         ? _buildUploadedImageInspectionView(context, colors)
                         : (_isUploadedObjectLabelMode
                             ? _buildUploadedObjectLabelingView(context, colors)
-                            : FittedBox(
-                                fit: BoxFit.contain,
-                                child: SizedBox(
-                                  width: _uploadedUiImage!.width.toDouble(),
-                                  height: _uploadedUiImage!.height.toDouble(),
-                                  child: DaltonizationShaderWidget(
-                                    customType: _getEffectiveShaderType(),
-                                    intensity: _getEffectiveShaderIntensity(),
-                                    image: _uploadedUiImage!,
+                            : ClipRect(
+                                child: FittedBox(
+                                  fit: BoxFit.cover,
+                                  child: SizedBox(
+                                    width: _uploadedUiImage!.width.toDouble(),
+                                    height: _uploadedUiImage!.height.toDouble(),
+                                    child: DaltonizationShaderWidget(
+                                      customType: _getEffectiveShaderType(),
+                                      intensity: _getEffectiveShaderIntensity(),
+                                      image: _uploadedUiImage!,
+                                    ),
                                   ),
                                 ),
                               )))
@@ -2021,61 +2060,79 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         onTap: _requestCameraPermission,
                         child: Container(
                           color: colors.surfaceContainerHighest,
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: isDarkMode ? darkTargetColor : colors.primary.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.camera_alt_rounded,
-                              size: 48,
-                              color: colors.primary,
+                          // Extra bottom padding keeps the content centered in the area above the
+                          // floating action bar (Upload / Shutter / mode switch) instead of behind it.
+                          // When Identify hides the preset chip bar, pad the top by its height so the
+                          // prompt sits in the same place as in Remap.
+                          padding: EdgeInsets.fromLTRB(
+                            24,
+                            24 + (_isPresetBarHidden ? _presetBarHeight : 0),
+                            24,
+                            120,
+                          ),
+                          alignment: Alignment.center,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 360),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: isDarkMode ? darkTargetColor : colors.primary.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt_rounded,
+                                      size: 48,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Vision Lens Access Required',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap to allow camera access and enable real-time color remapping.',
+                                  style: TextStyle(
+                                    fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
+                                    color: colors.onSurface,
+                                    height: 1.4,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: _requestCameraPermission,
+                                  icon: const Icon(Icons.security_rounded, size: 18, color: Colors.white),
+                                  label: const Text(
+                                    'Allow Camera Access',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: colors.primary,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size.fromHeight(50),
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Vision Lens Access Required',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tap to allow camera access and enable real-time LMS Daltonization color remapping.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.onSurface,
-                              height: 1.4,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton.icon(
-                            onPressed: _requestCameraPermission,
-                            icon: const Icon(Icons.security_rounded, size: 18, color: Colors.white),
-                            label: const Text(
-                              'Allow Camera Access',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
                   ))));
 
     return Stack(
@@ -2312,14 +2369,16 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           ),
 
         // Vertically Centered Right-Side Floating Control Stack
-        Positioned(
-          top: 0,
-          bottom: 0,
-          right: 16,
-          child: Center(
-            child: _buildRightSideFloatingToolbar(context),
+        // (hidden on the live camera until camera access is allowed)
+        if (_isCameraPermissionGranted || _isDisplayingUploadedImage)
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 16,
+            child: Center(
+              child: _buildRightSideFloatingToolbar(context),
+            ),
           ),
-        ),
 
         // Vertically Centered Zoom Slider Overlay (toggled by Zoom button)
         if (_showZoomSlider)
@@ -2348,7 +2407,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 _uploadedUiImage!.height.toDouble(),
               ),
               cameraDescription: null,
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
               isStaticImage: true,
               exifOrientation: _uploadedPhotoExifOrientation,
             ),
@@ -2466,7 +2525,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   // ---------------------------------------------------------------------------
 
   /// Builds the full-screen still-image inspection UI with:
-  ///   - The captured image displayed with [BoxFit.contain] (preserves aspect ratio).
+  ///   - The captured image displayed with [BoxFit.cover], matching the live preview.
   ///   - An interactive [GestureDetector] for tap and drag crosshair repositioning.
   ///   - A [CustomPaint] overlay drawing the draggable crosshair and colour badge.
   ///   - A "Resume Live Scan" pill button at the bottom to exit freeze mode.
@@ -2601,7 +2660,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         Positioned.fill(
           child: Image.memory(
             bytes,
-            fit: BoxFit.contain,
+            fit: BoxFit.cover,
             gaplessPlayback: true,
           ),
         ),
@@ -2629,13 +2688,13 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             Positioned.fill(
               child: ClipRect(
                 child: FittedBox(
-                  fit: BoxFit.contain,
+                  fit: BoxFit.cover,
                   child: SizedBox(
                     width: imageSize.width > 0 ? imageSize.width : containerSize.width,
                     height: imageSize.height > 0 ? imageSize.height : containerSize.height,
                     child: Image.memory(
                       bytes,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                       gaplessPlayback: true,
                     ),
                   ),
@@ -2667,7 +2726,6 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                     containerSize: containerSize,
                     colorResult: _freezeFrameColorResult,
                     accentColor: colors.primary,
-                    fit: BoxFit.contain,
                   ),
                   size: containerSize,
                 ),
@@ -2768,7 +2826,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   Widget _buildTransparentFloatingActionCard(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isShutterDisabled = _isDisplayingUploadedImage && _isUploadedObjectLabelMode;
+    final bool isShutterDisabled = _isShutterHidden;
     final iconColor = isDark
         ? AppColors.darkPrimaryButton
         : AppColors.primaryColor;
@@ -2802,32 +2860,36 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               // Upload Button
-              InkWell(
-                key: _uploadButtonKey,
-                onTap: _pickUploadedPhoto,
-                splashColor: iconColor.withValues(alpha: 0.15),
-                highlightColor: iconColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.collections_outlined,
-                        color: iconColor,
-                        size: 24,
+              Expanded(
+                child: Center(
+                  child: InkWell(
+                    key: _uploadButtonKey,
+                    onTap: _onUploadPressed,
+                    splashColor: iconColor.withValues(alpha: 0.15),
+                    highlightColor: iconColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.collections_outlined,
+                            color: iconColor,
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Upload',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: iconColor,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Upload',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: iconColor,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -2913,80 +2975,84 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 ),
               ),
 
-              // Remap / Identify / Live Camera Switcher Button
-              InkWell(
-                key: _modeSwitchButtonKey,
-                onTap: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  if (_isDisplayingUploadedImage) {
-                    await _switchToRealtimeCameraRemapping();
-                    if (_isCameraPermissionGranted) {
-                      await _startDelayPage();
-                    }
-                  } else {
-                    final nextMode = _activeCameraMode == CameraRealtimeMode.daltonization
-                        ? CameraRealtimeMode.knn
-                        : CameraRealtimeMode.daltonization;
-                    if (_isCameraPermissionGranted) {
-                      await _startDelayPage();
-                    }
-                    if (!mounted) return;
-                    setState(() {
-                      _activeCameraMode = nextMode;
-                      _isObjectDetectionMode = false;
-                      _detectedObjects = [];
-                      _isSplitScreenView = false;
-                      _showCalibrationSlider = false;
-                      VisionLensScreen.isFullScreenNotifier.value = false;
-                    });
-                    if (nextMode == CameraRealtimeMode.knn) {
-                      _startKnnFrameStream();
-                    } else {
-                      _stopKnnFrameStream();
-                    }
-                    _checkToolbarTutorialStatus();
-                    messenger.hideCurrentSnackBar();
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          _activeCameraMode == CameraRealtimeMode.knn
-                              ? 'Switched to KNN Color Identification Mode'
-                              : 'Switched to LMS Daltonization Mode',
-                        ),
-                        duration: const Duration(seconds: 1),
+              // Remap / Identify / Real-Time Switcher Button
+              Expanded(
+                child: Center(
+                  child: InkWell(
+                    key: _modeSwitchButtonKey,
+                    onTap: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      if (_isDisplayingUploadedImage) {
+                        await _switchToRealtimeCameraRemapping();
+                        if (_isCameraPermissionGranted) {
+                          await _startDelayPage();
+                        }
+                      } else {
+                        final nextMode = _activeCameraMode == CameraRealtimeMode.daltonization
+                            ? CameraRealtimeMode.knn
+                            : CameraRealtimeMode.daltonization;
+                        if (_isCameraPermissionGranted) {
+                          await _startDelayPage();
+                        }
+                        if (!mounted) return;
+                        setState(() {
+                          _activeCameraMode = nextMode;
+                          _isObjectDetectionMode = false;
+                          _detectedObjects = [];
+                          _isSplitScreenView = false;
+                          _showCalibrationSlider = false;
+                          VisionLensScreen.isFullScreenNotifier.value = false;
+                        });
+                        if (nextMode == CameraRealtimeMode.knn) {
+                          _startKnnFrameStream();
+                        } else {
+                          _stopKnnFrameStream();
+                        }
+                        _checkToolbarTutorialStatus();
+                        messenger.hideCurrentSnackBar();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _activeCameraMode == CameraRealtimeMode.knn
+                                  ? 'Switched to KNN Color Identification Mode'
+                                  : 'Switched to LMS Daltonization Mode',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                    splashColor: iconColor.withValues(alpha: 0.15),
+                    highlightColor: iconColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isDisplayingUploadedImage
+                                ? Icons.videocam
+                                : (_activeCameraMode == CameraRealtimeMode.daltonization
+                                    ? Icons.palette_outlined
+                                    : Icons.auto_awesome),
+                            color: iconColor,
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _isDisplayingUploadedImage
+                                ? 'Real-Time'
+                                : (_activeCameraMode == CameraRealtimeMode.daltonization ? 'Identify' : 'Remap'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: iconColor,
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  }
-                },
-                splashColor: iconColor.withValues(alpha: 0.15),
-                highlightColor: iconColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isDisplayingUploadedImage
-                            ? Icons.videocam
-                            : (_activeCameraMode == CameraRealtimeMode.daltonization
-                                ? Icons.auto_awesome
-                                : Icons.palette_outlined),
-                        color: iconColor,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _isDisplayingUploadedImage
-                            ? 'Live Camera'
-                            : (_activeCameraMode == CameraRealtimeMode.daltonization ? 'Identify' : 'Remap'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: iconColor,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -3991,7 +4057,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 ///
 /// The crosshair position is given as normalised coordinates in [0, 1] × [0, 1]
 /// image-space. The painter converts this to screen-space by applying the same
-/// BoxFit.contain letterbox/pillarbox offset math used in
+/// BoxFit.cover centre-crop offset math used in
 /// [_VisionLensScreenState._screenTouchToNormalisedImageCoord].
 class FreezeFrameCrosshairPainter extends CustomPainter {
   final Offset normPosition;       // Normalised position [0,1]x[0,1] in image space

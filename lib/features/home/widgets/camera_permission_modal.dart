@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/utils/responsive.dart';
 
 class CameraPermissionModal extends StatelessWidget {
-  const CameraPermissionModal({super.key});
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const CameraPermissionModal({
+    super.key,
+    this.icon = Icons.camera_alt_rounded,
+    this.title = 'Allow Camera Access',
+    this.description =
+        'GabEye requires camera permissions to provide image remapping and perform color identification.',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +50,7 @@ class CameraPermissionModal extends StatelessWidget {
               ),
               child: Center(
                 child: Icon(
-                  Icons.camera_alt_rounded,
+                  icon,
                   size: 40,
                   color: colors.primary,
                 ),
@@ -50,7 +61,7 @@ class CameraPermissionModal extends StatelessWidget {
 
             // Headline
             Text(
-              'Allow Camera Access',
+              title,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -64,9 +75,9 @@ class CameraPermissionModal extends StatelessWidget {
 
             // Description
             Text(
-              'GabEye requires camera permissions to provide image remapping and perform color identification.',
+              description,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                 height: 1.45,
                 color: colors.onSurfaceVariant,
               ),
@@ -102,7 +113,7 @@ class CameraPermissionModal extends StatelessWidget {
                         Text(
                           'Privacy First',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                             fontWeight: FontWeight.bold,
                             color: colors.onSurface,
                           ),
@@ -111,7 +122,7 @@ class CameraPermissionModal extends StatelessWidget {
                         Text(
                           'Image data is processed locally on your device and is never stored on our servers.',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: Responsive.font(context, base: 16, min: 13, max: 18),
                             height: 1.4,
                             color: colors.onSurfaceVariant,
                           ),
@@ -189,5 +200,18 @@ Future<bool?> showCameraPermissionModal(BuildContext context) {
     context: context,
     barrierDismissible: true,
     builder: (BuildContext context) => const CameraPermissionModal(),
+  );
+}
+
+/// Asks for photo gallery access before the user picks a photo to upload.
+Future<bool?> showGalleryPermissionModal(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    barrierDismissible: true,
+    builder: (BuildContext context) => const CameraPermissionModal(
+      icon: Icons.photo_library_rounded,
+      title: 'Allow Gallery Access',
+      description: 'GabEye needs access to your photo gallery so you can upload a photo to remap or identify its colors.',
+    ),
   );
 }
