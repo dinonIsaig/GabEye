@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/components/navbar/home_navbar.dart';
 import 'package:gabeye/core/services/vision_profile_service.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
@@ -13,6 +12,7 @@ import 'package:gabeye/features/assessment/services/assessment_controller.dart';
 import 'package:gabeye/features/assessment/services/scoring_service.dart';
 import 'package:gabeye/features/assessment/widgets/assessment_intro_modal.dart';
 import 'package:gabeye/features/assessment/widgets/debug_test_panel_modal.dart';
+import 'package:gabeye/features/assessment/widgets/how_it_works_modal.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 
 class CapDragData {
@@ -198,9 +198,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
 
   Widget _buildHowItWorksPill(ColorScheme colors) {
     return OutlinedButton.icon(
-      onPressed: () {
-        Navigator.popAndPushNamed(context, AppRoutes.preAssessmentIntro);
-      },
+      onPressed: () => showHowItWorksModal(context),
       icon: const Icon(Icons.help_outline, size: 16),
       label: const Text(
         'How it works?',
