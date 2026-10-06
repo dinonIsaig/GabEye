@@ -406,7 +406,7 @@ class ObjectDetectionService {
               final label = topLabels[i];
               fallbackObjects.add(
                 DetectedObject(
-                  boundingBox: Rect.fromLTWH(40.0 + (i * 20), 40.0 + (i * 20), 240, 240),
+                  boundingBox: Rect.zero,
                   labels: [Label(text: label.label, confidence: label.confidence, index: label.index)],
                   trackingId: i,
                 ),
