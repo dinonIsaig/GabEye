@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:gabeye/components/navbar/article_navbar.dart';
@@ -119,17 +120,17 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: isDark ? 0.15 : 0.08),
+                        color: context.accentColor.withValues(alpha: isDark ? 0.15 : 0.08),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: colorScheme.primary.withValues(alpha: isDark ? 0.4 : 0.25),
+                          color: context.accentColor.withValues(alpha: isDark ? 0.4 : 0.25),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.lock_outline_rounded,
-                            color: isDark ? Colors.white : AppColors.primaryColor,
+                            color: isDark ? context.accentColor : AppColors.primaryColor,
                             size: 24,
                           ),
                           const SizedBox(width: 14),
@@ -324,7 +325,7 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
               children: [
-                Icon(icon, size: 20, color: colorScheme.primary),
+                Icon(icon, size: 20, color: context.accentColor),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(

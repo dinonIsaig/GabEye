@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:gabeye/components/navbar/article_navbar.dart';
@@ -246,7 +247,7 @@ class _PersonalizedAccessibilityScreenState
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: colorScheme.primary
+                                      color: context.accentColor
                                           .withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -255,7 +256,7 @@ class _PersonalizedAccessibilityScreenState
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
-                                        color: colorScheme.primary,
+                                        color: context.accentColor,
                                       ),
                                     ),
                                   ),
@@ -366,7 +367,7 @@ class _PersonalizedAccessibilityScreenState
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
+                  color: context.accentColor,
                 ),
               ),
             ],

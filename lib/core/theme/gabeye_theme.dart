@@ -220,6 +220,24 @@ class GabEyeTheme {
           minimumSize: const Size(double.infinity, 55),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: tokens.primaryButton),
+      ),
+      // The navy primary is near-invisible on dark surfaces; draw sliders and
+      // progress indicators in the light blue CTA color instead.
+      sliderTheme: SliderThemeData(
+        activeTrackColor: tokens.primaryButton,
+        thumbColor: tokens.primaryButton,
+        inactiveTrackColor: tokens.primaryButton.withValues(alpha: 0.3),
+        activeTickMarkColor: AppColors.darkSurface.withValues(alpha: 0.5),
+        inactiveTickMarkColor: tokens.primaryButton.withValues(alpha: 0.6),
+        valueIndicatorColor: tokens.primaryButton,
+        valueIndicatorTextStyle: const TextStyle(color: AppColors.darkSurface),
+        overlayColor: tokens.primaryButton.withValues(alpha: 0.12),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: tokens.primaryButton,
+      ),
       textTheme: _buildTextTheme(AppColors.darkTextPrimary),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkSurface,

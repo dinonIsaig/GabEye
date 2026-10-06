@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 
@@ -37,7 +38,10 @@ class ToolbarTutorialCallout {
   final String text;
   final IconData icon;
 
-  const ToolbarTutorialCallout(this.text, {this.icon = Icons.info_rounded});
+  /// SVG icon drawn instead of [icon], for glyphs Material lacks (e.g. the narration speed turtle).
+  final String? svgAsset;
+
+  const ToolbarTutorialCallout(this.text, {this.icon = Icons.info_rounded, this.svgAsset});
 }
 
 /// Item model for a Vision Lens tutorial step.
@@ -297,7 +301,15 @@ class ToolbarTutorialOverlay extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(callout.icon, size: 22, color: accent),
+                      if (callout.svgAsset != null)
+                        SvgPicture.asset(
+                          callout.svgAsset!,
+                          width: 22,
+                          height: 22,
+                          colorFilter: ColorFilter.mode(accent, BlendMode.srcIn),
+                        )
+                      else
+                        Icon(callout.icon, size: 22, color: accent),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(

@@ -41,6 +41,7 @@ class IdentifyToolbarTutorialOverlay extends StatelessWidget {
       callouts: [
         ToolbarTutorialCallout('Turn your volume up!', icon: Icons.volume_up_rounded),
         ToolbarTutorialCallout('Turn off silent mode', icon: Icons.notifications_off_rounded),
+        ToolbarTutorialCallout('Adjust personalized narration speed', svgAsset: 'assets/icons/turtle.svg'),
       ],
     ),
     ToolbarTutorialStep(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
 import 'package:gabeye/core/constants/app_spacing.dart';
 import 'package:gabeye/core/routing/app_routes.dart';
@@ -809,7 +810,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
         Icon(
           Icons.check_circle_outline,
           size: 72,
-          color: Theme.of(context).colorScheme.primary,
+          color: context.accentColor,
         ),
         const SizedBox(height: 20),
         Text(
