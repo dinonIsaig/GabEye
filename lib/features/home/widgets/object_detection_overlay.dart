@@ -36,6 +36,11 @@ Rect scaleBoundingBox({
     return rawBox;
   }
 
+  // Fallback whole-image classification labels have no spatial bounding box.
+  if (rawBox == Rect.zero || rawBox.isEmpty || (rawBox.width <= 0 && rawBox.height <= 0)) {
+    return Rect.zero;
+  }
+
   // ── Static Image Scaling (BoxFit.contain letterboxing with orientation alignment) ──
   if (isStaticImage || (cameraDescription == null && rotation == null)) {
     double imgW = imageSize.width;
@@ -268,6 +273,17 @@ class ObjectDetectorPainter extends CustomPainter {
       ..strokeWidth = 1.2;
 
     for (final object in objects) {
+      if (object.boundingBox == Rect.zero ||
+          object.boundingBox.isEmpty ||
+          object.boundingBox.width <= 0 ||
+          object.boundingBox.height <= 0 ||
+          (object.boundingBox.left >= 39.9 &&
+              object.boundingBox.left <= 80.1 &&
+              object.boundingBox.width == 240 &&
+              object.boundingBox.height == 240)) {
+        continue;
+      }
+
       // 1. Transform raw ML Kit boundingBox to screen coordinates
       final Rect scaledRect = scaleBoundingBox(
         rawBox: object.boundingBox,
@@ -455,6 +471,18 @@ class _ObjectDetectionOverlayState extends State<ObjectDetectionOverlay>
     final double minAreaThreshold = totalScreenArea > 0 ? totalScreenArea * 0.015 : 1600.0;
 
     for (final obj in incomingObjects) {
+      // Skip objects without a valid spatial bounding box (e.g., whole-image classification fallback labels or dummy boxes)
+      if (obj.boundingBox == Rect.zero ||
+          obj.boundingBox.isEmpty ||
+          obj.boundingBox.width <= 0 ||
+          obj.boundingBox.height <= 0 ||
+          (obj.boundingBox.left >= 39.9 &&
+              obj.boundingBox.left <= 80.1 &&
+              obj.boundingBox.width == 240 &&
+              obj.boundingBox.height == 240)) {
+        continue;
+      }
+
       final screenRect = scaleBoundingBox(
         rawBox: obj.boundingBox,
         imageSize: widget.imageSize,
@@ -464,6 +492,13 @@ class _ObjectDetectionOverlayState extends State<ObjectDetectionOverlay>
         isStaticImage: widget.isStaticImage,
         exifOrientation: widget.exifOrientation,
       );
+
+      if (screenRect == Rect.zero ||
+          screenRect.isEmpty ||
+          screenRect.width <= 0 ||
+          screenRect.height <= 0) {
+        continue;
+      }
 
       final double area = screenRect.width * screenRect.height;
       if (!widget.isStaticImage) {

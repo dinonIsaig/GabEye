@@ -160,6 +160,29 @@ void main() {
       expect(scaled.width, closeTo(90.0, 0.01));
       expect(scaled.height, closeTo(120.0, 0.01));
     });
+
+    test('returns Rect.zero for empty or zero bounding boxes (whole-image fallback labels)', () {
+      const imageSize = Size(1000, 2000);
+      const canvasSize = Size(400, 1000);
+
+      final scaledZero = scaleBoundingBox(
+        rawBox: Rect.zero,
+        imageSize: imageSize,
+        canvasSize: canvasSize,
+        fit: BoxFit.contain,
+        isStaticImage: true,
+      );
+      expect(scaledZero, equals(Rect.zero));
+
+      final scaledEmpty = scaleBoundingBox(
+        rawBox: const Rect.fromLTWH(50, 50, 0, 0),
+        imageSize: imageSize,
+        canvasSize: canvasSize,
+        fit: BoxFit.contain,
+        isStaticImage: true,
+      );
+      expect(scaledEmpty, equals(Rect.zero));
+    });
   });
 
   group('scaleBoundingBox Real-Time Camera Platform Tests', () {

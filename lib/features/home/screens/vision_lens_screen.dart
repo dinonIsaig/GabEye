@@ -116,6 +116,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
   // Camera Realtime Mode (Daltonization vs. KNN Color Identification)
   CameraRealtimeMode _activeCameraMode = CameraRealtimeMode.daltonization;
+  // Remembers the active camera mode before an image was uploaded to restore when exiting
+  CameraRealtimeMode _preUploadCameraMode = CameraRealtimeMode.daltonization;
+  bool _preUploadObjectDetectionMode = false;
   bool _isUploadedIdentifyMode = false;
 
   // KNN & ML Kit Object Classification State
@@ -174,9 +177,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   int _uploadedPhotoExifOrientation = 1;
 
   bool get _isTorchDisabled =>
-      _isFreezeFrameActive ||
-      (_isDisplayingUploadedImage &&
-          (_isUploadedIdentifyMode || _activeCameraMode == CameraRealtimeMode.knn));
+      _isFreezeFrameActive || _isDisplayingUploadedImage;
 
   Future<void> _toggleTorch() async {
     if (_isTorchDisabled) return;
@@ -561,13 +562,13 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     return _getWidgetRect(key);
   }
 
-  /// Where the crosshair is drawn on an uploaded photo, relative to the viewport (BoxFit.cover).
+  /// Where the crosshair is drawn on an uploaded photo, relative to the viewport (BoxFit.contain).
   Rect? _getCrosshairRect() {
     final viewportBox = _viewportKey.currentContext?.findRenderObject() as RenderBox?;
     final image = _uploadedUiImage;
     if (viewportBox == null || !viewportBox.hasSize || image == null) return null;
     final Size box = viewportBox.size;
-    final double scale = math.max(box.width / image.width, box.height / image.height);
+    final double scale = math.min(box.width / image.width, box.height / image.height);
     final double renderedW = image.width * scale;
     final double renderedH = image.height * scale;
     final Offset center = Offset(
@@ -1048,7 +1049,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   ///
   /// The method:
   ///   1. Maps screen coordinates → normalised image coordinates accounting for
-  ///      the [BoxFit.cover] centre crop.
+  ///      BoxFit.contain letterboxing/pillarboxing (or BoxFit.cover for freeze frames).
   ///   2. Clamps the result to [0, 1].
   ///   3. Triggers async pixel sampling for real-time visual UI update (no TTS).
   void _onCrosshairInteraction({
@@ -1065,6 +1066,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       localPosition: localPosition,
       renderBoxSize: renderBoxSize,
       imagePixelSize: imageSize,
+      isUploadedImage: _isDisplayingUploadedImage,
     );
 
     setState(() {
@@ -1077,28 +1079,19 @@ class _VisionLensScreenState extends State<VisionLensScreen>
 
   /// Converts a touch point inside the image container to a normalised
   /// [0, 1] × [0, 1] coordinate within the **actual image content**,
-  /// accounting for the [BoxFit.cover] centre crop used by every viewport
-  /// (live freeze frame and uploaded photos alike).
+  /// accounting for [BoxFit.contain] letterboxing/pillarboxing for uploaded photos,
+  /// or [BoxFit.cover] centre crop for live camera freeze frames.
   ///
   /// ### Coordinate Mapping Algorithm
-  /// BoxFit.cover scales the image uniformly so it fills the container while
-  /// preserving aspect ratio, cropping the overflow equally on both sides.
-  ///
-  ///   scaleX = containerW / imageW
-  ///   scaleY = containerH / imageH
-  ///   scale  = max(scaleX, scaleY)          ← the filling axis
-  ///   renderedW = imageW * scale
-  ///   renderedH = imageH * scale
-  ///   offsetX = (containerW - renderedW) / 2  ← negative: cropped overflow
-  ///   offsetY = (containerH - renderedH) / 2
-  ///
-  /// Touch point mapped to image-space:
-  ///   normX = (touchX - offsetX) / renderedW  → clamped [0, 1]
-  ///   normY = (touchY - offsetY) / renderedH  → clamped [0, 1]
+  /// - For uploaded images ([BoxFit.contain]): scales uniformly to fit inside
+  ///   the container, creating pillarbox or letterbox padding bands.
+  /// - For camera freeze frames ([BoxFit.cover]): scales uniformly to fill
+  ///   the container, cropping the overflow.
   static Offset _screenTouchToNormalisedImageCoord({
     required Offset localPosition,
     required Size renderBoxSize,
     required Size imagePixelSize,
+    bool isUploadedImage = false,
   }) {
     if (imagePixelSize.isEmpty || renderBoxSize.isEmpty) {
       return const Offset(0.5, 0.5);
@@ -1109,12 +1102,18 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     final double imageW = imagePixelSize.width;
     final double imageH = imagePixelSize.height;
 
-    // BoxFit.cover scale factor.
-    final double scale = math.max(containerW / imageW, containerH / imageH);
+    // Scale factor for BoxFit.contain when uploaded image, or BoxFit.cover for live camera freeze frame.
+    final double scale = isUploadedImage
+        ? ((containerW / imageW) < (containerH / imageH)
+            ? (containerW / imageW)
+            : (containerH / imageH))
+        : ((containerW / imageW) > (containerH / imageH)
+            ? (containerW / imageW)
+            : (containerH / imageH));
     final double renderedW = imageW * scale;
     final double renderedH = imageH * scale;
 
-    // Center-crop offsets.
+    // Center-crop offsets or pillarbox/letterbox padding offsets.
     final double offsetX = (containerW - renderedW) / 2.0;
     final double offsetY = (containerH - renderedH) / 2.0;
 
@@ -1225,8 +1224,12 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     }
   }
 
-  /// Upload button: asks for gallery access first; declining returns to the live camera.
+  /// Upload button: asks for camera access first, then gallery access; declining returns to the live camera.
   Future<void> _onUploadPressed() async {
+    if (!_isCameraPermissionGranted) {
+      await _requestCameraPermission();
+      if (!_isCameraPermissionGranted || !mounted) return;
+    }
     if (!_isGalleryPermissionGranted) {
       final granted = await showGalleryPermissionModal(context);
       if (!mounted) return;
@@ -1242,6 +1245,12 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   }
 
   Future<void> _pickUploadedPhoto() async {
+    // Preserve camera mode from before upload so user can return to it seamlessly
+    if (!_isDisplayingUploadedImage) {
+      _preUploadCameraMode = _activeCameraMode;
+      _preUploadObjectDetectionMode = _isObjectDetectionMode;
+    }
+
     // 1. Instantly stop live frame streaming and wipe all detected objects state and previous uploaded image state to prevent state bleed
     await _stopKnnFrameStream();
     if (mounted) {
@@ -1269,7 +1278,21 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       final picked = await picker.pickImage(source: ImageSource.gallery);
       if (picked != null && mounted) {
         final mode = await showAssistanceModeModal(context);
-        if (mode == null || !mounted) return;
+        if (mode == null || !mounted) {
+          // User cancelled assistance mode selection: restore pre-upload live state
+          if (mounted) {
+            final returnToKnn = _preUploadCameraMode == CameraRealtimeMode.knn;
+            setState(() {
+              _activeCameraMode = _preUploadCameraMode;
+              _isRemapActive = !returnToKnn;
+              _isObjectDetectionMode = returnToKnn && _preUploadObjectDetectionMode;
+            });
+            if (returnToKnn && _isCameraPermissionGranted) {
+              await _startKnnFrameStream();
+            }
+          }
+          return;
+        }
 
         // Ensure stream remains stopped while viewing an uploaded photo.
         await _stopKnnFrameStream();
@@ -1306,14 +1329,17 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           _showUploadedObjectsSheet = (mode == AssistanceMode.objectLabeling);
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
+            _activeCameraMode = CameraRealtimeMode.daltonization;
             _isUploadedIdentifyMode = false;
             _isUploadedObjectLabelMode = false;
           } else if (mode == AssistanceMode.identifyColor) {
             _isRemapActive = false;
+            _activeCameraMode = CameraRealtimeMode.knn;
             _isUploadedIdentifyMode = true;
             _isUploadedObjectLabelMode = false;
           } else if (mode == AssistanceMode.objectLabeling) {
             _isRemapActive = false;
+            _activeCameraMode = CameraRealtimeMode.knn;
             _isUploadedIdentifyMode = false;
             _isUploadedObjectLabelMode = true;
             _isUploadedObjectLabelingProcessing = true;
@@ -1347,12 +1373,38 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         }
         // First time with this option: walk through its controls once processing is done.
         if (mounted) await _checkUploadTutorialStatus();
+      } else {
+        if (mounted) {
+          final returnToKnn = _preUploadCameraMode == CameraRealtimeMode.knn;
+          setState(() {
+            _activeCameraMode = _preUploadCameraMode;
+            _isRemapActive = !returnToKnn;
+            _isObjectDetectionMode = returnToKnn && _preUploadObjectDetectionMode;
+          });
+          if (returnToKnn && _isCameraPermissionGranted) {
+            await _startKnnFrameStream();
+          }
+        }
+        return;
       }
     } catch (e) {
       // Fallback sample image if running in test environment or gallery picking is unavailable
       if (mounted) {
         final mode = await showAssistanceModeModal(context);
-        if (mode == null || !mounted) return;
+        if (mode == null || !mounted) {
+          if (mounted) {
+            final returnToKnn = _preUploadCameraMode == CameraRealtimeMode.knn;
+            setState(() {
+              _activeCameraMode = _preUploadCameraMode;
+              _isRemapActive = !returnToKnn;
+              _isObjectDetectionMode = returnToKnn && _preUploadObjectDetectionMode;
+            });
+            if (returnToKnn && _isCameraPermissionGranted) {
+              await _startKnnFrameStream();
+            }
+          }
+          return;
+        }
 
         // Stop the live KNN camera frame stream while viewing an uploaded photo.
         await _stopKnnFrameStream();
@@ -1382,14 +1434,17 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           _showUploadedObjectsSheet = (mode == AssistanceMode.objectLabeling);
           if (mode == AssistanceMode.remapColor) {
             _isRemapActive = true;
+            _activeCameraMode = CameraRealtimeMode.daltonization;
             _isUploadedIdentifyMode = false;
             _isUploadedObjectLabelMode = false;
           } else if (mode == AssistanceMode.identifyColor) {
             _isRemapActive = false;
+            _activeCameraMode = CameraRealtimeMode.knn;
             _isUploadedIdentifyMode = true;
             _isUploadedObjectLabelMode = false;
           } else if (mode == AssistanceMode.objectLabeling) {
             _isRemapActive = false;
+            _activeCameraMode = CameraRealtimeMode.knn;
             _isUploadedIdentifyMode = false;
             _isUploadedObjectLabelMode = true;
           }
@@ -1502,6 +1557,10 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       try { oldUploaded.dispose(); } catch (_) {}
     }
 
+    final targetMode = _preUploadCameraMode;
+    final bool returnToKnn = targetMode == CameraRealtimeMode.knn;
+    final bool targetObjectDetection = returnToKnn && _preUploadObjectDetectionMode;
+
     setState(() {
       _uploadedImageBytes = null;
       _uploadedUiImage = null;
@@ -1516,7 +1575,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       _uploadedDetectedObjects = [];
       _showUploadedObjectsSheet = false;
       _isUploadedObjectLabelingProcessing = false;
-      _isObjectDetectionMode = false;
+      _isObjectDetectionMode = targetObjectDetection;
       _detectedObjects = [];
       _isObjectDetectionProcessing = false;
       _isFreezeFrameActive = false;
@@ -1525,18 +1584,28 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       _capturedImageSize = Size.zero;
       _freezeFrameColorResult = null;
       _currentIdentifiedObject = null;
-      _isRemapActive = true;
-      _activeCameraMode = CameraRealtimeMode.daltonization;
+      _isRemapActive = !returnToKnn;
+      _activeCameraMode = targetMode;
       _isSplitScreenView = false;
       _showCalibrationSlider = false;
       VisionLensScreen.isFullScreenNotifier.value = false;
     });
 
+    if (returnToKnn && _isCameraPermissionGranted) {
+      await _startKnnFrameStream();
+    }
+
     if (!mounted || !showSnackBar) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cleared image. Active real-time LMS Daltonization enabled.'),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: Text(
+          returnToKnn
+              ? (targetObjectDetection
+                  ? 'Returned to Object Labeling Mode.'
+                  : 'Returned to Color Identifier Mode.')
+              : 'Cleared image. Active real-time LMS Daltonization enabled.',
+        ),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -1698,13 +1767,17 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   /// Whether the top preset chip bar is hidden: uploaded Identify / Object Labeling photos and
   /// Identify mode, outside split screen.
   bool get _isPresetBarHidden {
-    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
     if (_isSplitScreenView) return false;
-    return isKnnMode || (_isDisplayingUploadedImage && _isUploadedObjectLabelMode);
+    if (_isDisplayingUploadedImage) {
+      return _isUploadedIdentifyMode || _isUploadedObjectLabelMode;
+    }
+    return _activeCameraMode == CameraRealtimeMode.knn;
   }
 
   Widget _buildTopPresetSelectorBar(BuildContext context) {
-    final bool isKnnMode = _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode;
+    final bool isKnnMode = _isDisplayingUploadedImage
+        ? _isUploadedIdentifyMode
+        : _activeCameraMode == CameraRealtimeMode.knn;
 
     if (_isPresetBarHidden) {
       return const SizedBox.shrink();
@@ -2096,17 +2169,15 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         ? _buildUploadedImageInspectionView(context, colors)
                         : (_isUploadedObjectLabelMode
                             ? _buildUploadedObjectLabelingView(context, colors)
-                            : ClipRect(
-                                child: FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width: _uploadedUiImage!.width.toDouble(),
-                                    height: _uploadedUiImage!.height.toDouble(),
-                                    child: DaltonizationShaderWidget(
-                                      customType: _getEffectiveShaderType(),
-                                      intensity: _getEffectiveShaderIntensity(),
-                                      image: _uploadedUiImage!,
-                                    ),
+                            : FittedBox(
+                                fit: BoxFit.contain,
+                                child: SizedBox(
+                                  width: _uploadedUiImage!.width.toDouble(),
+                                  height: _uploadedUiImage!.height.toDouble(),
+                                  child: DaltonizationShaderWidget(
+                                    customType: _getEffectiveShaderType(),
+                                    intensity: _getEffectiveShaderIntensity(),
+                                    image: _uploadedUiImage!,
                                   ),
                                 ),
                               )))
@@ -2475,7 +2546,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 _uploadedUiImage!.height.toDouble(),
               ),
               cameraDescription: null,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               isStaticImage: true,
               exifOrientation: _uploadedPhotoExifOrientation,
             ),
@@ -2746,7 +2817,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         Positioned.fill(
           child: Image.memory(
             bytes,
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             gaplessPlayback: true,
           ),
         ),
@@ -2774,13 +2845,13 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             Positioned.fill(
               child: ClipRect(
                 child: FittedBox(
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   child: SizedBox(
                     width: imageSize.width > 0 ? imageSize.width : containerSize.width,
                     height: imageSize.height > 0 ? imageSize.height : containerSize.height,
                     child: Image.memory(
                       bytes,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       gaplessPlayback: true,
                     ),
                   ),
@@ -2812,6 +2883,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                     containerSize: containerSize,
                     colorResult: _freezeFrameColorResult,
                     accentColor: colors.primary,
+                    fit: BoxFit.contain,
                   ),
                   size: containerSize,
                 ),
@@ -3001,7 +3073,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                           }
                         } else if (_isDisplayingUploadedImage) {
                           // Viewing an uploaded image (not in freeze frame yet):
-                          if (_isUploadedIdentifyMode || _activeCameraMode == CameraRealtimeMode.knn) {
+                          if (_isUploadedIdentifyMode) {
                             // Apply shutter function of color identifier into upload mode
                             _captureUploadedPhotoFreezeFrame();
                           } else {
@@ -3079,12 +3151,14 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                           await _startDelayPage();
                         }
                       } else {
+                        if (!_isCameraPermissionGranted) {
+                          await _requestCameraPermission();
+                          return;
+                        }
                         final nextMode = _activeCameraMode == CameraRealtimeMode.daltonization
                             ? CameraRealtimeMode.knn
                             : CameraRealtimeMode.daltonization;
-                        if (_isCameraPermissionGranted) {
-                          await _startDelayPage();
-                        }
+                        await _startDelayPage();
                         if (!mounted) return;
                         setState(() {
                           _activeCameraMode = nextMode;
@@ -3162,8 +3236,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
     final bgColor = isDark ? Colors.black.withValues(alpha: 0.55) : Colors.white.withValues(alpha: 0.85);
     final iconColor = isDark ? Colors.white : Colors.black87;
 
-    final bool isKnnMode =
-        _activeCameraMode == CameraRealtimeMode.knn || _isUploadedIdentifyMode || _isFreezeFrameActive;
+    final bool isKnnMode = _isDisplayingUploadedImage
+        ? _isUploadedIdentifyMode
+        : (_activeCameraMode == CameraRealtimeMode.knn || _isFreezeFrameActive);
     final bool isLiveCamera = !_isDisplayingUploadedImage && !_isFreezeFrameActive;
     final bool isLiveDaltonization = isLiveCamera && _activeCameraMode == CameraRealtimeMode.daltonization;
     final bool canSpeakObjectDetection =
