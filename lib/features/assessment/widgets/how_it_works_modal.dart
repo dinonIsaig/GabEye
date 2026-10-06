@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 
 /// Practice discs for the preview. Deliberately unlike the D-15 caps so the
 /// demo teaches the interaction without hinting at the real answer.
@@ -234,7 +235,7 @@ class _HowItWorksModalState extends State<HowItWorksModal> {
             width: i == _stepIndex ? 22 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: i <= _stepIndex ? colors.primary : colors.onSurfaceVariant.withValues(alpha: 0.3),
+              color: i <= _stepIndex ? context.accentColor : colors.onSurfaceVariant.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(4),
             ),
           ),

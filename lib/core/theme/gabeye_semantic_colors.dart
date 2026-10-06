@@ -100,6 +100,18 @@ extension GabEyeThemeContext on BuildContext {
   GabEyeSemanticColors get semanticColors =>
       Theme.of(this).extension<GabEyeSemanticColors>()!;
 
+  /// Accent for icons, highlighted text and controls drawn on a surface. The navy
+  /// [ColorScheme.primary] barely shows on dark surfaces, so dark mode uses the
+  /// light blue CTA color instead.
+  Color get accentColor => Theme.of(this).brightness == Brightness.dark
+      ? semanticColors.primaryButton
+      : Theme.of(this).colorScheme.primary;
+
+  /// Text/icon color drawn on top of an [accentColor] fill.
+  Color get onAccentColor => Theme.of(this).brightness == Brightness.dark
+      ? AppColors.darkSurface
+      : Colors.white;
+
   GabEyeErrorAccentTones get errorAccentTones {
     final isDark = Theme.of(this).brightness == Brightness.dark;
     final error = semanticColors.error;

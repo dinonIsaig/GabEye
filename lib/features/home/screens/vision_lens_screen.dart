@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/core/services/auditory_feedback_service.dart';
 import 'package:gabeye/core/services/camera_frame_ingestion_service.dart';
 import 'package:gabeye/core/services/capture_pixel_sampler_service.dart';
@@ -23,6 +24,7 @@ import 'package:gabeye/features/home/widgets/identify_toolbar_tutorial_overlay.d
 import 'package:gabeye/features/home/widgets/toolbar_tutorial_overlay.dart';
 import 'package:gabeye/features/home/widgets/upload_toolbar_tutorial_overlay.dart';
 import 'package:gabeye/core/theme/app_colors.dart';
+import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/core/utils/responsive.dart';
 import 'package:gabeye/features/home/screens/delay_screen.dart';
 import 'package:gabeye/features/home/widgets/assistance_mode_modal.dart';
@@ -228,7 +230,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.save_alt_rounded, color: colors.primary),
+            Icon(Icons.save_alt_rounded, color: context.accentColor),
             const SizedBox(width: 8),
             const Text('Save Photo?'),
           ],
@@ -251,8 +253,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.accentColor,
+                  foregroundColor: context.onAccentColor,
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
@@ -359,7 +361,6 @@ class _VisionLensScreenState extends State<VisionLensScreen>
   }
 
   Future<void> _showPhotoDownloadedDialog(BuildContext context) async {
-    final colors = Theme.of(context).colorScheme;
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -367,7 +368,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_rounded, color: colors.primary),
+            Icon(Icons.check_circle_rounded, color: context.accentColor),
             const SizedBox(width: 8),
             const Text('Photo Downloaded'),
           ],
@@ -381,8 +382,8 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: colors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: context.accentColor,
+              foregroundColor: context.onAccentColor,
               minimumSize: const Size(double.infinity, 48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -1851,7 +1852,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
       decoration: BoxDecoration(
         color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? context.accentColor
+              : colors.primary.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
@@ -1864,14 +1869,22 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             ),
           ),
           Expanded(
-            child: Slider(
-              value: currentVal.clamp(0.1, 1.0),
-              min: 0.1,
-              max: 1.0,
-              divisions: 9,
-              activeColor: colors.primary,
-              label: '${(currentVal * 100).round()}%',
-              onChanged: onChanged,
+            // Opts out of the app's dark slider theme so the track keeps its original look.
+            child: SliderTheme(
+              // Value popup: navy with white text in light mode, light blue with dark text in dark mode.
+              data: SliderThemeData(
+                valueIndicatorColor: context.accentColor,
+                valueIndicatorTextStyle: TextStyle(color: context.onAccentColor),
+              ),
+              child: Slider(
+                value: currentVal.clamp(0.1, 1.0),
+                min: 0.1,
+                max: 1.0,
+                divisions: 9,
+                activeColor: context.accentColor,
+                label: '${(currentVal * 100).round()}%',
+                onChanged: onChanged,
+              ),
             ),
           ),
           Text(
@@ -1879,7 +1892,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: colors.primary,
+              color: context.accentColor,
             ),
           ),
         ],
@@ -2501,7 +2514,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                         : Colors.white.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.45),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? context.accentColor
+                          : colors.primary.withValues(alpha: 0.45),
                       width: 1.5,
                     ),
                     boxShadow: [
@@ -2521,7 +2536,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                       height: 20,
                       child: CustomPaint(
                         painter: OpenTrianglePainter(
-                          color: colors.primary,
+                          color: context.accentColor,
                           strokeWidth: 3.5,
                         ),
                       ),
@@ -2871,12 +2886,16 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           ? math.max(previewSize.width, previewSize.height)
           : 1280;
 
-      return FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: previewWidth,
-          height: previewHeight,
-          child: CameraPreview(_cameraController!),
+      // ClipRect keeps the cover-scaled preview inside the viewport; without it the overflow
+      // paints over the preset bar and calibration slider above.
+      return ClipRect(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: previewWidth,
+            height: previewHeight,
+            child: CameraPreview(_cameraController!),
+          ),
         ),
       );
     }
@@ -2902,8 +2921,9 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         ? AppColors.darkPrimaryButton
         : AppColors.primaryColor;
 
+    // Dark mode: solid surface color, matching the bottom navbar.
     final cardBgColor = isDark
-        ? Colors.black.withValues(alpha: 0.55)
+        ? colors.surface
         : Colors.white.withValues(alpha: 0.85);
 
     return ClipRRect(
@@ -3310,37 +3330,11 @@ class _VisionLensScreenState extends State<VisionLensScreen>
               icon: Icons.volume_up_rounded,
               isActive: isSpeaking,
               onTap: isSpeaking ? null : () {
-                if (canSpeakObjectDetection) {
-                  final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
-                  final objectNames = sourceList
-                      .where((o) => o.labels.isNotEmpty)
-                      .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
-                      .toSet()
-                      .toList();
-                  final speechText = objectNames.isNotEmpty
-                      ? 'Detected: ${objectNames.join(", ")}'
-                      : 'No objects detected';
-                  AuditoryFeedbackService.instance.speakText(speechText);
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(speechText),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                } else {
-                  AuditoryFeedbackService.instance.speakIdentification(
-                    colorName: _currentIdentifiedColor,
-                    objectLabel: null,
-                  );
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Speaking: $_currentIdentifiedColor'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                if (!AuditoryFeedbackService.instance.ttsEnabled) {
+                  _showVoiceNarrationOffDialog(context, canSpeakObjectDetection: canSpeakObjectDetection);
+                  return;
                 }
+                _speakNarration(context, canSpeakObjectDetection: canSpeakObjectDetection);
               },
               bgColor: bgColor,
               activeBgColor: colors.primary,
@@ -3352,6 +3346,107 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           ),
         ],
       ],
+    );
+  }
+
+  /// Speaks the detected objects (Object Labeling) or the identified color, echoing it in a snackbar.
+  void _speakNarration(BuildContext context, {required bool canSpeakObjectDetection}) {
+    if (canSpeakObjectDetection) {
+      final sourceList = _isDisplayingUploadedImage ? _uploadedDetectedObjects : _detectedObjects;
+      final objectNames = sourceList
+          .where((o) => o.labels.isNotEmpty)
+          .map((o) => ObjectDetectionService.instance.resolveBestDisplayLabel(o.labels))
+          .toSet()
+          .toList();
+      final speechText = objectNames.isNotEmpty
+          ? 'Detected: ${objectNames.join(", ")}'
+          : 'No objects detected';
+      AuditoryFeedbackService.instance.speakText(speechText);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(speechText),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      AuditoryFeedbackService.instance.speakIdentification(
+        colorName: _currentIdentifiedColor,
+        objectLabel: null,
+      );
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Speaking: $_currentIdentifiedColor'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// Shown when the speak button is tapped while Voice Narration is off in Personalized Accessibility.
+  /// Offers to turn it on right here (then speaks) or to open that settings page.
+  Future<void> _showVoiceNarrationOffDialog(BuildContext context, {required bool canSpeakObjectDetection}) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.volume_off_rounded, color: context.accentColor),
+            const SizedBox(width: 8),
+            const Flexible(child: Text('Turn on voice narration')),
+          ],
+        ),
+        content: const Text(
+          'Voice narration is turned off in Personalized Accessibility, so there is no audio output.',
+          textAlign: TextAlign.center,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+        actions: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  await AuditoryFeedbackService.instance.setTtsEnabled(true);
+                  if (!context.mounted) return;
+                  _speakNarration(context, canSpeakObjectDetection: canSpeakObjectDetection);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.accentColor,
+                  foregroundColor: context.onAccentColor,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text(
+                  'Turn On',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.pushNamed(context, AppRoutes.personalizedAccessibility);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.accentColor,
+                  side: BorderSide(color: context.accentColor, width: 1.5),
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text(
+                  'Go to Personalized Accessibility',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -3423,7 +3518,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             color: cardBgColor,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: colors.primary.withValues(alpha: 0.4),
+              color: isDark ? context.accentColor : colors.primary.withValues(alpha: 0.4),
               width: 1.5,
             ),
             boxShadow: [
@@ -3477,16 +3572,20 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                   ),
                 ],
               ),
-              Slider(
-                value: _currentZoomLevel.clamp(_minZoom, _maxZoom),
-                min: _minZoom,
-                max: _maxZoom,
-                divisions: 8, // 0.5x steps from 1.0x to 5.0x
-                activeColor: colors.primary,
-                inactiveColor: colors.onSurfaceVariant.withValues(alpha: 0.25),
-                onChanged: (val) {
-                  _setZoomLevel(val);
-                },
+              // Opts out of the app's dark slider theme so only the active color changes in dark mode.
+              SliderTheme(
+                data: const SliderThemeData(),
+                child: Slider(
+                  value: _currentZoomLevel.clamp(_minZoom, _maxZoom),
+                  min: _minZoom,
+                  max: _maxZoom,
+                  divisions: 8, // 0.5x steps from 1.0x to 5.0x
+                  activeColor: context.accentColor,
+                  inactiveColor: colors.onSurfaceVariant.withValues(alpha: 0.25),
+                  onChanged: (val) {
+                    _setZoomLevel(val);
+                  },
+                ),
               ),
             ],
           ),
@@ -3730,33 +3829,6 @@ class _VisionLensScreenState extends State<VisionLensScreen>
               ),
             ),
           ),
-          // Center Compare Handle Icon
-          Positioned(
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.unfold_more_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
         ],
       );
     }
@@ -3909,33 +3981,6 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             ),
           ),
         ),
-        // Center Compare Handle Icon
-        Positioned(
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.unfold_more_rounded,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -3949,7 +3994,10 @@ class _VisionLensScreenState extends State<VisionLensScreen>
           ? Colors.black.withValues(alpha: 0.85)
           : Colors.white.withValues(alpha: 0.95),
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: colors.primary.withValues(alpha: 0.5), width: 1.5),
+      border: Border.all(
+        color: isDark ? context.accentColor : colors.primary.withValues(alpha: 0.5),
+        width: 1.5,
+      ),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.3),
@@ -3996,7 +4044,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.info_outline_rounded, size: 18, color: colors.primary),
+            Icon(Icons.info_outline_rounded, size: 18, color: context.accentColor),
             const SizedBox(width: 10),
             Text(
               'No objects detected in this photo.',
@@ -4025,7 +4073,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
             children: [
               Row(
                 children: [
-                  Icon(Icons.category_rounded, size: 18, color: colors.primary),
+                  Icon(Icons.category_rounded, size: 18, color: context.accentColor),
                   const SizedBox(width: 8),
                   Text(
                     'Detected Objects (${_uploadedDetectedObjects.length})',
@@ -4047,7 +4095,7 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                 child: Text(
                   'Image Labeling',
                   style: TextStyle(
-                    color: colors.primary,
+                    color: context.accentColor,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -4075,14 +4123,14 @@ class _VisionLensScreenState extends State<VisionLensScreen>
                       color: colors.surfaceContainerHighest.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: colors.primary.withValues(alpha: 0.3),
+                        color: isDark ? context.accentColor : colors.primary.withValues(alpha: 0.3),
                         width: 1.0,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.center_focus_strong_rounded, size: 14, color: colors.primary),
+                        Icon(Icons.center_focus_strong_rounded, size: 14, color: context.accentColor),
                         const SizedBox(width: 6),
                         Text(
                           label,
