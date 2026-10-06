@@ -5,6 +5,7 @@ class DiagnosticData {
   final String? cvdType;
   final String? severity;
   final DateTime? testDate;
+  final List<int>? arrangedCaps;
 
   const DiagnosticData({
     required this.userId,
@@ -12,6 +13,7 @@ class DiagnosticData {
     this.cvdType,
     this.severity,
     this.testDate,
+    this.arrangedCaps,
   });
 
   Map<String, dynamic> toMap() {
@@ -21,6 +23,7 @@ class DiagnosticData {
       'cvd_type': cvdType,
       'severity': severity,
       'test_date': testDate?.toIso8601String(),
+      'arranged_caps': arrangedCaps?.join(','),
     };
   }
 
@@ -33,6 +36,14 @@ class DiagnosticData {
       testDate: map['test_date'] != null
           ? DateTime.tryParse(map['test_date'] as String)
           : null,
+      arrangedCaps: map['arranged_caps'] != null &&
+              (map['arranged_caps'] as String).isNotEmpty
+          ? (map['arranged_caps'] as String)
+              .split(',')
+              .map((e) => int.tryParse(e.trim()))
+              .whereType<int>()
+              .toList()
+          : null,
     );
   }
 
@@ -42,6 +53,7 @@ class DiagnosticData {
     String? cvdType,
     String? severity,
     DateTime? testDate,
+    List<int>? arrangedCaps,
   }) {
     return DiagnosticData(
       userId: userId ?? this.userId,
@@ -49,10 +61,11 @@ class DiagnosticData {
       cvdType: cvdType ?? this.cvdType,
       severity: severity ?? this.severity,
       testDate: testDate ?? this.testDate,
+      arrangedCaps: arrangedCaps ?? this.arrangedCaps,
     );
   }
 
   @override
   String toString() =>
-      'DiagnosticData(user_id: $userId, has_taken_test: $hasTakenTest, cvd_type: $cvdType, severity: $severity, test_date: $testDate)';
+      'DiagnosticData(user_id: $userId, has_taken_test: $hasTakenTest, cvd_type: $cvdType, severity: $severity, test_date: $testDate, arranged_caps: $arrangedCaps)';
 }

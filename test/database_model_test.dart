@@ -33,6 +33,7 @@ void main() {
         cvdType: 'Deutan',
         severity: 'Moderate',
         testDate: now,
+        arrangedCaps: const [1, 2, 13, 14, 15, 3, 4, 12, 5, 6, 7, 8, 10, 9, 11],
       );
 
       final map = data.toMap();
@@ -41,6 +42,7 @@ void main() {
       expect(map['cvd_type'], 'Deutan');
       expect(map['severity'], 'Moderate');
       expect(map['test_date'], now.toIso8601String());
+      expect(map['arranged_caps'], '1,2,13,14,15,3,4,12,5,6,7,8,10,9,11');
 
       final fromMap = DiagnosticData.fromMap(map);
       expect(fromMap.userId, 1);
@@ -48,6 +50,19 @@ void main() {
       expect(fromMap.cvdType, 'Deutan');
       expect(fromMap.severity, 'Moderate');
       expect(fromMap.testDate?.toIso8601String(), now.toIso8601String());
+      expect(fromMap.arrangedCaps, [1, 2, 13, 14, 15, 3, 4, 12, 5, 6, 7, 8, 10, 9, 11]);
+
+      // Legacy test without arranged_caps
+      final legacyMap = {
+        'user_id': 1,
+        'has_taken_test': 1,
+        'cvd_type': 'Unclassified',
+        'severity': 'Strong',
+        'test_date': now.toIso8601String(),
+        'arranged_caps': null,
+      };
+      final fromLegacyMap = DiagnosticData.fromMap(legacyMap);
+      expect(fromLegacyMap.arrangedCaps, isNull);
     });
 
     test('AdaptiveUiSettings toMap and fromMap serialization', () {

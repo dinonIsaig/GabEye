@@ -14,7 +14,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const String _dbName = 'gabeye.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
 
   Database? _database;
 
@@ -33,12 +33,19 @@ class DatabaseHelper {
       version: _dbVersion,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onConfigure(Database db) async {
     // Enforce foreign key constraints across all tables
     await db.execute('PRAGMA foreign_keys = ON;');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE Diagnostic_Data ADD COLUMN arranged_caps TEXT;');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -59,6 +66,7 @@ class DatabaseHelper {
         cvd_type TEXT,
         severity TEXT,
         test_date TEXT,
+        arranged_caps TEXT,
         FOREIGN KEY (user_id) REFERENCES User_Profile (_id) ON DELETE CASCADE
       );
     ''');
@@ -97,6 +105,7 @@ class DatabaseHelper {
       'cvd_type': null,
       'severity': null,
       'test_date': null,
+      'arranged_caps': null,
     });
 
     await db.insert('Adaptive_UI_Settings', {
@@ -237,6 +246,7 @@ class DatabaseHelper {
         'cvd_type': null,
         'severity': null,
         'test_date': null,
+        'arranged_caps': null,
       },
       where: 'user_id = ?',
       whereArgs: [userId],

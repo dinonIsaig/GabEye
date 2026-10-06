@@ -42,7 +42,15 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
           orElse: () => SeverityLevel.moderate,
         );
 
-        value = _reconstituteResult(type, severity);
+        if (diagnosticData.arrangedCaps != null && diagnosticData.arrangedCaps!.length == 15) {
+          _arrangedCaps = List<int>.from(diagnosticData.arrangedCaps!);
+          value = ScoringService.calculateScore(_arrangedCaps);
+        } else {
+          _arrangedCaps = _getFallbackCapsForType(type, severity);
+          value = _reconstituteResult(type, severity);
+        }
+
+        assessmentController.setArrangedCaps(_arrangedCaps);
         assessmentController.setAssessmentCompleted(hasCompleted: true);
       }
 
@@ -77,6 +85,7 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
           cvdType: result.diagnosisType.name,
           severity: result.severity.name,
           testDate: DateTime.now(),
+          arrangedCaps: _arrangedCaps,
         ),
       );
 
@@ -89,6 +98,28 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
       );
     } catch (e) {
       debugPrint('VisionProfileService._persistAssessmentResult error: $e');
+    }
+  }
+
+  List<int> _getFallbackCapsForType(ColorDeficiencyType type, SeverityLevel severity) {
+    switch (type) {
+      case ColorDeficiencyType.protan:
+        return severity == SeverityLevel.strong
+            ? const [15, 1, 14, 2, 13, 3, 12, 4, 5, 6, 10, 11, 9, 8, 7]
+            : const [1, 14, 15, 13, 2, 5, 6, 7, 9, 8, 10, 12, 11, 4, 3];
+      case ColorDeficiencyType.deutan:
+        return severity == SeverityLevel.strong
+            ? const [1, 15, 2, 14, 3, 13, 5, 11, 7, 12, 4, 10, 6, 9, 8]
+            : const [1, 2, 13, 14, 15, 3, 4, 12, 5, 6, 7, 8, 10, 9, 11];
+      case ColorDeficiencyType.tritan:
+        return severity == SeverityLevel.strong
+            ? const [6, 1, 4, 3, 2, 5, 14, 9, 11, 10, 13, 7, 15, 8, 12]
+            : const [3, 1, 2, 5, 4, 6, 8, 9, 11, 13, 10, 12, 14, 7, 15];
+      case ColorDeficiencyType.normal:
+        return List.generate(15, (i) => i + 1);
+      case ColorDeficiencyType.unclassified:
+      case ColorDeficiencyType.random:
+        return const [3, 1, 2, 5, 4, 6, 7, 8, 9, 13, 10, 12, 14, 11, 15];
     }
   }
 
@@ -256,5 +287,6 @@ class VisionProfileService extends ValueNotifier<D15ScoreResult?> {
     _arrangedCaps = List.generate(15, (i) => i + 1);
     _customIntensityOverride = null;
     value = null;
+    assessmentController.reset();
   }
 }
