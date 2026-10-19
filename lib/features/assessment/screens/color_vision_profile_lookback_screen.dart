@@ -24,7 +24,7 @@ class ColorVisionProfileLookbackScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveCaps = arrangedCaps ?? assessmentController.value;
+    final effectiveCaps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
 
     return Scaffold(
       appBar: PreferredSize(
@@ -88,9 +88,8 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final List<int> effectiveCaps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
-    final D15ScoreResult result = (arrangedCaps == null && VisionProfileService.instance.value != null)
-        ? VisionProfileService.instance.value!
-        : ScoringService.calculateScore(effectiveCaps);
+    final D15ScoreResult result = VisionProfileService.instance.value ??
+        ScoringService.calculateScore(effectiveCaps);
     final severityStyle = severityStyleFor(context, result.severity);
     final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
@@ -498,10 +497,14 @@ class ColorVisionProfileLookbackContent extends StatelessWidget {
   // -------------------- Actions --------------------
   void _goToDetailedResult(BuildContext context) {
     final caps = arrangedCaps ?? VisionProfileService.instance.arrangedCaps;
+    final scoreResult = VisionProfileService.instance.value ?? ScoringService.calculateScore(caps);
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ResultsPage(arrangedCaps: caps),
+        builder: (context) => ResultsPage(
+          arrangedCaps: caps,
+          scoreResult: scoreResult,
+        ),
       ),
     );
   }

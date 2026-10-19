@@ -17,13 +17,18 @@ import 'package:gabeye/features/assessment/widgets/profile_heading_banner.dart';
 /// always agree on what a given result looks like.
 class ResultsPage extends StatelessWidget {
   final List<int> arrangedCaps;
+  final D15ScoreResult? scoreResult;
 
-  const ResultsPage({super.key, required this.arrangedCaps});
+  const ResultsPage({
+    super.key,
+    required this.arrangedCaps,
+    this.scoreResult,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final D15ScoreResult result = ScoringService.calculateScore(arrangedCaps);
+    final D15ScoreResult result = scoreResult ?? ScoringService.calculateScore(arrangedCaps);
     final severityStyle = severityStyleFor(context, result.severity);
     final diagnosisStyle = diagnosisStyleFor(context, result.diagnosisType);
 
@@ -61,7 +66,7 @@ class ResultsPage extends StatelessWidget {
                         const SizedBox(height: 20),
                         _buildConfusionLineCard(context, colors, result),
                         const SizedBox(height: 32),
-                        _buildFooterButtons(context, colors),
+                        _buildFooterButtons(context, colors, result),
                         const SizedBox(height: 12),
                       ],
                     ),
@@ -460,7 +465,11 @@ class ResultsPage extends StatelessWidget {
   }
 
   // -------------------- Footer buttons --------------------
-  Widget _buildFooterButtons(BuildContext context, ColorScheme colors) {
+  Widget _buildFooterButtons(
+    BuildContext context,
+    ColorScheme colors,
+    D15ScoreResult result,
+  ) {
     return Column(
       children: [
         SizedBox(
@@ -476,7 +485,7 @@ class ResultsPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () => _exportAsPdf(context),
+            onPressed: () => _exportAsPdf(context, result),
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(
@@ -543,9 +552,10 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
-  void _exportAsPdf(BuildContext context) {
+  void _exportAsPdf(BuildContext context, D15ScoreResult result) {
     PdfReportService.generateAndExportPdf(
       context,
+      scoreResult: result,
       arrangedCaps: arrangedCaps,
     );
   }
