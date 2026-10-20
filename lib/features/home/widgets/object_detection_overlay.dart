@@ -322,7 +322,9 @@ class ObjectDetectorPainter extends CustomPainter {
       final textPainter = TextPainter(
         text: textSpan,
         textDirection: TextDirection.ltr,
-      )..layout();
+        maxLines: 1,
+        ellipsis: '...',
+      )..layout(maxWidth: math.max(60.0, size.width - 32.0));
 
       const paddingH = 8.0;
       const paddingV = 4.0;
@@ -922,8 +924,10 @@ class _ObjectDetectionOverlayPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: textSpan,
       textDirection: TextDirection.ltr,
+      maxLines: 1,
+      ellipsis: '...',
     );
-    textPainter.layout();
+    textPainter.layout(maxWidth: math.max(60.0, canvasSize.width - 32.0));
 
     final paddingH = isPrimary ? 8.0 : 7.0;
     const paddingV = 4.0;
