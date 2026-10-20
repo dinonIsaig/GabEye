@@ -53,6 +53,15 @@ class AssessmentRecommendationsScreen extends StatelessWidget {
           buttonText: 'Continue with Personalized UI',
           onPressed: () => _goToPersonalizedUI(context),
         ),
+      if (!_showPersonalizedUI)
+        _RecommendationItem(
+          title: 'Color Encyclopedia',
+          description:
+              'Explore standard, universal color names and test your recognition skills with quick flashcards.',
+          buttonText: 'Explore Encyclopedia',
+          onPressed: () =>
+              Navigator.pushNamed(context, AppRoutes.colorEncyclopedia),
+        ),
       _RecommendationItem(
         description:
             "Allow GabEye to assist you in identifying and remapping colors you're confused with.",

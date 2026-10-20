@@ -65,6 +65,19 @@ class _HomeScreenState extends State<HomeScreen> {
           _onBottomNavTapped(2);
         },
       ),
+      FeatureRowData(
+        icon: Icons.menu_book_outlined,
+        title: 'Color Encyclopedia',
+        bullets: const [
+          'ISCC-NBS standardized dictionary',
+          'Learn exact color names & categories',
+          'Interactive 5-color flashcard challenge',
+        ],
+        ctaLabel: 'Explore Colors',
+        onCtaPressed: () {
+          Navigator.pushNamed(context, AppRoutes.colorEncyclopedia);
+        },
+      ),
     ];
   }
 
@@ -161,6 +174,9 @@ class _HomeScreenState extends State<HomeScreen> {
             switch (option.label) {
               case 'Settings':
                 Navigator.pushNamed(context, AppRoutes.settings);
+                break;
+              case 'Color Encyclopedia':
+                Navigator.pushNamed(context, AppRoutes.colorEncyclopedia);
                 break;
               case 'Help & Feedback':
                 Navigator.pushNamed(context, AppRoutes.helpFeedback);

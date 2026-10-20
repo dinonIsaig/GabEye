@@ -113,6 +113,10 @@ class HelpFeedbackScreen extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Already on Help & Feedback')),
               );
+            } else if (option.label == 'Color Encyclopedia') {
+              Navigator.pushNamed(context, AppRoutes.colorEncyclopedia);
+            } else if (option.label == 'Settings') {
+              Navigator.pushNamed(context, AppRoutes.settings);
             } else if (option.label == 'About GabEye') {
               Navigator.pushNamed(context, '/article');
             }

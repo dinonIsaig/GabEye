@@ -145,6 +145,8 @@ class GabEyeSettingsScreen extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Already on Settings')),
               );
+            } else if (option.label == 'Color Encyclopedia') {
+              Navigator.pushNamed(context, AppRoutes.colorEncyclopedia);
             } else if (option.label == 'Help & Feedback') {
               Navigator.push(
                 context,
