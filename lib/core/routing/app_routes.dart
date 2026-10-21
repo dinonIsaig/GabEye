@@ -17,6 +17,7 @@ import 'package:gabeye/features/featured_reads/settings/personal_data_screen.dar
 import 'package:gabeye/features/featured_reads/settings/personalized_accessibility_screen.dart';
 import 'package:gabeye/features/featured_reads/settings/real_time_mode_safety.dart';
 import 'package:gabeye/features/assessment/screens/pre_assessment/learnmore_screen.dart';
+import 'package:gabeye/features/encyclopedia/screens/color_encyclopedia_screen.dart';
 
 class AppRoutes {
   // Define strict string constants for route names
@@ -38,6 +39,7 @@ class AppRoutes {
   static const String howToUseGabEye = '/settings/how-to-use';
   static const String realTimeModeSafety = '/settings/real-time-safety';
   static const String colorVisionProfileLookback = '/color-vision-profile-lookback';
+  static const String colorEncyclopedia = '/color-encyclopedia';
   // use '/' in ur route soo it will be the landing
   // static const String practice = '/practice'; // <-- this is an example of defining
 
@@ -64,6 +66,7 @@ class AppRoutes {
       realTimeModeSafety: (context) => const RealTimeModeSafetyScreen(),
       colorVisionProfileLookback: (context) =>
           const ColorVisionProfileLookbackScreen(),
+      colorEncyclopedia: (context) => const ColorEncyclopediaScreen(),
 
       d15Assessment: (context) =>
           const Scaffold(body: Center(child: Text('D-15 Assessment Screen'))),

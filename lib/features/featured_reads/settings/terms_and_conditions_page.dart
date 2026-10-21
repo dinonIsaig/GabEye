@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gabeye/components/navbar/article_navbar.dart';
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'package:gabeye/features/onboarding/widgets/terms_and_conditions_content.dart';
 import 'help_feedback_screen.dart';
 
@@ -15,7 +16,9 @@ class TermsAndConditionsPage extends StatelessWidget {
           title: 'Terms & Conditions',
           onBack: () => Navigator.maybePop(context),
           onMenuSelected: (option) {
-            if (option.label == 'Help & Feedback') {
+            if (option.label == 'Color Encyclopedia') {
+              Navigator.pushNamed(context, AppRoutes.colorEncyclopedia);
+            } else if (option.label == 'Help & Feedback') {
               Navigator.push(
                 context,
                 MaterialPageRoute(

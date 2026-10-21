@@ -39,16 +39,18 @@ void main() {
 
     // Verify Core Features section
     expect(find.text('Core Features'), findsOneWidget);
-    expect(find.byType(FeatureRow), findsNWidgets(3));
+    expect(find.byType(FeatureRow), findsNWidgets(4));
     expect(find.text('Real-Time and Static Visual Processing'), findsOneWidget);
     expect(find.text('Audio & Personalized Accessibility'), findsOneWidget);
     expect(find.text('Color Diagnostic Assessment'), findsOneWidget);
+    expect(find.text('Color Encyclopedia'), findsOneWidget);
     expect(find.text('Audio & Contextual Feedback'), findsNothing);
 
     // Verify CTA buttons
     expect(find.text('Try Using Camera'), findsOneWidget);
     expect(find.text('Configure in Settings'), findsOneWidget);
     expect(find.text('View Vision Profile'), findsOneWidget);
+    expect(find.text('Explore Colors'), findsOneWidget);
     expect(find.text('Learn More'), findsNothing);
 
     // Verify Featured Reads section & Navigation arrows

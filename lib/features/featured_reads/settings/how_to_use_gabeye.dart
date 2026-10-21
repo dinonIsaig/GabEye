@@ -4,6 +4,7 @@ import 'package:gabeye/core/theme/app_colors.dart';
 import 'package:gabeye/core/theme/gabeye_semantic_colors.dart';
 import 'package:gabeye/features/assessment/widgets/pre_assessment_hero_header.dart';
 
+import 'package:gabeye/core/routing/app_routes.dart';
 import 'gabeye_settings.dart';
 import 'help_feedback_screen.dart';
 
@@ -92,6 +93,8 @@ class HowToUseGabEyeScreen extends StatelessWidget {
                   builder: (context) => const GabEyeSettingsScreen(),
                 ),
               );
+            } else if (option.label == 'Color Encyclopedia') {
+              Navigator.pushNamed(context, AppRoutes.colorEncyclopedia);
             } else if (option.label == 'Help & Feedback') {
               Navigator.push(
                 context,

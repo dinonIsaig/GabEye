@@ -20,6 +20,10 @@ class MenuButton extends StatelessWidget {
 
   static const defaultOptions = [
     MenuButtonOption(label: 'Settings', icon: Icons.settings_outlined),
+    MenuButtonOption(
+      label: 'Color Encyclopedia',
+      icon: Icons.menu_book_outlined,
+    ),
     MenuButtonOption(label: 'Help & Feedback', icon: Icons.help_outline),
     MenuButtonOption(label: 'About GabEye', icon: Icons.info_outline),
   ];
@@ -76,6 +80,9 @@ class MenuButton extends StatelessWidget {
     switch (option.label) {
       case 'Settings':
         Navigator.of(context).pushNamed(AppRoutes.settings);
+        return;
+      case 'Color Encyclopedia':
+        Navigator.of(context).pushNamed(AppRoutes.colorEncyclopedia);
         return;
       case 'Help & Feedback':
         Navigator.of(context).pushNamed(AppRoutes.helpFeedback);
