@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -65,8 +66,8 @@ class ObjectDetectionService {
           modelPath: localModelPath,
           classifyObjects: true,
           multipleObjects: true, // Detects objects across the scene reliably
-          confidenceThreshold: 0.35, // Allows specific child classes (e.g. Laptop at ~0.45+) to pass
-          maximumLabelsPerObject: 3, // Retrieves candidate labels so specific items can be selected
+          confidenceThreshold: 0.30, // Allows specific child classes (e.g. Coffeemaker, Laptop) to pass
+          maximumLabelsPerObject: 5, // Retrieves all candidate labels so specific items can be prioritized
         );
         _objectDetector = ObjectDetector(options: localOptions);
 
@@ -75,8 +76,8 @@ class ObjectDetectionService {
           modelPath: localModelPath,
           classifyObjects: true,
           multipleObjects: true,
-          confidenceThreshold: 0.35,
-          maximumLabelsPerObject: 3,
+          confidenceThreshold: 0.30,
+          maximumLabelsPerObject: 5,
         );
         _staticObjectDetector = ObjectDetector(options: staticOptions);
 
@@ -200,7 +201,7 @@ class ObjectDetectionService {
         for (final obj in objects) {
           if (obj.boundingBox.contains(crosshairPoint)) {
             if (obj.labels.isNotEmpty) {
-              return _cleanObjectLabel(obj.labels.first.text);
+              return resolveBestDisplayLabel(obj.labels);
             }
           }
         }
@@ -419,6 +420,10 @@ class ObjectDetectionService {
         }
       }
 
+      if (rawObjects.isNotEmpty) {
+        return suppressOverlappingGenericObjects(rawObjects);
+      }
+
       return rawObjects;
     } catch (e) {
       debugPrint('[ObjectDetectionService] Error in detectObjectsInFilePath: $e');
@@ -454,7 +459,9 @@ class ObjectDetectionService {
         try {
           final labels = await _imageLabeler!.processImage(inputImage);
           if (labels.isNotEmpty) {
-            return _cleanObjectLabel(labels.first.label);
+            final valid = labels.where((l) => !_isBroadLabel(l.label)).toList();
+            final chosen = valid.isNotEmpty ? valid.first.label : labels.first.label;
+            return cleanObjectLabel(chosen);
           }
         } catch (_) {}
       }
@@ -467,8 +474,7 @@ class ObjectDetectionService {
           if (objects.isNotEmpty) {
             final firstObj = objects.first;
             if (firstObj.labels.isNotEmpty) {
-              final topLabel = firstObj.labels.first.text;
-              return _cleanObjectLabel(topLabel);
+              return resolveBestDisplayLabel(firstObj.labels);
             }
           }
         } catch (_) {}
@@ -494,166 +500,45 @@ class ObjectDetectionService {
         .join(' ');
   }
 
-  String _cleanObjectLabel(String label) => cleanObjectLabel(label);
-
   /// Broad umbrella / parent category names that should be deprioritized in favor of specific child objects.
   static const Set<String> umbrellaCategories = {
+    'home appliance',
+    'kitchen appliance',
+    'small appliance',
+    'major appliance',
     'electronic device',
     'consumer electronics',
+    'display device',
     'home good',
     'office supplies',
-    'kitchen appliance',
     'tableware',
+    'light fixture',
+    'fixture',
+    'furniture',
     'footwear',
     'clothing',
     'container',
+    'waste container',
     'packaged goods',
+    'baked goods',
     'personal care',
     'fashion accessory',
     'vehicle',
     'sports equipment',
     'musical instrument',
     'food',
-    'furniture',
-  };
-
-  /// Canonical COCO-80 vocabulary mapping associating model labels and common
-  /// synonyms to the standard 80 COCO categories.
-  static const Map<String, String> coco80LabelMap = {
-    // Electronics & Workspace (COCO: laptop, mouse, keyboard, tv, cell phone)
-    'laptop': 'Laptop',
-    'computer keyboard': 'Keyboard',
-    'musical keyboard': 'Keyboard',
-    'keyboard': 'Keyboard',
-    'mouse': 'Mouse',
-    'computer monitor': 'TV',
-    'tv': 'TV',
-    'television': 'TV',
-    'cell phone': 'Cell Phone',
-    'mobile phone': 'Cell Phone',
-    'telephone': 'Cell Phone',
-
-    // Furniture & Indoors (COCO: chair, couch, potted plant, bed, dining table, toilet)
-    'chair': 'Chair',
-    'armchair': 'Chair',
-    'folding chair': 'Chair',
-    'couch': 'Couch',
-    'sofa': 'Couch',
-    'bed': 'Bed',
-    'dining table': 'Dining Table',
-    'table': 'Dining Table',
-    'coffee table': 'Dining Table',
-    'kitchen & dining room table': 'Dining Table',
-    'billiard table': 'Dining Table',
-    'toilet': 'Toilet',
-    'potted plant': 'Potted Plant',
-    'houseplant': 'Potted Plant',
-
-    // Kitchen & Appliances (COCO: bottle, wine glass, cup, fork, knife, spoon, bowl, microwave, oven, toaster, sink, refrigerator)
-    'bottle': 'Bottle',
-    'water bottle': 'Bottle',
-    'vacuum flask': 'Bottle',
-    'wine glass': 'Wine Glass',
-    'cup': 'Cup',
-    'coffee cup': 'Cup',
-    'tumbler': 'Cup',
-    'mug': 'Cup',
-    'fork': 'Fork',
-    'knife': 'Knife',
-    'spoon': 'Spoon',
-    'bowl': 'Bowl',
-    'microwave': 'Microwave',
-    'oven': 'Oven',
-    'toaster': 'Toaster',
-    'sink': 'Sink',
-    'refrigerator': 'Refrigerator',
-
-    // Food (COCO: banana, apple, sandwich, orange, broccoli, carrot, hot dog, pizza, donut, cake)
-    'banana': 'Banana',
-    'apple': 'Apple',
-    'sandwich': 'Sandwich',
-    'orange': 'Orange',
-    'broccoli': 'Broccoli',
-    'carrot': 'Carrot',
-    'hot dog': 'Hot Dog',
-    'pizza': 'Pizza',
-    'donut': 'Donut',
-    'doughnut': 'Donut',
-    'cake': 'Cake',
-
-    // Personal & Everyday (COCO: backpack, umbrella, handbag, tie, suitcase, book, clock, vase, scissors, teddy bear, hair drier, toothbrush)
-    'backpack': 'Backpack',
-    'umbrella': 'Umbrella',
-    'handbag': 'Handbag',
-    'purse': 'Handbag',
-    'tie': 'Tie',
-    'necktie': 'Tie',
-    'suitcase': 'Suitcase',
-    'luggage': 'Suitcase',
-    'book': 'Book',
-    'notebook': 'Book',
-    'clock': 'Clock',
-    'alarm clock': 'Clock',
-    'vase': 'Vase',
-    'scissors': 'Scissors',
-    'teddy bear': 'Teddy Bear',
-    'hair drier': 'Hair Drier',
-    'toothbrush': 'Toothbrush',
-
-    // Outdoor & Vehicles (COCO: person, bicycle, car, motorcycle, airplane, bus, train, truck, boat, traffic light, fire hydrant, stop sign, parking meter, bench)
-    'person': 'Person',
-    'man': 'Person',
-    'woman': 'Person',
-    'child': 'Person',
-    'bicycle': 'Bicycle',
-    'kid bike': 'Bicycle',
-    'bike': 'Bicycle',
-    'car': 'Car',
-    'motorcycle': 'Motorcycle',
-    'airplane': 'Airplane',
-    'aeroplane': 'Airplane',
-    'bus': 'Bus',
-    'train': 'Train',
-    'truck': 'Truck',
-    'boat': 'Boat',
-    'traffic light': 'Traffic Light',
-    'fire hydrant': 'Fire Hydrant',
-    'stop sign': 'Stop Sign',
-    'parking meter': 'Parking Meter',
-    'bench': 'Bench',
-
-    // Animals (COCO: bird, cat, dog, horse, sheep, cow, elephant, bear, zebra, giraffe)
-    'bird': 'Bird',
-    'cat': 'Cat',
-    'dog': 'Dog',
-    'horse': 'Horse',
-    'sheep': 'Sheep',
-    'cow': 'Cow',
-    'elephant': 'Elephant',
-    'bear': 'Bear',
-    'zebra': 'Zebra',
-    'giraffe': 'Giraffe',
-
-    // Sports (COCO: frisbee, skis, snowboard, sports ball, kite, baseball bat, baseball glove, skateboard, surfboard, tennis racket)
-    'frisbee': 'Frisbee',
-    'skis': 'Skis',
-    'snowboard': 'Snowboard',
-    'sports ball': 'Sports Ball',
-    'football': 'Sports Ball',
-    'soccer ball': 'Sports Ball',
-    'basketball': 'Sports Ball',
-    'kite': 'Kite',
-    'baseball bat': 'Baseball Bat',
-    'baseball glove': 'Baseball Glove',
-    'skateboard': 'Skateboard',
-    'surfboard': 'Surfboard',
-    'tennis racket': 'Tennis Racket',
+    'produce',
+    'organism',
+    'commodity',
+    'dish',
+    'fast food',
+    'hardware',
   };
 
   /// Selects the most specific [Label] from a list of detected [labels].
   ///
-  /// Prioritizes specific items (e.g., "Laptop", "Computer keyboard", "Coffee cup", "Chair")
-  /// over broad umbrella classifications (e.g., "Electronic device", "Tableware").
+  /// Prioritizes specific items (e.g., "Potato", "Laptop", "Coffee Cup", "Chair")
+  /// over broad umbrella classifications (e.g., "Food", "Electronic device", "Tableware").
   Label? selectBestLabel(List<Label> labels) {
     if (labels.isEmpty) return null;
     if (labels.length == 1) return labels.first;
@@ -670,38 +555,14 @@ class ObjectDetectionService {
     return labels.first;
   }
 
-  /// Resolves the optimal display label strictly mapped to the 80 COCO categories.
+  /// Resolves the optimal display label utilizing the full fine-grained 631+ class vocabulary.
   ///
-  /// Priority 1 (COCO-80 Whitelist): Searches candidates for a direct match or
-  /// synonym within the standard 80 COCO categories.
-  /// Priority 2: Returns the most specific non-umbrella child category.
-  /// Priority 3: Fallback to the top label or 'Object'.
+  /// Priority 1: Returns the most specific non-umbrella child category (e.g., "Potato", "Laptop", "Coffee Cup").
+  /// Priority 2: Fallback to the top candidate label if only umbrella categories exist.
+  /// Priority 3: Fallback to 'Object' if no valid label is present.
   String resolveBestDisplayLabel(List<Label> labels) {
     if (labels.isEmpty) return 'Object';
 
-    // 1. Search candidate labels for a COCO-80 match
-    for (final label in labels) {
-      final cleanText = label.text.toLowerCase().trim();
-      if (umbrellaCategories.contains(cleanText) || cleanText.contains('???')) {
-        continue;
-      }
-
-      // Direct match
-      final direct = coco80LabelMap[cleanText];
-      if (direct != null) return direct;
-
-      // Substring match for compound phrases (e.g. "laptop computer" -> "Laptop")
-      for (final entry in coco80LabelMap.entries) {
-        if (cleanText == entry.key ||
-            cleanText.startsWith('${entry.key} ') ||
-            cleanText.endsWith(' ${entry.key}') ||
-            cleanText.contains(' ${entry.key} ')) {
-          return entry.value;
-        }
-      }
-    }
-
-    // 2. Fall back to best non-umbrella specific label
     final best = selectBestLabel(labels);
     if (best != null) {
       return cleanObjectLabel(best.text);
@@ -710,28 +571,21 @@ class ObjectDetectionService {
     return 'Object';
   }
 
-  /// Finds the candidate [Label] that produced the best COCO-80 match, for confidence display.
+  /// Finds the candidate [Label] that produced the resolved display name, for confidence display.
   Label? findMatchedLabel(List<Label> labels) {
     if (labels.isEmpty) return null;
     final bestDisplayName = resolveBestDisplayLabel(labels);
+
     for (final label in labels) {
       final cleanText = label.text.toLowerCase().trim();
       if (umbrellaCategories.contains(cleanText) || cleanText.contains('???')) {
         continue;
       }
-      if (coco80LabelMap[cleanText] == bestDisplayName) {
+      if (cleanObjectLabel(label.text) == bestDisplayName) {
         return label;
       }
-      for (final entry in coco80LabelMap.entries) {
-        if ((cleanText == entry.key ||
-             cleanText.startsWith('${entry.key} ') ||
-             cleanText.endsWith(' ${entry.key}') ||
-             cleanText.contains(' ${entry.key} ')) &&
-            entry.value == bestDisplayName) {
-          return label;
-        }
-      }
     }
+
     return selectBestLabel(labels) ?? labels.first;
   }
 
@@ -786,7 +640,86 @@ class ObjectDetectionService {
       return scoreB.compareTo(scoreA);
     });
 
-    return candidates.take(maxObjects).toList();
+    // 3. Cross-Class Spatial Overlap & Specificity Suppression:
+    // Suppresses generic parent bounding boxes (e.g., "Home Appliance") when a specific child
+    // bounding box (e.g., "Coffeemaker") occupies the same physical area (IoU >= 0.35 or Enclosure >= 0.65).
+    final nonOverlapping = suppressOverlappingGenericObjects(candidates);
+
+    return nonOverlapping.take(maxObjects).toList();
+  }
+
+  /// Calculates Intersection over Union (IoU) of two bounding box rectangles.
+  static double computeIoU(Rect a, Rect b) {
+    final intersection = a.intersect(b);
+    if (intersection.width <= 0 || intersection.height <= 0) return 0.0;
+    final intersectionArea = intersection.width * intersection.height;
+    final unionArea = (a.width * a.height) + (b.width * b.height) - intersectionArea;
+    return unionArea > 0 ? (intersectionArea / unionArea).clamp(0.0, 1.0) : 0.0;
+  }
+
+  /// Calculates the Enclosure ratio (Intersection / min(Area(a), Area(b))).
+  ///
+  /// Detects when a specific object (e.g. Coffeemaker) is nestled entirely inside
+  /// a larger bounding box of a generic class (e.g. Home Appliance / Furniture).
+  static double computeEnclosureRatio(Rect a, Rect b) {
+    final intersection = a.intersect(b);
+    if (intersection.width <= 0 || intersection.height <= 0) return 0.0;
+    final intersectionArea = intersection.width * intersection.height;
+    final minArea = math.min(a.width * a.height, b.width * b.height);
+    return minArea > 0 ? (intersectionArea / minArea).clamp(0.0, 1.0) : 0.0;
+  }
+
+  /// Checks whether the resolved primary label of a [DetectedObject] belongs to an umbrella category.
+  bool isObjectGeneric(DetectedObject obj) {
+    if (obj.labels.isEmpty) return true;
+    final resolved = resolveBestDisplayLabel(obj.labels).toLowerCase().trim();
+    return umbrellaCategories.contains(resolved) || resolved == 'object' || resolved.contains('???');
+  }
+
+  /// Suppresses generic parent bounding boxes when overlapping with specific child objects.
+  List<DetectedObject> suppressOverlappingGenericObjects(List<DetectedObject> objects) {
+    if (objects.length <= 1) return objects;
+
+    final List<DetectedObject> result = [];
+    final Set<int> suppressedIndices = {};
+
+    for (int i = 0; i < objects.length; i++) {
+      if (suppressedIndices.contains(i)) continue;
+
+      final objA = objects[i];
+      final bool isGenericA = isObjectGeneric(objA);
+
+      for (int j = i + 1; j < objects.length; j++) {
+        if (suppressedIndices.contains(j)) continue;
+
+        final objB = objects[j];
+        final bool isGenericB = isObjectGeneric(objB);
+
+        final iou = computeIoU(objA.boundingBox, objB.boundingBox);
+        final enclosure = computeEnclosureRatio(objA.boundingBox, objB.boundingBox);
+
+        // If two boxes occupy the same physical object
+        if (iou >= 0.35 || enclosure >= 0.65) {
+          if (!isGenericA && isGenericB) {
+            // A is specific, B is generic -> suppress B
+            suppressedIndices.add(j);
+          } else if (isGenericA && !isGenericB) {
+            // A is generic, B is specific -> suppress A
+            suppressedIndices.add(i);
+            break; // Stop comparing A since it is suppressed
+          } else if (isGenericA && isGenericB) {
+            // Both are generic -> suppress the one with lower confidence / prominence
+            suppressedIndices.add(j);
+          }
+        }
+      }
+
+      if (!suppressedIndices.contains(i)) {
+        result.add(objA);
+      }
+    }
+
+    return result;
   }
 
   /// Processes a live camera frame independently for real-time object detection mode.
